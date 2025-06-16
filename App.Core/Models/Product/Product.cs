@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using MyApp.Core.Utils;
+using NanoidDotNet;
 
 namespace App.Core.Models.Product;
 
@@ -16,6 +18,8 @@ public class Product
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; }
+    
+    public string UniqueId { get; set; }
     
     /// <summary>
     /// Name of the product.
@@ -81,6 +85,7 @@ public class Product
         Features = new Dictionary<string, object>();
         Media = new List<ProductMedia>();
         CategoryPath = new List<string>();
+        UniqueId = NanoIdGenerator.Generate(15);
     }
 
     /// <summary>
@@ -108,5 +113,6 @@ public class Product
         Quantity = quantity;
         QuantityStatus = quantityStatus ?? null;
         Price = price;
+        UniqueId = NanoIdGenerator.Generate(25);
     }
 }
