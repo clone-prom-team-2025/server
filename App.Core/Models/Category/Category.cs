@@ -6,43 +6,45 @@ namespace App.Core.Models;
 
 /// <summary>
 /// Represents a product category in the system.
-/// Categories can be organized hierarchically using the ParentId property.
+/// Categories support hierarchical organization using the <see cref="ParentId"/> field,
+/// and localized names through the <see cref="Name"/> dictionary.
 /// </summary>
 public class Category
 {
     /// <summary>
-    /// Unique identifier for the category (MongoDB ObjectId).
+    /// Unique identifier for the category (MongoDB ObjectId as a string).
     /// </summary>
     [BsonId]
-    public ObjectId Id { get; set; }
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string Id { get; set; } = null!;
 
     /// <summary>
-    /// Name of the category.
-    /// Must be between 3 and 100 characters.
+    /// Dictionary containing localized names for the category.
+    /// Example: { "ua": "Телефони", "en": "Phones" }.
     /// </summary>
-    [StringLength(100, MinimumLength = 3)]
-    public string Name { get; set; }
+    [Required]
+    public Dictionary<string, string> Name { get; set; } = new();
 
     /// <summary>
-    /// Optional reference to the parent category's ObjectId.
-    /// Allows nesting categories hierarchically.
+    /// Optional reference to the parent category's ID.
+    /// If null, this category is considered a root-level category.
     /// </summary>
     [BsonRepresentation(BsonType.ObjectId)]
     public string? ParentId { get; set; }
 
     /// <summary>
-    ///  Empty constructor
+    /// Initializes a new instance of the <see cref="Category"/> class.
     /// </summary>
     public Category() {}
 
     /// <summary>
-    /// Constructor to create a category with initial values.
+    /// Initializes a new instance of the <see cref="Category"/> class with specified values.
     /// </summary>
-    /// <param name="name">Category name.</param>
-    /// <param name="parentId">Id of the senior (parental) category.</param>
-    public Category(string name, string? parentId = null)
+    /// <param name="name">Dictionary of localized names.</param>
+    /// <param name="parentId">ID of the parent category (optional).</param>
+    public Category(Dictionary<string, string> name, string? parentId = null)
     {
-        Name = name;
+        Name = name ?? throw new ArgumentNullException(nameof(name));
         ParentId = parentId;
     }
 }
