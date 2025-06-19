@@ -14,14 +14,14 @@ public class Category
     /// Unique identifier for the category (MongoDB ObjectId).
     /// </summary>
     [BsonId]
-    public ObjectId Id { get; set; }
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string Id { get; set; }
 
     /// <summary>
-    /// Name of the category.
-    /// Must be between 3 and 100 characters.
+    /// Dictionary of localized names (e.g., { "ua": "Телефони", "en": "Phones" }).
     /// </summary>
-    [StringLength(100, MinimumLength = 3)]
-    public string Name { get; set; }
+    [Required]
+    public Dictionary<string, string> Name { get; set; } = new();
 
     /// <summary>
     /// Optional reference to the parent category's ObjectId.
@@ -40,9 +40,9 @@ public class Category
     /// </summary>
     /// <param name="name">Category name.</param>
     /// <param name="parentId">Id of the senior (parental) category.</param>
-    public Category(string name, string? parentId = null)
+    public Category(Dictionary<string, string> name, string? parentId = null)
     {
-        Name = name;
+        Name = new Dictionary<string, string>(name);
         ParentId = parentId;
     }
 }
