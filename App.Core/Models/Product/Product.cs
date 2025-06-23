@@ -29,7 +29,7 @@ public class Product
     /// Example: { "ua": "Кріплення універсальне", "en": "Universal fastening" }.
     /// </summary>
     [Required]
-    public Dictionary<string, string> Name { get; set; } = new();
+    public Dictionary<string, string> Name { get; set; }
 
     /// <summary>
     /// Product type or high-level category (e.g., "phone", "tv").
@@ -40,12 +40,12 @@ public class Product
     /// <summary>
     /// List of category hierarchy or path (e.g., ["Electronics", "Phones", "Smartphones"]).
     /// </summary>
-    public List<string> CategoryPath { get; set; } = new();
+    public List<string> CategoryPath { get; set; }
 
     /// <summary>
     /// List of all variations for this product (e.g., different colors, configurations).
     /// </summary>
-    public List<ProductVariation> Variations { get; set; } = new();
+    public List<ProductVariation> Variations { get; set; }
     
     /// <summary>
     /// Identifier of the seller (linked from PostgreSQL).
@@ -58,7 +58,9 @@ public class Product
     public Product()
     {
         Id = ObjectId.GenerateNewId().ToString();
-        CategoryPath = new List<string>();
+        CategoryPath = [];
+        Variations = [];
+        Name = [];
     }
 
     /// <summary>
@@ -68,6 +70,7 @@ public class Product
     /// <param name="productType">The product type/category.</param>
     /// <param name="categoryPath">The product's category hierarchy.</param>
     /// <param name="variations">The list of product variations.</param>
+    /// <param name="sellerId">Reference to seller by his id</param>
     /// <exception cref="ArgumentNullException">Thrown when required arguments are null.</exception>
     public Product(
         Dictionary<string, string> name,

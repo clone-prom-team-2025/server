@@ -22,7 +22,7 @@ public class ProductVariation
     /// <summary>
     /// List of media items (images, videos) associated with the product.
     /// </summary>
-    public List<ProductMedia> Media { get; set; } = new();
+    public List<ProductMedia> Media { get; set; } = [];
     
     /// <summary>
     /// Quantity available in stock.
@@ -45,7 +45,7 @@ public class ProductVariation
     /// Stored as extra elements in MongoDB.
     /// </summary>
     [BsonExtraElements]
-    public Dictionary<string, object> Features { get; set; } = new();
+    public List<ProductFeature> Features { get; set; } = [];
 
     /// <summary>
     /// Full constructor for initializing all properties of a product variation.
@@ -58,16 +58,16 @@ public class ProductVariation
     /// <param name="description">Optional description of the product.</param>
     /// <param name="quantityStatus">Optional quantity status ("In stock", etc.).</param>
     public ProductVariation(
-        List<ProductMedia> media,
-        Dictionary<string, object> features,
+        List<ProductMedia>? media,
+        List<ProductFeature>? features,
         int quantity,
         double price,
         string? modelName = null,
         string? description = null,
         string? quantityStatus = null)
     {
-        Media = media ?? new List<ProductMedia>();
-        Features = features ?? new Dictionary<string, object>();
+        Media = media ?? [];
+        Features = features ?? [];
         Quantity = quantity;
         Price = price;
         ModelName = modelName;
