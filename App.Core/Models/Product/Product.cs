@@ -2,117 +2,89 @@ using System.ComponentModel.DataAnnotations;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MyApp.Core.Utils;
-using NanoidDotNet;
 
 namespace App.Core.Models.Product;
 
 /// <summary>
 /// Represents a product stored in the MongoDB database.
-/// Contains general product details and a flexible dictionary of features.
+/// Contains general product details, localization, categorization, and variations.
 /// </summary>
 public class Product
 {
     /// <summary>
-    /// Unique identifier for the product (MongoDB ObjectId).
+    /// Unique identifier for the product (MongoDB ObjectId as string).
     /// </summary>
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; }
     
-    public string UniqueId { get; set; }
-    
     /// <summary>
-    /// Name of the product.
+    /// Unique identifier of the product variation (automatically generated).
     /// </summary>
-    [StringLength(200)]
-    public string Name { get; set; }
-    
+    [Required]
+    public string UniqueId { get; set; }
+
     /// <summary>
-    /// Type/category of the product (e.g., "phone", "tv").
+    /// Dictionary of localized product names.
+    /// Example: { "ua": "Кріплення універсальне", "en": "Universal fastening" }.
+    /// </summary>
+    [Required]
+    public Dictionary<string, string> Name { get; set; }
+
+    /// <summary>
+    /// Product type or high-level category (e.g., "phone", "tv").
     /// </summary>
     [StringLength(50)]
     public string ProductType { get; set; }
-    
-    /// <summary>
-    /// Optional description of the product.
-    /// </summary>
-    public string? Description { get; set; }
 
     /// <summary>
-    /// List of media items (images, videos) related to the product.
+    /// List of category hierarchy or path (e.g., ["Electronics", "Phones", "Smartphones"]).
     /// </summary>
-    private List<ProductMedia> Media { get; set; }
+    public List<string> CategoryPath { get; set; }
 
     /// <summary>
-    /// List representing the category path or hierarchy for the product.
+    /// List of all variations for this product (e.g., different colors, configurations).
     /// </summary>
-    private List<string> CategoryPath { get; set; }
-    
-    /// <summary>
-    /// Flexible dictionary of product features and their values.
-    /// Keys correspond to feature keys defined in the product schema.
-    /// </summary>
-    [BsonExtraElements]
-    public Dictionary<string, object> Features { get; set; }
+    public List<ProductVariation> Variations { get; set; }
     
     /// <summary>
     /// Identifier of the seller (linked from PostgreSQL).
     /// </summary>
-    public int SellerId { get; set; }
-    
+    public string SellerId { get; set; }
+
     /// <summary>
-    /// Quantity available in stock.
-    /// </summary>
-    private int Quantity { get; set; }
-    
-    /// <summary>
-    /// Optional status of the quantity (e.g., "In stock", "Limited").
-    /// </summary>
-    [StringLength(40)]
-    public string? QuantityStatus { get; set; }
-    
-    /// <summary>
-    /// Price of the product.
-    /// </summary>
-    double Price { get; set; }
-    
-    /// <summary>
-    /// Default constructor initializes IDs and collections.
+    /// Default constructor. Initializes the ID and lists.
     /// </summary>
     public Product()
     {
         Id = ObjectId.GenerateNewId().ToString();
-        Features = new Dictionary<string, object>();
-        Media = new List<ProductMedia>();
-        CategoryPath = new List<string>();
-        UniqueId = NanoIdGenerator.Generate(15);
+        CategoryPath = [];
+        Variations = [];
+        Name = [];
     }
 
     /// <summary>
-    /// Constructor to create a product with initial values.
+    /// Constructs a new Product instance with provided values.
     /// </summary>
-    /// <param name="name">Product name.</param>
-    /// <param name="productType">Type or category of the product.</param>
-    /// <param name="description">Optional description.</param>
-    /// <param name="categoryPath">List of categories/hierarchy.</param>
-    /// <param name="features">Dictionary of product features and values.</param>
-    /// <param name="sellerid">Seller identifier.</param>
-    /// <param name="quantity">Available quantity.</param>
-    /// <param name="quantityStatus">Optional quantity status.</param>
-    /// <param name="price">Price of the product.</param>
-    public Product(string name, string productType, string? description, List<string> categoryPath, Dictionary<string, object>? features, int sellerid, int quantity, string? quantityStatus, double price)
+    /// <param name="name">Localized names of the product.</param>
+    /// <param name="productType">The product type/category.</param>
+    /// <param name="categoryPath">The product's category hierarchy.</param>
+    /// <param name="variations">The list of product variations.</param>
+    /// <param name="sellerId">Reference to seller by his id</param>
+    /// <exception cref="ArgumentNullException">Thrown when required arguments are null.</exception>
+    public Product(
+        Dictionary<string, string> name,
+        string productType,
+        List<string> categoryPath,
+        List<ProductVariation> variations,
+        string sellerId)
     {
+        UniqueId = NanoIdGenerator.Generate(15);
         Id = ObjectId.GenerateNewId().ToString();
-        Name = name;
+        Name = name ?? throw new ArgumentNullException(nameof(name));
         ProductType = productType;
-        Description = description ?? null;
-        Media = new List<ProductMedia>();
-        CategoryPath = new List<string>(categoryPath);
-        Features = features ?? new Dictionary<string, object>();
-        SellerId = sellerid;
-        Quantity = quantity;
-        QuantityStatus = quantityStatus ?? null;
-        Price = price;
-        UniqueId = NanoIdGenerator.Generate(25);
+        CategoryPath = categoryPath ?? throw new ArgumentNullException(nameof(categoryPath));
+        Variations = variations ?? throw new ArgumentNullException(nameof(variations));
+        SellerId = sellerId ?? throw new ArgumentNullException(nameof(sellerId));
     }
 }
