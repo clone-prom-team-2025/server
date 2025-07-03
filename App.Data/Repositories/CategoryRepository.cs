@@ -1,19 +1,20 @@
 using App.Core.Interfaces;
 using App.Core.Models;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace App.Data.Repositories;
 
 /// <summary>
-/// Repository implementation for managing Category documents in MongoDB.
-/// Provides CRUD operations, tree navigation, and localized search functionality.
+///     Repository implementation for managing Category documents in MongoDB.
+///     Provides CRUD operations, tree navigation, and localized search functionality.
 /// </summary>
 public class CategoryRepository(MongoDbContext mongoDbContext) : ICategoryRepository
 {
     private readonly IMongoCollection<Category> _categories = mongoDbContext.Categories;
 
     /// <summary>
-    /// Gets all categories from the database.
+    ///     Gets all categories from the database.
     /// </summary>
     public async Task<List<Category>?> GetAllAsync()
     {
@@ -21,7 +22,7 @@ public class CategoryRepository(MongoDbContext mongoDbContext) : ICategoryReposi
     }
 
     /// <summary>
-    /// Retrieves a category by its unique identifier.
+    ///     Retrieves a category by its unique identifier.
     /// </summary>
     /// <param name="id">The category ID.</param>
     public async Task<Category?> GetByIdAsync(string id)
@@ -30,17 +31,18 @@ public class CategoryRepository(MongoDbContext mongoDbContext) : ICategoryReposi
     }
 
     /// <summary>
-    /// Retrieves a category by its localized name.
+    ///     Retrieves a category by its localized name.
     /// </summary>
     /// <param name="name">The name to search for.</param>
     /// <param name="languageCode">The language code (default is "en").</param>
     public async Task<Category?> GetByNameAsync(string name, string languageCode = "en")
     {
-        return await _categories.Find(c => c.Name.ContainsKey(languageCode) && c.Name[languageCode] == name).FirstOrDefaultAsync();
+        return await _categories.Find(c => c.Name.ContainsKey(languageCode) && c.Name[languageCode] == name)
+            .FirstOrDefaultAsync();
     }
 
     /// <summary>
-    /// Retrieves all direct child categories of a given parent category.
+    ///     Retrieves all direct child categories of a given parent category.
     /// </summary>
     /// <param name="parentId">The parent category ID.</param>
     public async Task<List<Category>?> GetByParentIdAsync(string parentId)
@@ -49,7 +51,7 @@ public class CategoryRepository(MongoDbContext mongoDbContext) : ICategoryReposi
     }
 
     /// <summary>
-    /// Inserts a new category into the database.
+    ///     Inserts a new category into the database.
     /// </summary>
     /// <param name="category">The category to create.</param>
     public async Task CreateAsync(Category category)
@@ -58,7 +60,7 @@ public class CategoryRepository(MongoDbContext mongoDbContext) : ICategoryReposi
     }
 
     /// <summary>
-    /// Updates an existing category.
+    ///     Updates an existing category.
     /// </summary>
     /// <param name="category">The category with updated values.</param>
     /// <returns>True if a document was matched and modified; otherwise false.</returns>
@@ -69,7 +71,7 @@ public class CategoryRepository(MongoDbContext mongoDbContext) : ICategoryReposi
     }
 
     /// <summary>
-    /// Deletes a category by ID.
+    ///     Deletes a category by ID.
     /// </summary>
     /// <param name="id">The category ID to delete.</param>
     /// <returns>True if a document was deleted; otherwise false.</returns>
@@ -80,7 +82,7 @@ public class CategoryRepository(MongoDbContext mongoDbContext) : ICategoryReposi
     }
 
     /// <summary>
-    /// Performs a localized fuzzy search by name, and highlights matched substrings.
+    ///     Performs a localized fuzzy search by name, and highlights matched substrings.
     /// </summary>
     /// <param name="name">The name fragment to search.</param>
     /// <param name="languageCode">The language code (default is "en").</param>
@@ -89,10 +91,10 @@ public class CategoryRepository(MongoDbContext mongoDbContext) : ICategoryReposi
     {
         var filter = Builders<Category>.Filter.Regex(
             $"Name.{languageCode}",
-            new MongoDB.Bson.BsonRegularExpression(name, "i")
+            new BsonRegularExpression(name, "i")
         );
 
-        var categories = await _categories.Find(filter).ToListAsync();
+        var categories = await this._categories.Find(filter).ToListAsync();
 
         if (categories is null || categories.Count == 0)
             return new List<Category>();
@@ -136,8 +138,8 @@ public class CategoryRepository(MongoDbContext mongoDbContext) : ICategoryReposi
     }
 
     /// <summary>
-    /// Builds the full parent tree (ancestry) from a given category ID upward.
-    /// Each parent wraps the previous node as a child.
+    ///     Builds the full parent tree (ancestry) from a given category ID upward.
+    ///     Each parent wraps the previous node as a child.
     /// </summary>
     /// <param name="id">The starting category ID.</param>
     /// <returns>The root ancestor with nested children leading to the original category.</returns>
@@ -152,27 +154,25 @@ public class CategoryRepository(MongoDbContext mongoDbContext) : ICategoryReposi
             {
                 Id = current.Id,
                 Name = current.Name,
-                Children = new()
+                Children = new List<CategoryNode>()
             };
 
-            if (childNode != null)
-            {
-                node.Children.Add(childNode);
-            }
+            if (childNode != null) node.Children.Add(childNode);
 
             childNode = node;
 
             if (string.IsNullOrEmpty(current.ParentId))
                 break;
 
-            current = await _categories.Find(x => x.Id == current.ParentId).FirstOrDefaultAsync();
+            var current1 = current;
+            current = await _categories.Find(x => x.Id == current1.ParentId).FirstOrDefaultAsync();
         }
 
         return childNode;
     }
 
     /// <summary>
-    /// Builds a full category subtree starting from the specified parent ID.
+    ///     Builds a full category subtree starting from the specified parent ID.
     /// </summary>
     /// <param name="parentId">The root category ID to start from.</param>
     /// <returns>The root node with all nested children.</returns>
@@ -192,7 +192,7 @@ public class CategoryRepository(MongoDbContext mongoDbContext) : ICategoryReposi
     }
 
     /// <summary>
-    /// Recursively retrieves all children of a given category as a tree structure.
+    ///     Recursively retrieves all children of a given category as a tree structure.
     /// </summary>
     /// <param name="parentId">The parent category ID.</param>
     /// <returns>List of child nodes with their nested descendants.</returns>
