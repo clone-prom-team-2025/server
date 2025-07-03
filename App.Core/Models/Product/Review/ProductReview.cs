@@ -14,7 +14,7 @@ public class ProductReview
     /// for a specific product and model variation.
     /// </summary>
     /// <param name="productId">The ID of the related product.</param>
-    /// <param name="modelName">The model name of the variation.</param>
+    /// <param name="modelId">The model id of the variation.</param>
     public ProductReview(string productId, string modelId)
     {
         Id = ObjectId.GenerateNewId().ToString();
