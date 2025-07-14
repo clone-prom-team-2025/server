@@ -1,59 +1,20 @@
 using System.ComponentModel.DataAnnotations;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using MyApp.Core.Utils;
 
 namespace App.Core.Models.Product;
 
 /// <summary>
-/// Represents a product stored in the MongoDB database.
-/// Contains general product details, localization, categorization, and variations.
+///     Represents a product stored in the MongoDB database.
+///     Contains general product details, localization, categorization, and variations.
+/// </summary>/// <summary>
+///     Represents a product stored in MongoDB.
+///     Contains localization, categorization, and variation data.
 /// </summary>
 public class Product
 {
     /// <summary>
-    /// Unique identifier for the product (MongoDB ObjectId as string).
-    /// </summary>
-    [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; }
-    
-    /// <summary>
-    /// Unique identifier of the product variation (automatically generated).
-    /// </summary>
-    [Required]
-    public string UniqueId { get; set; }
-
-    /// <summary>
-    /// Dictionary of localized product names.
-    /// Example: { "ua": "Кріплення універсальне", "en": "Universal fastening" }.
-    /// </summary>
-    [Required]
-    public Dictionary<string, string> Name { get; set; }
-
-    /// <summary>
-    /// Product type or high-level category (e.g., "phone", "tv").
-    /// </summary>
-    [StringLength(50)]
-    public string ProductType { get; set; }
-
-    /// <summary>
-    /// List of category hierarchy or path (e.g., ["Electronics", "Phones", "Smartphones"]).
-    /// </summary>
-    public List<string> CategoryPath { get; set; }
-
-    /// <summary>
-    /// List of all variations for this product (e.g., different colors, configurations).
-    /// </summary>
-    public List<ProductVariation> Variations { get; set; }
-    
-    /// <summary>
-    /// Identifier of the seller (linked from PostgreSQL).
-    /// </summary>
-    public string SellerId { get; set; }
-
-    /// <summary>
-    /// Default constructor. Initializes the ID and lists.
+    ///     Default constructor initializing ID and collections.
     /// </summary>
     public Product()
     {
@@ -63,15 +24,25 @@ public class Product
         Name = [];
     }
 
+    public Product(Product product)
+    {
+        Id = product.Id;
+        Name = new Dictionary<string, string>(product.Name);
+        ProductType = product.ProductType;
+        CategoryPath = new List<string>(product.CategoryPath);
+        Variations = new List<ProductVariation>(product.Variations);
+        SellerId = product.SellerId;
+        
+    }
+
     /// <summary>
-    /// Constructs a new Product instance with provided values.
+    ///     Constructs a new Product instance with provided values.
     /// </summary>
-    /// <param name="name">Localized names of the product.</param>
-    /// <param name="productType">The product type/category.</param>
-    /// <param name="categoryPath">The product's category hierarchy.</param>
-    /// <param name="variations">The list of product variations.</param>
-    /// <param name="sellerId">Reference to seller by his id</param>
-    /// <exception cref="ArgumentNullException">Thrown when required arguments are null.</exception>
+    /// <param name="name">Localized product names.</param>
+    /// <param name="productType">Product type or classification.</param>
+    /// <param name="categoryPath">Hierarchy of categories.</param>
+    /// <param name="variations">List of product variations.</param>
+    /// <param name="sellerId">Seller's identifier.</param>
     public Product(
         Dictionary<string, string> name,
         string productType,
@@ -79,12 +50,45 @@ public class Product
         List<ProductVariation> variations,
         string sellerId)
     {
-        UniqueId = NanoIdGenerator.Generate(15);
         Id = ObjectId.GenerateNewId().ToString();
-        Name = name ?? throw new ArgumentNullException(nameof(name));
+        Name = name;
         ProductType = productType;
-        CategoryPath = categoryPath ?? throw new ArgumentNullException(nameof(categoryPath));
-        Variations = variations ?? throw new ArgumentNullException(nameof(variations));
-        SellerId = sellerId ?? throw new ArgumentNullException(nameof(sellerId));
+        CategoryPath = categoryPath;
+        Variations = variations;
+        SellerId = sellerId;
     }
+
+    /// <summary>
+    ///     Unique product identifier (MongoDB ObjectId as string).
+    /// </summary>
+    [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
+    public string Id { get; set; }
+
+    /// <summary>
+    ///     Localized product names (e.g., {"en": "Lamp", "ua": "Лампа"}).
+    /// </summary>
+    [Required]
+    public Dictionary<string, string> Name { get; set; }
+
+    /// <summary>
+    ///     Product type or category.
+    /// </summary>
+    [StringLength(50)]
+    public string ProductType { get; set; }
+
+    /// <summary>
+    ///     Product category hierarchy.
+    /// </summary>
+    public List<string> CategoryPath { get; set; }
+
+    /// <summary>
+    ///     List of product variations (e.g., different configurations).
+    /// </summary>
+    public List<ProductVariation> Variations { get; set; }
+
+    /// <summary>
+    ///     Identifier of the associated seller.
+    /// </summary>
+    public string SellerId { get; set; }
 }
