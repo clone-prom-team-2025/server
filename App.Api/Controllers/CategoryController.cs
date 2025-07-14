@@ -98,7 +98,7 @@ public class CategoryController : ControllerBase
     /// Updates an existing category.
     /// </summary>
     /// <param name="id">Category ID.</param>
-    /// <param name="category">Updated category data.</param>
+    /// <param name="categoryDto">Updated category DTO</param>
     /// <returns>NoContent if success; NotFound if category not found.</returns>
     [HttpPut("{id}")]
     public async Task<ActionResult> Update(string id, [FromBody] CategoryUpdateDto categoryDto)
@@ -108,7 +108,7 @@ public class CategoryController : ControllerBase
         Category category = new Category(categoryDto.Name, categoryDto.ParentId);
         category.Id = id;
 
-        var updated = await _categoryService.UpdateAsync(category);//-------------------------------------------------
+        var updated = await _categoryService.UpdateAsync(category);
         if (!updated)
             return NotFound();
 
