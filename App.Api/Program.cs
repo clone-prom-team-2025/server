@@ -1,27 +1,40 @@
+using App.Core.Interfaces;
 using App.Data;
+using App.Data.Repositories;
+using App.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-
-// Add swagger gen
-builder.Services.AddSwaggerGen();
-
+// --- MongoDB settings ---
 builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDb"));
+
+// --- Infrastructure ---
 builder.Services.AddSingleton<MongoDbContext>();
 
+// --- Repositories ---
+builder.Services.AddSingleton<ICategoryRepository, CategoryRepository>();
+
+// --- Services ---
+builder.Services.AddSingleton<ICategoryService, CategoryService>();
+
+// --- Controllers ---
+builder.Services.AddControllers();
+
+// --- Swagger ---
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// --- Create app ---
 var app = builder.Build();
 
+// --- Create MongoDB indexes on startup ---
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<MongoDbContext>();
     await dbContext.CreateCategoryIndexesAsync();
 }
 
-// Configure the HTTP request pipeline.
-// Swagger url: https://localhost:7142/swagger/index.html
+// --- HTTP request pipeline ---
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -29,9 +42,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
