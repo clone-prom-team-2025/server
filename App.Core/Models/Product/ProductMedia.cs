@@ -53,4 +53,9 @@ public class ProductMedia
     ///     Display order for the media.
     /// </summary>
     public int Order { get; set; }
+
+    /// <summary>
+    ///     Additional info for the image (e.g., color, style).
+    /// </summary>
+    public Dictionary<string, string> AdditionalInfo { get; set; } = new();
 }

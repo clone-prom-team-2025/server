@@ -88,6 +88,11 @@ public class Product
     public List<ProductVariation> Variations { get; set; }
 
     /// <summary>
+    ///     List of product images.
+    /// </summary>
+    public List<ProductMedia> Images { get; set; } = new();
+
+    /// <summary>
     ///     Identifier of the associated seller.
     /// </summary>
     public string SellerId { get; set; }

@@ -21,3 +21,20 @@ public class ProductFeatureDto
     /// </summary>
     public Dictionary<string, string> Rules { get; set; } = new();
 }
+
+public class ProductCreateDto
+{
+    public Dictionary<string, string> Name { get; set; }
+    public string ProductType { get; set; }
+    public List<string> CategoryPath { get; set; }
+    public string SellerId { get; set; }
+    public List<ProductMedia> Images { get; set; }
+}
+
+public class ProductUpdateDto
+{
+    public Dictionary<string, string> Name { get; set; }
+    public string ProductType { get; set; }
+    public List<string> CategoryPath { get; set; }
+    public List<ProductMedia> Images { get; set; }
+}
