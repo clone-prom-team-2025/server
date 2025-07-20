@@ -1,24 +1,31 @@
 using App.Core.Models.Product;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using App.Core.DTOs.Product;
 
 namespace App.Core.Interfaces;
 
 public interface IProductService
 {
-    Task<Product?> GetByIdAsync(string id);
-    Task<List<Product>> GetAllAsync();
-    Task<List<Product>> SearchAsync(string? name = null, string? category = null, string? sellerId = null);
-    Task CreateAsync(Product product);
-    Task<bool> UpdateAsync(Product product);
+    Task<List<ProductDto>?> GetAllAsync(ProductFilterRequest filter);
+    Task<ProductDto?> GetByIdAsync(string id);
+    Task<List<ProductDto>?> GetByNameAsync(string name, ProductFilterRequest filter);
+    Task<List<ProductDto>?> GetByCategoryAsync(string categoryId, ProductFilterRequest filter);
+    Task<List<ProductDto>?> GetBySellerIdAsync(string sellerId, ProductFilterRequest filter);
+    Task<ProductDto?> GetByModelIdAsync(string modelId, ProductFilterRequest filter);
+    Task<List<ProductDto>?> GetByModelIdsAsync(List<string> modelId, ProductFilterRequest filter);
+    Task<ProductDto> CreateAsync(ProductCreateDto product);
+    Task<ProductDto> UpdateAsync(ProductDto product);
     Task<bool> DeleteAsync(string id);
+    Task<List<ProductSearchResult>?> SearchByNameAsync(string name, string languageCode = "en");
 
     // Variation management
-    Task<bool> AddVariationAsync(string productId, ProductVariation variation);
-    Task<bool> UpdateVariationAsync(string productId, ProductVariation variation);
-    Task<bool> RemoveVariationAsync(string productId, string modelName);
+    // Task<ProductVariationDto> AddVariationAsync(string productId, ProductVariationDto variation);
+    // Task<ProductVariationDto> UpdateVariationAsync(string productId, ProductVariationDto variation);
+    // Task<bool> RemoveVariationAsync(string productId, string modelId);
 
     // Media management
-    Task<bool> AddMediaAsync(string productId, string modelName, ProductMedia media);
-    Task<bool> RemoveMediaAsync(string productId, string modelName, string mediaId);
+    // Task<ProductMediaDto> AddMediaAsync(string productId, string modelId, ProductMediaCreateDto media);
+    // Task<ProductMediaDto> UpdateMediaAsync();
+    // Task<bool> RemoveMediaAsync(string productId, string modelId, string mediaId);
 } 

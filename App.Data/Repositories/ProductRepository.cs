@@ -21,7 +21,36 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
     /// <returns>A list of all products, or null if none found.</returns>
     public async Task<List<Product>?> GetAllAsync(ProductFilterRequest filter)
     {
-        return await _products.Find(FilterDefinition<Product>.Empty).ToListAsync();
+        var builder = Builders<Product>.Filter;
+
+        var finalFilter = builder.Eq(p => p.ProductType, filter.ProductType);
+
+        if (filter.Include != null && filter.Include.Count > 0)
+        {
+            foreach (var kv in filter.Include)
+            {
+                var includeFilter = builder.Eq(kv.Key, BsonValue.Create(kv.Value));
+                finalFilter &= includeFilter;
+            }
+        }
+
+        if (filter.Exclude != null && filter.Exclude.Count > 0)
+        {
+            foreach (var kv in filter.Exclude)
+            {
+                var excludeFilter = builder.Ne(kv.Key, BsonValue.Create(kv.Value));
+                finalFilter &= excludeFilter;
+            }
+        }
+
+        var skip = (filter.Page - 1) * filter.PageSize;
+        var limit = filter.PageSize;
+
+        return await _products
+            .Find(finalFilter)
+            .Skip(skip)
+            .Limit(limit)
+            .ToListAsync();
     }
 
     /// <summary>
@@ -31,7 +60,8 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
     /// <returns>The product if found, otherwise null.</returns>
     public async Task<Product?> GetByIdAsync(string id)
     {
-        return await _products.Find(p => p.Id.Equals(id)).FirstOrDefaultAsync();
+        var filter = Builders<Product>.Filter.Eq(p => p.Id, ObjectId.Parse(id));
+        return await _products.Find(filter).FirstOrDefaultAsync();
     }
 
     /// <summary>
@@ -42,18 +72,44 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
     /// <returns>List of products with the specified name, or null if none found.</returns>
     public async Task<List<Product>?> GetByNameAsync(string name, ProductFilterRequest filter)
     {
-        return await _products.Find(p => p.Name.Equals(name)).ToListAsync();
-    }
+        var builder = Builders<Product>.Filter;
 
-    /// <summary>
-    /// Retrieves products by their product type.
-    /// </summary>
-    /// <param name="productType">The product type string.</param>
-    /// <param name="filter">Additional filter parameters (currently unused).</param>
-    /// <returns>List of products with the specified type, or null if none found.</returns>
-    public async Task<List<Product>?> GetByProductTypeAsync(string productType, ProductFilterRequest filter)
-    {
-        return await _products.Find(p => p.ProductType.Equals(productType)).ToListAsync();
+        var languageCode = filter.Language ?? "en";
+        var nameFilter = builder.Eq($"Name.{languageCode}", name);
+
+        var finalFilter = nameFilter;
+
+        if (!string.IsNullOrEmpty(filter.ProductType))
+        {
+            finalFilter &= builder.Eq(p => p.ProductType, filter.ProductType);
+        }
+
+        if (filter.Include != null && filter.Include.Count > 0)
+        {
+            foreach (var kv in filter.Include)
+            {
+                var includeFilter = builder.Eq(kv.Key, BsonValue.Create(kv.Value));
+                finalFilter &= includeFilter;
+            }
+        }
+
+        if (filter.Exclude != null && filter.Exclude.Count > 0)
+        {
+            foreach (var kv in filter.Exclude)
+            {
+                var excludeFilter = builder.Ne(kv.Key, BsonValue.Create(kv.Value));
+                finalFilter &= excludeFilter;
+            }
+        }
+
+        var skip = (filter.Page - 1) * filter.PageSize;
+        var limit = filter.PageSize;
+
+        return await _products
+            .Find(finalFilter)
+            .Skip(skip)
+            .Limit(limit)
+            .ToListAsync();
     }
 
     /// <summary>
@@ -64,7 +120,36 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
     /// <returns>List of products in the specified category, or null if none found.</returns>
     public async Task<List<Product>?> GetByCategoryAsync(string categoryId, ProductFilterRequest filter)
     {
-        return await _products.Find(p => p.CategoryPath.First().Equals(categoryId)).ToListAsync();
+        var builder = Builders<Product>.Filter;
+
+        var finalFilter = builder.Eq("CategoryPath.0", categoryId);
+
+        if (filter.Include != null && filter.Include.Count > 0)
+        {
+            foreach (var kv in filter.Include)
+            {
+                var includeFilter = builder.Eq(kv.Key, BsonValue.Create(kv.Value));
+                finalFilter &= includeFilter;
+            }
+        }
+
+        if (filter.Exclude != null && filter.Exclude.Count > 0)
+        {
+            foreach (var kv in filter.Exclude)
+            {
+                var excludeFilter = builder.Ne(kv.Key, BsonValue.Create(kv.Value));
+                finalFilter &= excludeFilter;
+            }
+        }
+
+        var skip = (filter.Page - 1) * filter.PageSize;
+        var limit = filter.PageSize;
+
+        return await _products
+            .Find(finalFilter)
+            .Skip(skip)
+            .Limit(limit)
+            .ToListAsync();
     }
 
     /// <summary>
@@ -75,7 +160,36 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
     /// <returns>List of products by the seller, or null if none found.</returns>
     public async Task<List<Product>?> GetBySellerIdAsync(string sellerId, ProductFilterRequest filter)
     {
-        return await _products.Find(p => p.SellerId.Equals(sellerId)).ToListAsync();
+        var builder = Builders<Product>.Filter;
+
+        var finalFilter = builder.Eq(p => p.SellerId, ObjectId.Parse(sellerId));
+
+        if (filter.Include != null && filter.Include.Count > 0)
+        {
+            foreach (var kv in filter.Include)
+            {
+                var includeFilter = builder.Eq(kv.Key, BsonValue.Create(kv.Value));
+                finalFilter &= includeFilter;
+            }
+        }
+
+        if (filter.Exclude != null && filter.Exclude.Count > 0)
+        {
+            foreach (var kv in filter.Exclude)
+            {
+                var excludeFilter = builder.Ne(kv.Key, BsonValue.Create(kv.Value));
+                finalFilter &= excludeFilter;
+            }
+        }
+
+        var skip = (filter.Page - 1) * filter.PageSize;
+        var limit = filter.PageSize;
+
+        return await _products
+            .Find(finalFilter)
+            .Skip(skip)
+            .Limit(limit)
+            .ToListAsync();
     }
 
     /// <summary>
@@ -87,12 +201,32 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
     /// <returns>The product with a single variation, or null if not found.</returns>
     public async Task<Product?> GetByModelIdAsync(string modelId, ProductFilterRequest filter)
     {
-        var dbFilter = Builders<Product>.Filter.ElemMatch(
+        var builder = Builders<Product>.Filter;
+
+        var finalFilter = builder.ElemMatch(
             x => x.Variations,
             v => v.ModelId == modelId
         );
 
-        var product = await _products.Find(dbFilter).FirstOrDefaultAsync();
+        if (filter.Include != null && filter.Include.Count > 0)
+        {
+            foreach (var kv in filter.Include)
+            {
+                var includeFilter = builder.Eq(kv.Key, BsonValue.Create(kv.Value));
+                finalFilter &= includeFilter;
+            }
+        }
+
+        if (filter.Exclude != null && filter.Exclude.Count > 0)
+        {
+            foreach (var kv in filter.Exclude)
+            {
+                var excludeFilter = builder.Ne(kv.Key, BsonValue.Create(kv.Value));
+                finalFilter &= excludeFilter;
+            }
+        }
+
+        var product = await _products.Find(finalFilter).FirstOrDefaultAsync();
         var variation = product?.Variations.FirstOrDefault(v => v.ModelId == modelId);
 
         if (product is null || variation is null)
@@ -104,6 +238,7 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 
         return newProduct;
     }
+
 
     /// <summary>
     /// Retrieves a list of products by multiple variation model IDs.
@@ -117,12 +252,32 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         if (modelIds == null || modelIds.Count == 0)
             return null;
 
-        var dbFilter = Builders<Product>.Filter.ElemMatch(
+        var builder = Builders<Product>.Filter;
+
+        var finalFilter = builder.ElemMatch(
             x => x.Variations,
             v => modelIds.Contains(v.ModelId)
         );
 
-        var matchedProducts = await _products.Find(dbFilter).ToListAsync();
+        if (filter.Include != null && filter.Include.Count > 0)
+        {
+            foreach (var kv in filter.Include)
+            {
+                var includeFilter = builder.Eq(kv.Key, BsonValue.Create(kv.Value));
+                finalFilter &= includeFilter;
+            }
+        }
+
+        if (filter.Exclude != null && filter.Exclude.Count > 0)
+        {
+            foreach (var kv in filter.Exclude)
+            {
+                var excludeFilter = builder.Ne(kv.Key, BsonValue.Create(kv.Value));
+                finalFilter &= excludeFilter;
+            }
+        }
+
+        var matchedProducts = await _products.Find(finalFilter).ToListAsync();
 
         if (matchedProducts.Count == 0)
             return null;
@@ -155,7 +310,7 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
     {
         await _products.InsertOneAsync(product);
     }
-
+    
     /// <summary>
     /// Replaces an existing product document with a new version.
     /// </summary>

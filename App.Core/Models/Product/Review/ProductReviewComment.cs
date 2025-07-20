@@ -1,4 +1,6 @@
-﻿namespace App.Core.Models.Product.Review;
+﻿using MongoDB.Bson;
+
+namespace App.Core.Models.Product.Review;
 
 /// <summary>
 /// Represents a single user review comment with rating, content,
@@ -13,7 +15,7 @@ public class ProductReviewComment
     /// <param name="rating">The rating given by the user (typically 1–5).</param>
     /// <param name="userId">The identifier of the user who left the review.</param>
     /// <param name="comment">The content of the comment.</param>
-    public ProductReviewComment(double rating, string userId, string comment)
+    public ProductReviewComment(double rating, ObjectId userId, string comment)
     {
         Rating = rating;
         UserId = userId;
@@ -33,7 +35,7 @@ public class ProductReviewComment
     /// <summary>
     /// The identifier of the user who made the comment.
     /// </summary>
-    public string UserId { get; set; }
+    public ObjectId UserId { get; set; }
 
     /// <summary>
     /// The content of the review comment.

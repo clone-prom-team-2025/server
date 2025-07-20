@@ -8,7 +8,6 @@ public interface IProductRepository
     Task<List<Product>?> GetAllAsync(ProductFilterRequest filter);
     Task<Product?> GetByIdAsync(string id);
     Task<List<Product>?> GetByNameAsync(string name, ProductFilterRequest filter);
-    Task<List<Product>?> GetByProductTypeAsync(string productType, ProductFilterRequest filter);
     Task<List<Product>?> GetByCategoryAsync(string categoryId, ProductFilterRequest filter);
     Task<List<Product>?> GetBySellerIdAsync(string sellerId, ProductFilterRequest filter);
     Task<Product?> GetByModelIdAsync(string modelId, ProductFilterRequest filter);

@@ -9,8 +9,7 @@ namespace App.Core.Models.User;
 public class User
 {
     [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; }
+    public ObjectId Id { get; set; }
 
     [Required]
     [MaxLength(50)]
@@ -19,6 +18,8 @@ public class User
     [EmailAddress]
     [MaxLength(100)]
     public string? Email { get; set; }
+    
+    public bool EmailConfirmed { get; set; }
 
     [Url]
     public string AvatarUrl { get; set; }
@@ -33,21 +34,22 @@ public class User
     public UserAdditionalInfo? AdditionalInfo { get; set; }
 
     public UserBlockInfo? BlockInfo { get; set; }
-
+    
     public User(string username, string avatarUrl, List<UserRole> roles)
     {
-        Id = ObjectId.GenerateNewId().ToString();
+        Id = ObjectId.GenerateNewId();
         this.Username = username;
         this.AvatarUrl = avatarUrl;
         this.Roles = new List<UserRole>(roles);
         CreatedAt = DateTime.UtcNow;
     }
     
-    public User(string username, string password, string avatarUrl, List<UserRole> roles)
+    public User(string username, string password, string email, string avatarUrl, List<UserRole> roles)
     {
-        Id = ObjectId.GenerateNewId().ToString();
+        Id = ObjectId.GenerateNewId();
         this.Username = username;
         this.PasswordHash = PasswordHasher.HashPassword(password);
+        this.Email = email;
         this.AvatarUrl = avatarUrl;
         this.Roles = new List<UserRole>(roles);
         CreatedAt = DateTime.UtcNow;

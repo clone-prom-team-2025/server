@@ -15,9 +15,9 @@ public class ProductReview
     /// </summary>
     /// <param name="productId">The ID of the related product.</param>
     /// <param name="modelId">The model id of the variation.</param>
-    public ProductReview(string productId, string modelId)
+    public ProductReview(ObjectId productId, ObjectId modelId)
     {
-        Id = ObjectId.GenerateNewId().ToString();
+        Id = ObjectId.GenerateNewId();
         ProductId = productId;
         AverageRating = 0.0;
         ModelId = modelId;
@@ -27,19 +27,18 @@ public class ProductReview
     /// The unique identifier of this review document (MongoDB ObjectId).
     /// </summary>
     [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; }
+    public ObjectId Id { get; set; }
 
     /// <summary>
     /// The identifier of the associated product.
     /// </summary>
     [BsonRepresentation(BsonType.ObjectId)]
-    public string ProductId { get; set; }
+    public ObjectId ProductId { get; set; }
 
     /// <summary>
     /// The name of the product variation model being reviewed.
     /// </summary>
-    public string ModelId { get; set; }
+    public ObjectId ModelId { get; set; }
 
     /// <summary>
     /// The average rating calculated from all submitted comments.

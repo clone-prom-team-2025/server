@@ -8,8 +8,7 @@ namespace App.Core.Models.Store;
 public class Store
 {
     [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; }
+    public ObjectId Id { get; set; }
 
     [Required] [MaxLength(50)] 
     public string Name { get; set; } = null!;
@@ -19,9 +18,11 @@ public class Store
     
     public List<StoreRole> Roles { get; set; } = new List<StoreRole>();
 
-    public Store()
+    public Store(string name, string avatarUrl, List<StoreRole> roles)
     {
-        Id = ObjectId.GenerateNewId().ToString();
-        
+        Id = ObjectId.GenerateNewId();
+        Name = name;
+        AvatarUrl = avatarUrl;
+        Roles = new List<StoreRole>(roles);
     }
 }

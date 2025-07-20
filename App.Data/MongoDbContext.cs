@@ -1,6 +1,9 @@
 using App.Core.Models;
 using App.Core.Models.Product;
 using App.Core.Models.Product.Review;
+using App.Core.Models.User;
+using App.Core.Models.Store.Review;
+using App.Core.Models.Store;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 
@@ -39,9 +42,24 @@ public class MongoDbContext
     ///  Gets the MongoDB collection for <see cref="ProductReview" /> documents.
     /// </summary>
     public IMongoCollection<ProductReview> ProductReviews => _database.GetCollection<ProductReview>("ProductReviews");
+    
+    /// <summary>
+    /// Gets the MongoDB collection for <see cref="User"/> document
+    /// </summary>
+    public IMongoCollection<User> Users => _database.GetCollection<User>("Users");
 
     /// <summary>
-    ///     Ensures that the necessary indexes for the Category collection are created.
+    /// Gets the MongoDB collection for <see cref="Store"/> document
+    /// </summary>
+    public IMongoCollection<Store> Stores => _database.GetCollection<Store>("Stores");
+
+    /// <summary>
+    /// Gets the MongoDB collection for <see cref="StoreReview"/> document
+    /// </summary>
+    public IMongoCollection<StoreReview> StoreReviews => _database.GetCollection<StoreReview>("StoreReviews");
+
+    /// <summary>
+    ///     Ensures that the necessary indexes for the <see cref="Category"/> collection are created.
     ///     Specifically, creates a unique ascending index on the Name field if it does not already exist.
     /// </summary>
     public async Task CreateCategoryIndexesAsync()
@@ -65,7 +83,7 @@ public class MongoDbContext
     }
 
     /// <summary>
-    /// Ensures that the necessary indexes for the Product collection are created.
+    /// Ensures that the necessary indexes for the <see cref="Product"/> collection are created.
     /// Specifically, creates non-unique ascending indexes on SellerId and CategoryPath fields if they do not already exist.
     /// </summary>
     public async Task CreateProductIndexesAsync()
@@ -97,6 +115,90 @@ public class MongoDbContext
             var indexOptions = new CreateIndexOptions { Unique = false };
             var indexModel = new CreateIndexModel<Product>(indexKeys, indexOptions);
 
+            await collection.Indexes.CreateOneAsync(indexModel);
+        }
+    }
+
+    /// <summary>
+    /// Ensures that the necessary indexes for the <see cref="ProductReviews"/> collection are created.
+    /// Specifically, creates non-unique ascending indexes on ProductId, ModelId and AverageRating fields if they do not already exist.
+    /// </summary>
+    public async Task CreateProductReviewIndexesAsync()
+    {
+        var collection = ProductReviews;
+        
+        var existingIndexesCursor = await collection.Indexes.ListAsync();
+        var existingIndexes = await existingIndexesCursor.ToListAsync();
+        
+        var productIdIndexExists = existingIndexes
+            .Any(index => index["name"] == "ProductId_1");
+        
+        var modelIdIndexExists = existingIndexes
+            .Any(index => index["name"] == "ModelId_1");
+        
+        var averageRatingIndexExists = existingIndexes
+            .Any(index => index["name"] == "AverageRating_1");
+
+        if (!productIdIndexExists)
+        {
+            var indexKeys = Builders<ProductReview>.IndexKeys.Ascending(p => p.ProductId);
+            var indexOptions = new CreateIndexOptions { Unique = false };
+            var indexModel = new CreateIndexModel<ProductReview>(indexKeys, indexOptions);
+            
+            await collection.Indexes.CreateOneAsync(indexModel);
+        }
+
+        if (!modelIdIndexExists)
+        {
+            var indexKeys = Builders<ProductReview>.IndexKeys.Ascending(p => p.ModelId);
+            var indexOptions = new CreateIndexOptions { Unique = false };
+            var indexModel = new CreateIndexModel<ProductReview>(indexKeys, indexOptions);
+            
+            await collection.Indexes.CreateOneAsync(indexModel);
+        }
+
+        if (!averageRatingIndexExists)
+        {
+            var indexKeys = Builders<ProductReview>.IndexKeys.Ascending(p => p.AverageRating);
+            var indexOptions = new CreateIndexOptions { Unique = false };
+            var indexModel = new CreateIndexModel<ProductReview>(indexKeys, indexOptions);
+            
+            await collection.Indexes.CreateOneAsync(indexModel);
+        }
+    }
+
+    /// <summary>
+    /// Ensures that the necessary indexes for the <see cref="StoreReview"/> collection are created.
+    /// Specifically, creates non-unique ascending indexes on StoreId and AverageRating fields if they do not already exist.
+    /// </summary>
+    public async Task CreateStoreReviewIndexesAsync()
+    {
+        var collection = StoreReviews;
+        
+        var existingIndexesCursor = await collection.Indexes.ListAsync();
+        var existingIndexes = await existingIndexesCursor.ToListAsync();
+        
+        var storeIdReviewIndexExists = existingIndexes
+            .Any(index => index["name"] == "StoreId_1");
+        
+        var averageRatingIndexExist = existingIndexes
+            .Any(index => index["name"] == "AverageRating_1");
+
+        if (!storeIdReviewIndexExists)
+        {
+            var indexKeys = Builders<StoreReview>.IndexKeys.Ascending(p => p.StoreId);
+            var indexOptions = new CreateIndexOptions { Unique = false };
+            var indexModel = new CreateIndexModel<StoreReview>(indexKeys, indexOptions);
+            
+            await collection.Indexes.CreateOneAsync(indexModel);
+        }
+
+        if (!averageRatingIndexExist)
+        {
+            var indexKeys = Builders<StoreReview>.IndexKeys.Ascending(p => p.AverageRating);
+            var indexOptions = new CreateIndexOptions { Unique = false };
+            var indexModel = new CreateIndexModel<StoreReview>(indexKeys, indexOptions);
+            
             await collection.Indexes.CreateOneAsync(indexModel);
         }
     }

@@ -1,6 +1,7 @@
 ﻿using App.Core.Interfaces;
 using App.Core.Models.Product;
 using App.Core.Models.Product.Review;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace App.Data.Repositories;
@@ -26,6 +27,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
         List<ProductReview>? reviews = new();
         foreach (var product in products)
         {
+            var filter = Builders<ProductReview>.Filter.Eq(r => r.ProductId, product.Id);
             var temp = await _reviews.Find(r => r.ProductId.Equals(product.Id)).ToListAsync();
             foreach (var review in temp)
             {
@@ -42,7 +44,8 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     /// <returns>The product review or null if not found.</returns>
     public async Task<ProductReview?> GetReviewByIdAsync(string reviewId)
     {
-        return await _reviews.Find(r => r.Id.Equals(reviewId)).FirstOrDefaultAsync();
+        var filter = Builders<ProductReview>.Filter.Eq(r => r.Id, ObjectId.Parse(reviewId));
+        return await _reviews.Find(filter).FirstOrDefaultAsync();
     }
 
     /// <summary>
@@ -52,7 +55,8 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     /// <returns>The product review or null if not found.</returns>
     public async Task<ProductReview?> GetReviewByProductIdAsync(string productId)
     {
-        return await _reviews.Find(r => r.ProductId.Equals(productId)).FirstOrDefaultAsync();
+        var filters = Builders<ProductReview>.Filter.Eq(r => r.ProductId, ObjectId.Parse(productId));
+        return await _reviews.Find(filters).FirstOrDefaultAsync();
     }
 
     /// <summary>
@@ -62,7 +66,8 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     /// <returns>The product review or null if not found.</returns>
     public async Task<ProductReview?> GetReviewByModelIdAsync(string modelId)
     {
-        return await _reviews.Find(r => r.ModelId.Equals(modelId)).FirstOrDefaultAsync();
+        var filters = Builders<ProductReview>.Filter.Eq(r => r.ModelId, ObjectId.Parse(modelId));
+        return await _reviews.Find(filters).FirstOrDefaultAsync();
     }
 
     /// <summary>
@@ -81,8 +86,9 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     /// <returns>True if update was acknowledged and modified a document; otherwise false.</returns>
     public async Task<bool> UpdateReviewAsync(ProductReview review)
     {
-        var result = await _reviews.ReplaceOneAsync(r => r.Id.Equals(review.Id), review);
-        return result.IsAcknowledged && result.ModifiedCount > 0;
+        var filter = Builders<ProductReview>.Filter.Eq(r => r.Id, review.Id);
+        var result = await _reviews.ReplaceOneAsync(filter, review);
+        return result.IsAcknowledged;
     }
 
     /// <summary>
@@ -92,7 +98,8 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     /// <returns>True if deletion was acknowledged and deleted a document; otherwise false.</returns>
     public async Task<bool> DeleteReviewAsync(string reviewId)
     {
-        var result = await _reviews.DeleteOneAsync(r => r.Id.Equals(reviewId));
+        var filter = Builders<ProductReview>.Filter.Eq(r => r.Id, ObjectId.Parse(reviewId));
+        var result = await _reviews.DeleteOneAsync(filter);
         return result.IsAcknowledged && result.DeletedCount > 0;
     }
 
@@ -103,7 +110,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     /// <returns>List of review comments or null if review not found.</returns>
     public async Task<List<ProductReviewComment>?> GetCommentsByReviewIdAsync(string reviewId)
     {
-        var filter = Builders<ProductReview>.Filter.Eq(r => r.Id, reviewId);
+        var filter = Builders<ProductReview>.Filter.Eq(r => r.Id.ToString(), reviewId);
         var projection = Builders<ProductReview>.Projection.Expression(r => r.Items);
         var comments = await _reviews.Find(filter).Project(projection).FirstOrDefaultAsync();
 
@@ -177,7 +184,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
         var productReview = await GetReviewByIdAsync(reviewId);
         if (productReview == null)
             return false;
-
+            
         var comment = productReview.Items.FirstOrDefault(c => c.Id == commentId);
         if (comment == null)
             return false;

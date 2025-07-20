@@ -17,7 +17,7 @@ public class StoreReview
     /// <param name="modelId">The model id of the variation.</param>
     public StoreReview(string storeId)
     {
-        Id = ObjectId.GenerateNewId().ToString();
+        Id = ObjectId.GenerateNewId();
         StoreId = storeId;
         AverageRating = 0.0;
     }
@@ -26,8 +26,7 @@ public class StoreReview
     /// The unique identifier of this review document (MongoDB ObjectId).
     /// </summary>
     [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; }
+    public ObjectId Id { get; set; }
 
     /// <summary>
     /// The identifier of the associated product.

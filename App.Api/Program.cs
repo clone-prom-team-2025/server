@@ -1,4 +1,5 @@
 using App.Core.Interfaces;
+using App.Core.Mapping;
 using App.Data;
 using App.Data.Repositories;
 using App.Services;
@@ -24,6 +25,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// --- Mapper ----
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+
 // --- Create app ---
 var app = builder.Build();
 
@@ -32,6 +37,9 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<MongoDbContext>();
     await dbContext.CreateCategoryIndexesAsync();
+    await dbContext.CreateProductIndexesAsync();
+    await dbContext.CreateProductReviewIndexesAsync();
+    await dbContext.CreateStoreReviewIndexesAsync();
 }
 
 // --- HTTP request pipeline ---

@@ -1,9 +1,8 @@
-﻿using App.Core.DTOs;
+﻿using App.Core.DTOs.Categoty;
 using App.Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using App.Core.Models;
-using App.Services;
-using MongoDB.Bson;
+using AutoMapper;
 
 namespace App.Api.Controllers;
 
@@ -12,10 +11,12 @@ namespace App.Api.Controllers;
 public class CategoryController : ControllerBase
 {
     private readonly ICategoryService _categoryService;
+    private readonly IMapper _mapper;
 
-    public CategoryController(ICategoryService categoryService)
+    public CategoryController(ICategoryService categoryService, IMapper mapper)
     {
         _categoryService = categoryService;
+        _mapper = mapper;
     }
 
     /// <summary>
@@ -23,7 +24,7 @@ public class CategoryController : ControllerBase
     /// </summary>
     /// <returns>List of categories or empty list.</returns>
     [HttpGet]
-    public async Task<ActionResult<List<Category>?>> GetAll()
+    public async Task<ActionResult<List<CategoryDto>?>> GetAll()
     {
         var categories = await _categoryService.GetAllAsync();
         if (categories == null || categories.Count == 0)
@@ -87,10 +88,8 @@ public class CategoryController : ControllerBase
     public async Task<ActionResult> Create([FromBody] CategoryCreateDto categoryDto)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        Console.WriteLine(categoryDto.ToJson());
-        Category category = new Category(categoryDto.Name, categoryDto.ParentId);
         
-        await _categoryService.CreateAsync(category);
+        var category = await _categoryService.CreateAsync(categoryDto);
         return CreatedAtAction(nameof(GetById), new { id = category.Id }, category);
     }
 
@@ -100,19 +99,13 @@ public class CategoryController : ControllerBase
     /// <param name="id">Category ID.</param>
     /// <param name="categoryDto">Updated category DTO</param>
     /// <returns>NoContent if success; NotFound if category not found.</returns>
-    [HttpPut("{id}")]
-    public async Task<ActionResult> Update(string id, [FromBody] CategoryUpdateDto categoryDto)
+    [HttpPut]
+    public async Task<ActionResult> Update([FromBody] CategoryDto categoryDto)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-        
-        Category category = new Category(categoryDto.Name, categoryDto.ParentId);
-        category.Id = id;
+        var category = await _categoryService.UpdateAsync(categoryDto);
+        if (category == null) return BadRequest(ModelState);
 
-        var updated = await _categoryService.UpdateAsync(category);
-        if (!updated)
-            return NotFound();
-
-        return NoContent();
+        return Ok(category);
     }
 
     /// <summary>
@@ -151,10 +144,10 @@ public class CategoryController : ControllerBase
     /// </summary>
     /// <param name="id">Category ID.</param>
     /// <returns>CategoryNode representing the ancestry tree or NotFound.</returns>
-    [HttpGet("parents-tree/{id}")]
-    public async Task<ActionResult<CategoryNode?>> GetParentsTree(string id)
+    [HttpGet("full-tree")]
+    public async Task<ActionResult<CategoryNode?>> GetFullTree()
     {
-        var tree = await _categoryService.GetParentsTreeAsync(id);
+        var tree = await _categoryService.GetFullTreeAsync();
         if (tree == null)
             return NotFound();
 
