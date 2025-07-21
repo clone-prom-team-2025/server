@@ -1,6 +1,10 @@
-﻿using App.Core.Interfaces;
+﻿using App.Core.DTOs.Categoty;
+using App.Core.Interfaces;
 using App.Core.Models;
 using App.Data.Repositories;
+using AutoMapper;
+using Microsoft.VisualBasic;
+using MongoDB.Bson;
 
 namespace App.Services;
 
@@ -8,24 +12,21 @@ namespace App.Services;
 /// Service class responsible for handling business logic related to categories.
 /// Delegates data access operations to the underlying <see cref="CategoryRepository"/>.
 /// </summary>
-public class CategoryService : ICategoryService
+/// <remarks>
+/// Initializes a new instance of the <see cref="CategoryService"/> class.
+/// </remarks>
+/// <param name="categoryRepository">The repository instance used for data access.</param>
+/// <param name="mapper">The mapper instance used for mapping objects</param>
+public class CategoryService(ICategoryRepository categoryRepository, IMapper mapper) : ICategoryService
 {
-    private readonly ICategoryRepository _categoryRepository;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="CategoryService"/> class.
-    /// </summary>
-    /// <param name="categoryRepository">The repository instance used for data access.</param>
-    public CategoryService(ICategoryRepository categoryRepository)
-    {
-        this._categoryRepository = categoryRepository;
-    }
+    private readonly ICategoryRepository _categoryRepository = categoryRepository;
+    private readonly IMapper _mapper = mapper;
 
     /// <summary>
     /// Retrieves all categories asynchronously.
     /// </summary>
     /// <returns>A list of all categories or null if none found.</returns>
-    public async Task<List<Category>?> GetAllAsync()
+    public async Task<List<CategoryDto>?> GetAllAsync()
     {
         return await _categoryRepository.GetAllAsync();
     }
@@ -35,7 +36,7 @@ public class CategoryService : ICategoryService
     /// </summary>
     /// <param name="id">The unique identifier of the category.</param>
     /// <returns>The category if found; otherwise, null.</returns>
-    public async Task<Category?> GetByIdAsync(string id)
+    public async Task<CategoryDto?> GetByIdAsync(string id)
     {
         return await _categoryRepository.GetByIdAsync(id);
     }
@@ -46,7 +47,7 @@ public class CategoryService : ICategoryService
     /// <param name="name">The localized category name to search for.</param>
     /// <param name="languageCode">The language code for localization (e.g., "en").</param>
     /// <returns>The matching category if found; otherwise, null.</returns>
-    public async Task<Category?> GetByNameAsync(string name, string languageCode)
+    public async Task<CategoryDto?> GetByNameAsync(string name, string languageCode)
     {
         return await _categoryRepository.GetByNameAsync(name, languageCode);
     }
@@ -56,7 +57,7 @@ public class CategoryService : ICategoryService
     /// </summary>
     /// <param name="parentId">The parent category's unique identifier.</param>
     /// <returns>A list of child categories or null if none found.</returns>
-    public async Task<List<Category>?> GetByParentIdAsync(string parentId)
+    public async Task<List<CategoryDto>?> GetByParentIdAsync(string parentId)
     {
         return await _categoryRepository.GetByParentIdAsync(parentId);
     }
@@ -64,21 +65,28 @@ public class CategoryService : ICategoryService
     /// <summary>
     /// Creates a new category asynchronously.
     /// </summary>
-    /// <param name="category">The category object to be created.</param>
+    /// <param name="categoryCreateDto">The category object to be created.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    public async Task CreateAsync(Category category)
+    public async Task<CategoryDto> CreateAsync(CategoryCreateDto categoryCreateDto)
     {
+        var category = _mapper.Map<Category>(categoryCreateDto);
+        category.Id = ObjectId.GenerateNewId();
         await _categoryRepository.CreateAsync(category);
+        return _mapper.Map<CategoryDto>(category);
     }
 
     /// <summary>
     /// Updates an existing category asynchronously.
     /// </summary>
-    /// <param name="category">The category object containing updated data.</param>
+    /// <param name="categoryUpdateDto">The category object containing updated data.</param>
     /// <returns>True if the update was successful; otherwise, false.</returns>
-    public async Task<bool> UpdateAsync(Category category)
+    public async Task<CategoryDto?> UpdateAsync(CategoryDto categoryUpdateDto)
     {
-        return await _categoryRepository.UpdateAsync(category);
+        var category = _mapper.Map<Category>(categoryUpdateDto);
+        var result = await _categoryRepository.UpdateAsync(category);
+        if (!result) return null;
+        var updatedCategory = await _categoryRepository.GetByIdAsync(category.Id.ToString());
+        return _mapper.Map<CategoryDto?>(updatedCategory);
     }
 
     /// <summary>
@@ -97,19 +105,18 @@ public class CategoryService : ICategoryService
     /// <param name="name">The search string to look for.</param>
     /// <param name="languageCode">The language code for localization (e.g., "en").</param>
     /// <returns>A list of matching categories with highlights or an empty list.</returns>
-    public async Task<List<Category>?> SearchAsync(string name, string languageCode)
+    public async Task<List<CategoryDto>?> SearchAsync(string name, string languageCode)
     {
         return await _categoryRepository.SearchAsync(name, languageCode);
     }
 
     /// <summary>
-    /// Builds and retrieves the full ancestry tree of a category up to the root asynchronously.
+    /// Builds and retrieves the full tree of a category.
     /// </summary>
-    /// <param name="id">The category's unique identifier.</param>
     /// <returns>A <see cref="CategoryNode"/> representing the ancestry tree or null if not found.</returns>
-    public async Task<CategoryNode?> GetParentsTreeAsync(string id)
+    public async Task<List<CategoryNode>?> GetFullTreeAsync()
     {
-        return await _categoryRepository.GetParentsTreeAsync(id);
+        return await _categoryRepository.GetFullTreeAsync();
     }
 
     /// <summary>
@@ -127,7 +134,7 @@ public class CategoryService : ICategoryService
     /// </summary>
     /// <param name="parentId">The parent category's unique identifier.</param>
     /// <returns>A list of <see cref="CategoryNode"/> representing the children.</returns>
-    public async Task<List<CategoryNode>> GetChildrenAsync(string parentId)
+    public async Task<List<CategoryNode>?> GetChildrenAsync(string parentId)
     {
         return await _categoryRepository.GetChildrenAsync(parentId);
     }

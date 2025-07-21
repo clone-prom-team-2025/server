@@ -16,9 +16,9 @@ public class ProductMedia
     /// <param name="url">The media URL.</param>
     /// <param name="type">The type of the media.</param>
     /// <param name="order">Ordering index for display.</param>
-    public ProductMedia(string productId, string url, MediaType type, int order)
+    public ProductMedia(ObjectId productId, string url, MediaType type, int order)
     {
-        Id = ObjectId.GenerateNewId().ToString();
+        Id = ObjectId.GenerateNewId();
         ProductId = productId;
         Url = url;
         Type = type;
@@ -29,14 +29,12 @@ public class ProductMedia
     ///     Unique identifier for the media.
     /// </summary>
     [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; }
+    public ObjectId Id { get; set; }
 
     /// <summary>
     ///     ID of the associated product.
     /// </summary>
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string ProductId { get; set; }
+    public ObjectId ProductId { get; set; }
 
     /// <summary>
     ///     URL to the media file.

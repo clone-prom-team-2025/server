@@ -1,4 +1,6 @@
-﻿namespace App.Core.Models.Product;
+﻿using MongoDB.Bson;
+
+namespace App.Core.Models.Product;
 
 /// <summary>
 ///     Represents the result of a product search.
@@ -8,7 +10,7 @@ public class ProductSearchResult
     /// <summary>
     ///     Product identifier.
     /// </summary>
-    public string ProductId { get; set; } = string.Empty;
+    public ObjectId ProductId { get; set; } = ObjectId.GenerateNewId();
 
     /// <summary>
     ///     Highlighted string containing the search match.

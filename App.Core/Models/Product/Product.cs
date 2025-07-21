@@ -7,9 +7,6 @@ namespace App.Core.Models.Product;
 /// <summary>
 ///     Represents a product stored in the MongoDB database.
 ///     Contains general product details, localization, categorization, and variations.
-/// </summary>/// <summary>
-///     Represents a product stored in MongoDB.
-///     Contains localization, categorization, and variation data.
 /// </summary>
 public class Product
 {
@@ -18,7 +15,7 @@ public class Product
     /// </summary>
     public Product()
     {
-        Id = ObjectId.GenerateNewId().ToString();
+        Id = ObjectId.GenerateNewId();
         CategoryPath = [];
         Variations = [];
         Name = [];
@@ -29,7 +26,7 @@ public class Product
         Id = product.Id;
         Name = new Dictionary<string, string>(product.Name);
         ProductType = product.ProductType;
-        CategoryPath = new List<string>(product.CategoryPath);
+        CategoryPath = new List<ObjectId>(product.CategoryPath);
         Variations = new List<ProductVariation>(product.Variations);
         SellerId = product.SellerId;
         
@@ -46,11 +43,11 @@ public class Product
     public Product(
         Dictionary<string, string> name,
         string productType,
-        List<string> categoryPath,
+        List<ObjectId> categoryPath,
         List<ProductVariation> variations,
-        string sellerId)
+        ObjectId sellerId)
     {
-        Id = ObjectId.GenerateNewId().ToString();
+        Id = ObjectId.GenerateNewId();
         Name = name;
         ProductType = productType;
         CategoryPath = categoryPath;
@@ -63,7 +60,7 @@ public class Product
     /// </summary>
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; }
+    public ObjectId Id { get; set; }
 
     /// <summary>
     ///     Localized product names (e.g., {"en": "Lamp", "ua": "Лампа"}).
@@ -80,7 +77,7 @@ public class Product
     /// <summary>
     ///     Product category hierarchy.
     /// </summary>
-    public List<string> CategoryPath { get; set; }
+    public List<ObjectId> CategoryPath { get; set; }
 
     /// <summary>
     ///     List of product variations (e.g., different configurations).
@@ -90,5 +87,5 @@ public class Product
     /// <summary>
     ///     Identifier of the associated seller.
     /// </summary>
-    public string SellerId { get; set; }
+    public ObjectId SellerId { get; set; }
 }

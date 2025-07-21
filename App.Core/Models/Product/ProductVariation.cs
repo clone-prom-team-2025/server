@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MyApp.Core.Utils;
 
@@ -21,7 +22,7 @@ public class ProductVariation
     /// <param name="description">An optional textual description of this variation.</param>
     /// <param name="quantityStatus">An optional text label describing the stock status (e.g., "In Stock", "Out of Stock").</param>
     public ProductVariation(
-        List<ProductMedia>? media,
+        List<ObjectId>? media,
         List<ProductFeature>? features,
         int quantity,
         double price,
@@ -66,7 +67,7 @@ public class ProductVariation
     /// <summary>
     /// Gets or sets the list of media files associated with this variation (e.g., images, videos).
     /// </summary>
-    public List<ProductMedia> Media { get; set; } = [];
+    public List<ObjectId> Media { get; set; } = [];
 
     /// <summary>
     /// Gets or sets the number of items available in stock for this variation.

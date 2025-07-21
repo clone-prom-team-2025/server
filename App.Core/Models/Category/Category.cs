@@ -11,11 +11,12 @@ namespace App.Core.Models;
 /// </summary>
 public class Category
 {
-    /// <summary>
-    ///     Initializes a new instance of the <see cref="Category" /> class.
-    /// </summary>
-    public Category()
+
+    public Category(ObjectId id, IDictionary<string, string> name, ObjectId? parentId)
     {
+        Id = id;
+        Name = new Dictionary<string, string>(name);
+        ParentId = parentId;
     }
 
     /// <summary>
@@ -23,8 +24,9 @@ public class Category
     /// </summary>
     /// <param name="name">Dictionary of localized names.</param>
     /// <param name="parentId">ID of the parent category (optional).</param>
-    public Category(Dictionary<string, string> name, string? parentId = null)
+    public Category(Dictionary<string, string> name, ObjectId? parentId = null)
     {
+        Id = ObjectId.GenerateNewId();
         Name = name ?? throw new ArgumentNullException(nameof(name));
         ParentId = parentId;
     }
@@ -33,8 +35,7 @@ public class Category
     ///     Unique identifier for the category (MongoDB ObjectId as a string).
     /// </summary>
     [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; } = null!;
+    public ObjectId Id { get; set; }
 
     /// <summary>
     ///     Dictionary containing localized names for the category.
@@ -48,5 +49,5 @@ public class Category
     ///     If null, this category is considered a root-level category.
     /// </summary>
     [BsonRepresentation(BsonType.ObjectId)]
-    public string? ParentId { get; set; }
+    public ObjectId? ParentId { get; set; }
 }
