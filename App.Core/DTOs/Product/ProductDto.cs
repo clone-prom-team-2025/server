@@ -1,6 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using App.Core.Models.Product;
-using MongoDB.Bson;
 
 namespace App.Core.DTOs.Product;
 
