@@ -49,22 +49,6 @@ public class CategoryController : ControllerBase
     }
 
     /// <summary>
-    /// Gets a category by localized name.
-    /// </summary>
-    /// <param name="name">Category name.</param>
-    /// <param name="languageCode">Language code (default: "en").</param>
-    /// <returns>The category or NotFound.</returns>
-    [HttpGet("by-name")]
-    public async Task<ActionResult<Category?>> GetByName([FromQuery] string name, [FromQuery] string languageCode = "en")
-    {
-        var category = await _categoryService.GetByNameAsync(name, languageCode);
-        if (category == null)
-            return NotFound();
-
-        return Ok(category);
-    }
-
-    /// <summary>
     /// Gets direct children categories by parent ID.
     /// </summary>
     /// <param name="parentId">Parent category ID.</param>
