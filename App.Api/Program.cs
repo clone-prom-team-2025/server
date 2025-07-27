@@ -1,22 +1,36 @@
+using App.Api.Middleware;
 using App.Core.Interfaces;
-using App.Core.Mapping;
+using App.Core.Models.FileStorage;
 using App.Data;
 using App.Data.Repositories;
 using App.Services;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // --- MongoDB settings ---
 builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDb"));
 
+// --- File storage settings
+builder.Services.Configure<FileStorageOptions>(builder.Configuration.GetSection("FileStorage"));
+
 // --- Infrastructure ---
 builder.Services.AddSingleton<MongoDbContext>();
 
 // --- Repositories ---
 builder.Services.AddSingleton<ICategoryRepository, CategoryRepository>();
+builder.Services.AddSingleton<IProductRepository, ProductRepository>();
+builder.Services.AddSingleton<ProductRepository>();
+builder.Services.AddSingleton<IProductReviewRepository, ProductReviewRepository>();
+builder.Services.AddSingleton<IUserRepository, UserRepository>();
+builder.Services.AddSingleton<IProductMediaRepository, ProductMediaRepository>();
 
 // --- Services ---
 builder.Services.AddSingleton<ICategoryService, CategoryService>();
+builder.Services.AddSingleton<IProductService, ProductService>();
+builder.Services.AddSingleton<IUserService, UserService>();
+builder.Services.AddSingleton<IProductMediaService, ProductMediaService>();
+builder.Services.AddSingleton<IFileService, FileService>();
 
 // --- Controllers ---
 builder.Services.AddControllers();
@@ -28,9 +42,18 @@ builder.Services.AddSwaggerGen();
 // --- Mapper ----
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-
 // --- Create app ---
 var app = builder.Build();
+
+// Включаємо підтримку forwarded headers, щоб коректно отримувати інформацію про клієнта, IP, схему (http/https)
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+app.UseStaticFiles();
 
 // --- Create MongoDB indexes on startup ---
 using (var scope = app.Services.CreateScope())
@@ -43,13 +66,12 @@ using (var scope = app.Services.CreateScope())
 }
 
 // --- HTTP request pipeline ---
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
 
-app.UseHttpsRedirection();
+app.UseSwagger();
+app.UseSwaggerUI();
+
 app.UseAuthorization();
+
 app.MapControllers();
+
 app.Run();

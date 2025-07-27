@@ -2,9 +2,12 @@ namespace App.Core.DTOs.Product;
 
 public class ProductFeatureDto
 {
-    public object Value { get; set; }
+    public ProductFeatureDto(string category)
+    {
+        Category = category;
+    }
 
-    public string Type { get; set; }
+    public string Category { get; set; }
 
-    public Dictionary<string, string> Rules { get; set; } = new();
+    public Dictionary<string, ProductFeatureItemDto> Features { get; set; } = new();
 }

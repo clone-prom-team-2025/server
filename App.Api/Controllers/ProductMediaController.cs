@@ -1,0 +1,99 @@
+using App.Core.DTOs.Product;
+using App.Core.Enums;
+using App.Core.Models.Product;
+using App.Core.Models;
+using App.Services;
+using Microsoft.AspNetCore.Mvc;
+using App.Core.DTOs;
+
+namespace App.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class ProductMediaController : ControllerBase
+{
+    private readonly IProductMediaService _productMediaService;
+
+    public ProductMediaController(IProductMediaService productMediaService)
+    {
+        _productMediaService = productMediaService;
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<ProductMediaDto>> SaveMediaAsync(string productId, IFormFile formFile, int order)
+    {
+        if (formFile.Length > 50 * 1024 * 1024) return BadRequest("File too large");
+
+        using var stream = formFile.OpenReadStream();
+
+        return await _productMediaService.PushMediaAsync(productId, stream, formFile.FileName, order);
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<List<ProductMediaDto>>> GetAll()
+    {
+        var media = await _productMediaService.GetAll();
+        return media == null ? NoContent() : Ok(media);
+    }
+
+    [HttpDelete("by-id/{id}")]
+    public async Task<ActionResult> DeleteMediaAsync(string id)
+    {
+        return await _productMediaService.DeleteAsync(id) ? Ok() : NotFound();
+    }
+
+    [HttpDelete("by-product-id/{productId}")]
+    public async Task<ActionResult> DeleteMediaByProductIdAsync(string productId)
+    {
+        return await _productMediaService.DeleteByProductIdAsync(productId) ? Ok() : NotFound();
+    }
+
+    [HttpGet("by-product-id/{productId}")]
+    public async Task<ActionResult<List<ProductMediaDto>?>> GetByProdcutIdAsync(string productId)
+    {
+        return await _productMediaService.GetByProductIdAsync(productId);
+    }
+
+    [HttpPost("many")]
+    public async Task<ActionResult<List<ProductMediaDto>?>> SyncProductMediaAsync([FromForm] IFormFile[] files, [FromQuery] string productId)
+    {
+        if (files == null || files.Length == 0)
+            return BadRequest("No files uploaded.");
+
+        string tempDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "temp");
+        if (!Directory.Exists(tempDir))
+            Directory.CreateDirectory(tempDir);
+
+        List<FileArrayItemDto> filesDto = [];
+
+        for (int i = 0; i < files.Length; i++)
+        {
+            var file = files[i];
+            if (file.Length > 0)
+            {
+                var tempFilePath = Path.Combine(tempDir, Path.GetRandomFileName());
+                using (var stream = new FileStream(tempFilePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                filesDto.Add(new FileArrayItemDto
+                {
+                    FileName = file.FileName,
+                    Order = i,
+                    Url = tempFilePath
+                });
+            }
+        }
+
+        var result = await _productMediaService.SyncMediaFromTempFilesAsync(filesDto, productId);
+
+        foreach (var file in filesDto)
+        {
+            if (!string.IsNullOrWhiteSpace(file.Url) && System.IO.File.Exists(file.Url))
+                System.IO.File.Delete(file.Url);
+        }
+
+        return Ok(result);
+    }
+}

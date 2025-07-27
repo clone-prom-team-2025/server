@@ -23,4 +23,6 @@ public interface IProductService
     Task<ProductVariationDto?> AddVariationAsync(string productId, ProductVariationDto variationDto);
     Task<ProductVariationDto?> UpdateVariationAsync(string productId, ProductVariationDto variationDto);
     Task<bool> RemoveVariationAsync(string productId, string modelId);
+
+    //
 } 

@@ -37,7 +37,9 @@ public class MongoDbContext
     /// Gets the MongoDB collection for <see cref="Product" /> documents.
     /// </summary>
     public IMongoCollection<Product> Products => _database.GetCollection<Product>("Products");
-    
+
+    public IMongoCollection<ProductMedia> ProductMedia => _database.GetCollection<ProductMedia>("ProductMedia");
+
     /// <summary>
     ///  Gets the MongoDB collection for <see cref="ProductReview" /> documents.
     /// </summary>

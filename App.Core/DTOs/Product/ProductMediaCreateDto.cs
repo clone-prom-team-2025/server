@@ -4,19 +4,24 @@ namespace App.Core.DTOs.Product;
 
 public class ProductMediaCreateDto
 {
-    public ProductMediaCreateDto(string productId, string url, MediaType type, int order)
+    public ProductMediaCreateDto(string productId, string url, int order, string? id = null)
     {
         ProductId = productId;
         Url = url;
-        Type = type;
         Order = order;
+        Id = id;
     }
+
+    public ProductMediaCreateDto()
+    {
+        
+    }
+
+    public string? Id;
 
     public string ProductId { get; set; }
 
     public string Url { get; set; }
-
-    public MediaType Type { get; set; }
 
     public int Order { get; set; }
 }

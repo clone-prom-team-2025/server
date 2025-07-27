@@ -2,7 +2,8 @@ namespace App.Core.Models.FileStorage;
 
 public class FileStorageOptions
 {
-    public string ImagePath { get; set; } = null!;
-    public string VideoPath { get; set; } = null!;
+    public string FullHdImagePath { get; set; } = default!;
+    public string HdImagePath { get; set; } = default!;
+    public string VideoPath { get; set; } = default!;
     public string? FfmpegPath { get; set; }
 }

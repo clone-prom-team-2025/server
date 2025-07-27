@@ -14,6 +14,11 @@ public class ProductDto
         SellerId = sellerId;
     }
 
+    public ProductDto()
+    {
+        
+    }
+
     public string Id { get; set; }
 
     [Required]
