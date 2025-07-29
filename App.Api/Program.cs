@@ -14,6 +14,9 @@ builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("Mo
 // --- File storage settings
 builder.Services.Configure<FileStorageOptions>(builder.Configuration.GetSection("FileStorage"));
 
+builder.Services.Configure<CloudflareR2Options>(builder.Configuration.GetSection("CloudflareR2"));
+builder.Services.Configure<ProductMediaKeys>(builder.Configuration.GetSection("ProductMediaKeys"));
+
 // --- Infrastructure ---
 builder.Services.AddSingleton<MongoDbContext>();
 

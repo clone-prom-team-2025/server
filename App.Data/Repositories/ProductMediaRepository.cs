@@ -54,7 +54,7 @@ public class ProductMediaRepository(MongoDbContext mongoDbContext) : IProductMed
 
     public async Task<ProductMedia?> GetFilenameAsync(string fileName)
     {
-        var filter = Builders<ProductMedia>.Filter.Eq(m => m.FileName, fileName);
+        var filter = Builders<ProductMedia>.Filter.Eq(m => m.UrlFileName, fileName);
         return await _productMedia.Find(filter).FirstOrDefaultAsync();
     }
 }

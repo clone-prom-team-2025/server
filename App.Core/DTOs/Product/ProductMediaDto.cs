@@ -4,11 +4,12 @@ namespace App.Core.DTOs.Product;
 
 public class ProductMediaDto
 {
-    public ProductMediaDto(string id, string productId, string fileName, string url, MediaType type, int order, string? secondaryUrl = null)
+    public ProductMediaDto(string id, string productId, string urlFileName, string url, MediaType type, int order, string? secondaryUrl = null, string? secondUrlFileName = null)
     {
         Id = id;
         ProductId = productId;
-        FileName = fileName;
+        UrlFileName = urlFileName;
+        SecondUrlFileName = secondUrlFileName;
         Url = url;
         Type = type;
         Order = order;
@@ -24,7 +25,9 @@ public class ProductMediaDto
 
     public string ProductId { get; set; }
 
-    public string FileName { get; set; }
+    public string UrlFileName { get; set; }
+
+    public string? SecondUrlFileName { get; set; }
 
     public string Url { get; set; }
 

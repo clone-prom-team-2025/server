@@ -8,39 +8,43 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
 using Xabe.FFmpeg;
+using Amazon.S3;
+using Amazon.S3.Transfer;
+using Amazon.Runtime;
+using MongoDB.Bson;
 
 namespace App.Services;
 
-/// <summary>
-/// Provides functionality to process and store image and video files
-/// including format conversion, resizing, and structured storage.
-/// </summary>
 public class FileService : IFileService
 {
     private readonly FileStorageOptions _options;
+    private readonly CloudflareR2Options _r2Options;
+    private readonly IAmazonS3 _s3Client;
+    private readonly int fileUniqueidLength = 10;
 
-    private readonly int fileUniqueidLenght = 10;
+    private readonly TransferUtility _transferUtility;
 
-    /// <summary>
-    /// Initializes the <see cref="FileService"/> instance and configures FFmpeg.
-    /// </summary>
-    /// <param name="options">Injected file storage configuration options.</param>
-    /// <exception cref="FileNotFoundException">Thrown if FFmpeg is not found.</exception>
-    public FileService(IOptions<FileStorageOptions> options)
+    public FileService(IOptions<FileStorageOptions> options, IOptions<CloudflareR2Options> r2Options)
     {
         _options = options.Value;
+        _r2Options = r2Options.Value;
+
+        var credentials = new BasicAWSCredentials(_r2Options.AccessKey, _r2Options.SecretKey);
+
+        var s3Config = new AmazonS3Config
+        {
+            ServiceURL = _r2Options.Endpoint,
+            ForcePathStyle = true,
+            AuthenticationRegion = "auto",
+        };
+
+        _s3Client = new AmazonS3Client(credentials, s3Config);
+        _transferUtility = new TransferUtility(_s3Client);
 
         var ffmpegPath = GetFfmpegPath(_options.FfmpegPath);
         FFmpeg.SetExecutablesPath(Path.GetDirectoryName(ffmpegPath)!);
     }
 
-    /// <summary>
-    /// Detects the FFmpeg binary location. Attempts to resolve automatically
-    /// via environment or uses explicitly defined path.
-    /// </summary>
-    /// <param name="userDefinedPath">Optional manual path to ffmpeg binary.</param>
-    /// <returns>Full path to ffmpeg binary.</returns>
-    /// <exception cref="FileNotFoundException">If ffmpeg could not be found.</exception>
     private string GetFfmpegPath(string? userDefinedPath)
     {
         if (!string.IsNullOrWhiteSpace(userDefinedPath) && File.Exists(userDefinedPath))
@@ -71,102 +75,132 @@ public class FileService : IFileService
         throw new FileNotFoundException("FFmpeg executable not found. Please install FFmpeg or set path in appsettings.json.");
     }
 
-    /// <summary>
-    /// Generates a sanitized, unique file name based on the original name and suffix.
-    /// </summary>
-    /// <param name="originalName">Original file name.</param>
-    /// <param name="suffix">Suffix to append (e.g., "_fullhd").</param>
-    /// <param name="extension">Target file extension (e.g., ".webp").</param>
-    /// <returns>Sanitized unique file name.</returns>
+    public string GetPreSignedURL(string bucketName, string objectKey, double expirationMinutes = 60)
+    {
+        var request = new Amazon.S3.Model.GetPreSignedUrlRequest
+        {
+            BucketName = bucketName,
+            Key = objectKey,
+            Expires = DateTime.UtcNow.AddMinutes(expirationMinutes)
+        };
+        return _s3Client.GetPreSignedURL(request);
+    }
+
+
     private string GenerateFileName(string originalName, string suffix, string extension)
     {
-        var id = NanoIdGenerator.Generate(fileUniqueidLenght);
-        var sanitized = Path.GetFileNameWithoutExtension(originalName)
-                            .Trim()
-                            .Replace(" ", "-");
-
+        var id = NanoIdGenerator.Generate(fileUniqueidLength);
+        var sanitized = Path.GetFileNameWithoutExtension(originalName).Trim().Replace(" ", "-");
         return $"{id}_{sanitized}{suffix}{extension}";
     }
 
-    /// <summary>
-    /// Generates a sanitized, unique file name using a provided identifier.
-    /// </summary>
-    /// <param name="id">Unique ID to prefix.</param>
-    /// <param name="originalName">Original file name.</param>
-    /// <param name="suffix">Suffix to append (e.g., "_hd").</param>
-    /// <param name="extension">Target file extension (e.g., ".webp").</param>
-    /// <returns>Sanitized unique file name.</returns>
     private string GenerateFileName(string id, string originalName, string suffix, string extension)
     {
-        var sanitized = Path.GetFileNameWithoutExtension(originalName)
-                            .Trim()
-                            .Replace(" ", "-");
-
+        var sanitized = Path.GetFileNameWithoutExtension(originalName).Trim().Replace(" ", "-");
         return $"{id}_{sanitized}{suffix}{extension}";
     }
 
-    /// <summary>
-    /// Saves an image in both Full HD (max 1920x1080) and HD (1280x720) resolutions.
-    /// Output format is WebP.
-    /// </summary>
-    /// <param name="imageStream">Input image stream.</param>
-    /// <param name="fileName">Original file name for reference.</param>
-    /// <returns>Tuple of saved file paths: (FullHD, HD).</returns>
-    public async Task<(string FullHdPath, string HdPath, string fileName)> SaveImageAsync(Stream imageStream, string fileName)
+    private async Task<string> UploadToR2Async(string keyPrefix, Stream fileStream, string fileName)
+    {
+        var tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        try
+        {
+            using (var tempFile = File.Create(tempPath))
+            {
+                await fileStream.CopyToAsync(tempFile);
+            }
+
+            using (var fs = File.OpenRead(tempPath))
+            {
+                var r2Key = $"{keyPrefix.TrimEnd('/')}/{fileName}";
+                var request = new Amazon.S3.Model.PutObjectRequest
+                {
+                    BucketName = _r2Options.BucketName,
+                    Key = r2Key,
+                    InputStream = fs,
+                    DisablePayloadSigning = true,
+                    ContentType = GetMimeType(fileName),
+                };
+                await _s3Client.PutObjectAsync(request);
+                return $"{_r2Options.PublicBaseUrl!.TrimEnd('/')}/{_r2Options.BucketName}/{r2Key}";
+                //return $"{_r2Options.Endpoint.TrimEnd('/')}/{r2Key}";
+                //return GetPreSignedURL(_r2Options.BucketName, r2Key);
+            }
+        }
+        finally
+        {
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
+        }
+    }
+
+    private string GetMimeType(string fileName)
+    {
+        var ext = Path.GetExtension(fileName).ToLowerInvariant();
+        return ext switch
+        {
+            ".webp" => "image/webp",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            ".webm" => "video/webm",
+            ".mp4" => "video/mp4",
+            _ => "application/octet-stream"
+        };
+    }
+
+    public async Task<(string FullHdUrl, string HdUrl, string UrlFileName, string SecondUrlFileName)> SaveImageAsync(Stream imageStream, string fileName, string key)
     {
         using var image = await Image.LoadAsync(imageStream);
 
         var fullHdSize = new Size(Math.Min(1920, image.Width), Math.Min(1080, image.Height));
         var hdSize = new Size(1280, 720);
 
-        Directory.CreateDirectory(_options.FullHdImagePath);
-        Directory.CreateDirectory(_options.HdImagePath);
-
         var baseFileName = Path.GetFileNameWithoutExtension(fileName);
+        var id = NanoIdGenerator.Generate(fileUniqueidLength);
 
-        var id = NanoIdGenerator.Generate(fileUniqueidLenght);
         var fullHdName = GenerateFileName(id, baseFileName, "_fullhd", ".webp");
         var hdName = GenerateFileName(id, baseFileName, "_hd", ".webp");
 
-        string fullHdFile = Path.Combine(_options.FullHdImagePath, fullHdName);
-        string hdFile = Path.Combine(_options.HdImagePath, hdName);
+        var tempDir = Path.Combine("wwwroot", "temp");
+        Directory.CreateDirectory(tempDir);
+
+        var fullHdPath = Path.Combine(tempDir, fullHdName);
+        var hdPath = Path.Combine(tempDir, hdName);
 
         // Full HD
-        image.Mutate(x => x.Resize(new ResizeOptions
-        {
-            Size = fullHdSize,
-            Mode = ResizeMode.Max
-        }));
-        await image.SaveAsync(fullHdFile, new WebpEncoder());
+        image.Mutate(x => x.Resize(new ResizeOptions { Size = fullHdSize, Mode = ResizeMode.Max }));
+        await image.SaveAsync(fullHdPath, new WebpEncoder());
 
         // HD
-        image.Mutate(x => x.Resize(new ResizeOptions
-        {
-            Size = hdSize,
-            Mode = ResizeMode.Max
-        }));
-        await image.SaveAsync(hdFile, new WebpEncoder());
+        image.Mutate(x => x.Resize(new ResizeOptions { Size = hdSize, Mode = ResizeMode.Max }));
+        await image.SaveAsync(hdPath, new WebpEncoder());
 
-        return (fullHdFile, hdFile, GenerateFileName(id, baseFileName, "", ".webp"));
+        // Завантажуємо в R2
+        await using var fullHdFileStream = File.OpenRead(fullHdPath);
+        var fullHdUrl = await UploadToR2Async(key, fullHdFileStream, fullHdName);
+
+        await using var hdFileStream = File.OpenRead(hdPath);
+        var hdUrl = await UploadToR2Async(key, hdFileStream, hdName);
+
+        // Видаляємо тимчасові файли
+        File.Delete(fullHdPath);
+        File.Delete(hdPath);
+
+        return (fullHdUrl, hdUrl, fullHdName, hdName);
     }
 
-    /// <summary>
-    /// Saves a video file by converting it to WebM format and scaling it to max 1280x720.
-    /// </summary>
-    /// <param name="videoStream">Input video stream.</param>
-    /// <param name="fileName">Original file name for reference.</param>
-    /// <returns>Path to the saved WebM file.</returns>
-    public async Task<(string Url, string FileName)> SaveVideoAsync(Stream videoStream, string fileName)
+    public async Task<(string Url, string FileName)> SaveVideoAsync(Stream videoStream, string fileName, string key)
     {
-        var id = NanoIdGenerator.Generate(fileUniqueidLenght);
+        var id = NanoIdGenerator.Generate(fileUniqueidLength);
         var baseFileName = Path.GetFileNameWithoutExtension(fileName);
+        var outputFileName = GenerateFileName(id, baseFileName, "", ".webm");
 
-        var outputFileName = $"{id}_{baseFileName}.webm";
+        var tempDir = Path.Combine("wwwroot", "temp");
+        Directory.CreateDirectory(tempDir);
 
-        var inputPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + Path.GetExtension(fileName));
-        var outputPath = Path.Combine(_options.VideoPath, outputFileName);
-
-        Directory.CreateDirectory(_options.VideoPath);
+        var inputPath = Path.Combine(tempDir, Guid.NewGuid() + Path.GetExtension(fileName));
+        var outputPath = Path.Combine(tempDir, Guid.NewGuid() + ".webm");
 
         using (var fileStream = File.Create(inputPath))
         {
@@ -181,18 +215,19 @@ public class FileService : IFileService
         await conversion.Start();
 
         File.Delete(inputPath);
-        return (outputPath, GenerateFileName(id, baseFileName, "", ".webm"));
+
+        await using var outputStream = File.OpenRead(outputPath);
+        var url = await UploadToR2Async(key, outputStream, outputFileName);
+
+        File.Delete(outputPath);
+
+        return (url, outputFileName);
     }
 
-    /// <summary>
-    /// Deletes the specified file if it exists.
-    /// </summary>
-    /// <param name="path">Absolute file path to delete.</param>
-    public void DeleteFile(string path)
+    public async Task DeleteFileAsync(string key, string fileName)
     {
-        if (File.Exists(path))
-        {
-            File.Delete(path);
-        }
+        string r2Key = $"{key}/{fileName}";
+        //Console.WriteLine(r2Key);
+        var result = await _s3Client.DeleteObjectAsync(_r2Options.BucketName, r2Key);
     }
 }

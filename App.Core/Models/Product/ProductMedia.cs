@@ -16,11 +16,12 @@ public class ProductMedia
     /// <param name="url">The media URL.</param>
     /// <param name="type">The type of the media.</param>
     /// <param name="order">Ordering index for display.</param>
-    public ProductMedia(ObjectId productId, string fileName, string url, MediaType type, int order, string? secondaryUrl = null)
+    public ProductMedia(ObjectId productId, string urlFileName, string url, MediaType type, int order, string? secondaryUrl = null, string? secondUrlFileName = null)
     {
         Id = ObjectId.GenerateNewId();
         ProductId = productId;
-        FileName = fileName;
+        UrlFileName = urlFileName;
+        SecondUrlFileName = secondUrlFileName;
         Url = url;
         Type = type;
         Order = order;
@@ -41,7 +42,9 @@ public class ProductMedia
     /// <summary>
     ///     Name of the media file.
     /// </summary>
-    public string FileName { get; set; }
+    public string UrlFileName { get; set; }
+
+    public string? SecondUrlFileName { get; set; }
 
     /// <summary>
     ///     URL to the media file.
