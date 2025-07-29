@@ -1,4 +1,6 @@
-﻿namespace App.Core.Models.Product;
+﻿using MongoDB.Bson;
+
+namespace App.Core.Models.Product;
 
 /// <summary>
 ///     Represents a specific product feature value.
@@ -10,16 +12,17 @@ public class ProductFeatureItem
     /// </summary>
     /// <param name="value">The value of the feature.</param>
     /// <param name="type">The type of the feature (e.g., number, string).</param>
-    public ProductFeatureItem(object value, string type)
+    public ProductFeatureItem(string value, string type, bool nullable = false)
     {
         Value = value;
         Type = type;
+        Nullable = nullable;
     }
 
     /// <summary>
     ///     The value of the feature.
     /// </summary>
-    public object Value { get; set; }
+    public string Value { get; set; }
 
     /// <summary>
     ///     The type of the feature (e.g., string, number).
@@ -29,5 +32,5 @@ public class ProductFeatureItem
     /// <summary>
     ///     Optional validation rules for the feature.
     /// </summary>
-    public Dictionary<string, string> Rules { get; set; } = new();
+    public bool Nullable { get; set; }
 }

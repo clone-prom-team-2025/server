@@ -22,5 +22,5 @@ public class ProductFeature
     /// <summary>
     ///     Dictionary of feature items within the category.
     /// </summary>
-    private Dictionary<string, ProductFeatureItem> Features { get; set; } = new();
+    public Dictionary<string, ProductFeatureItem> Features { get; set; } = new();
 }

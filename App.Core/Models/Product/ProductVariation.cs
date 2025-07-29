@@ -22,7 +22,6 @@ public class ProductVariation
     /// <param name="description">An optional textual description of this variation.</param>
     /// <param name="quantityStatus">An optional text label describing the stock status (e.g., "In Stock", "Out of Stock").</param>
     public ProductVariation(
-        List<ObjectId>? media,
         List<ProductFeature>? features,
         int quantity,
         double price,
@@ -30,7 +29,6 @@ public class ProductVariation
         string? description = null,
         string? quantityStatus = null)
     {
-        Media = media ?? [];
         Features = features ?? [];
         Quantity = quantity;
         Price = price;
@@ -63,12 +61,6 @@ public class ProductVariation
     /// Gets or sets an optional description for the variation.
     /// </summary>
     public string? Description { get; set; }
-
-    /// <summary>
-    /// Gets or sets the list of media files associated with this variation (e.g., images, videos).
-    /// </summary>
-    public List<ObjectId> Media { get; set; } = [];
-
     /// <summary>
     /// Gets or sets the number of items available in stock for this variation.
     /// </summary>
@@ -89,6 +81,5 @@ public class ProductVariation
     /// Gets or sets a list of additional product features specific to this variation.
     /// Any unknown fields will also be deserialized into this list.
     /// </summary>
-    [BsonExtraElements]
     public List<ProductFeature> Features { get; set; } = [];
 }

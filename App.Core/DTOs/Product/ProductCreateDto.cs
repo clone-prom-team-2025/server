@@ -15,6 +15,9 @@ public class ProductCreateDto
         SellerId = sellerId;
     }
 
+    public ProductCreateDto() { }
+
+
     [Required]
     public Dictionary<string, string> Name { get; set; }
 

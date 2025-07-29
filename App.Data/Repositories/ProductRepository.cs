@@ -14,6 +14,43 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 {
     private readonly IMongoCollection<Product> _products = mongoDbContext.Products;
 
+
+    private List<FilterDefinition<Product>> FormFilter(ProductFilterRequest filter)
+    {
+        var builder = Builders<Product>.Filter;
+        var filters = new List<FilterDefinition<Product>>();
+
+        if (!string.IsNullOrEmpty(filter.ProductType))
+        {
+            filters.Add(builder.Eq(p => p.ProductType, filter.ProductType));
+        }
+
+        foreach (var kv in filter.Include)
+        {
+            var includeFilter = builder.ElemMatch(p => p.Variations,
+                variation => variation.Features.Any(f =>
+                    f.Features.ContainsKey(kv.Key) && f.Features[kv.Key].Value == kv.Value
+                )
+            );
+
+            filters.Add(includeFilter);
+        }
+
+        foreach (var kv in filter.Exclude)
+        {
+            var excludeFilter = builder.Not(
+                builder.ElemMatch(p => p.Variations,
+                    variation => variation.Features.Any(f =>
+                        f.Features.ContainsKey(kv.Key) && f.Features[kv.Key].Value == kv.Value
+                    )
+                )
+            );
+
+            filters.Add(excludeFilter);
+        }
+
+        return filters;
+    }
     /// <summary>
     /// Retrieves all products with optional filtering.
     /// </summary>
@@ -23,28 +60,16 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
     {
         var builder = Builders<Product>.Filter;
 
-        var finalFilter = builder.Eq(p => p.ProductType, filter.ProductType);
+        var filters = FormFilter(filter);
 
-        if (filter.Include != null && filter.Include.Count > 0)
-        {
-            foreach (var kv in filter.Include)
-            {
-                var includeFilter = builder.Eq(kv.Key, BsonValue.Create(kv.Value));
-                finalFilter &= includeFilter;
-            }
-        }
+        var finalFilter = filters.Any() ? builder.And(filters) : builder.Empty;
 
-        if (filter.Exclude != null && filter.Exclude.Count > 0)
-        {
-            foreach (var kv in filter.Exclude)
-            {
-                var excludeFilter = builder.Ne(kv.Key, BsonValue.Create(kv.Value));
-                finalFilter &= excludeFilter;
-            }
-        }
+        var page = Math.Max(filter.Page, 1);
+        var pageSize = Math.Max(filter.PageSize, 1);
 
-        var skip = (filter.Page - 1) * filter.PageSize;
-        var limit = filter.PageSize;
+        var skip = (page - 1) * pageSize;
+        var limit = pageSize;
+
 
         return await _products
             .Find(finalFilter)
@@ -74,36 +99,16 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
     {
         var builder = Builders<Product>.Filter;
 
-        var languageCode = filter.Language ?? "en";
-        var nameFilter = builder.Eq($"Name.{languageCode}", name);
+        var filters = FormFilter(filter);
+        filters.Add(builder.Eq($"Name.{filter.Language ?? "en"}", name));
 
-        var finalFilter = nameFilter;
+        var finalFilter = filters.Any() ? builder.And(filters) : builder.Empty;
 
-        if (!string.IsNullOrEmpty(filter.ProductType))
-        {
-            finalFilter &= builder.Eq(p => p.ProductType, filter.ProductType);
-        }
+        var page = Math.Max(filter.Page, 1);
+        var pageSize = Math.Max(filter.PageSize, 1);
 
-        if (filter.Include != null && filter.Include.Count > 0)
-        {
-            foreach (var kv in filter.Include)
-            {
-                var includeFilter = builder.Eq(kv.Key, BsonValue.Create(kv.Value));
-                finalFilter &= includeFilter;
-            }
-        }
-
-        if (filter.Exclude != null && filter.Exclude.Count > 0)
-        {
-            foreach (var kv in filter.Exclude)
-            {
-                var excludeFilter = builder.Ne(kv.Key, BsonValue.Create(kv.Value));
-                finalFilter &= excludeFilter;
-            }
-        }
-
-        var skip = (filter.Page - 1) * filter.PageSize;
-        var limit = filter.PageSize;
+        var skip = (page - 1) * pageSize;
+        var limit = pageSize;
 
         return await _products
             .Find(finalFilter)
@@ -122,28 +127,17 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
     {
         var builder = Builders<Product>.Filter;
 
-        var finalFilter = builder.Eq("CategoryPath.0", categoryId);
+        var filters = FormFilter(filter);
 
-        if (filter.Include != null && filter.Include.Count > 0)
-        {
-            foreach (var kv in filter.Include)
-            {
-                var includeFilter = builder.Eq(kv.Key, BsonValue.Create(kv.Value));
-                finalFilter &= includeFilter;
-            }
-        }
+        filters.Add(builder.Eq("CategoryPath.0", categoryId));
 
-        if (filter.Exclude != null && filter.Exclude.Count > 0)
-        {
-            foreach (var kv in filter.Exclude)
-            {
-                var excludeFilter = builder.Ne(kv.Key, BsonValue.Create(kv.Value));
-                finalFilter &= excludeFilter;
-            }
-        }
+        var finalFilter = filters.Any() ? builder.And(filters) : builder.Empty;
 
-        var skip = (filter.Page - 1) * filter.PageSize;
-        var limit = filter.PageSize;
+        var page = Math.Max(filter.Page, 1);
+        var pageSize = Math.Max(filter.PageSize, 1);
+
+        var skip = (page - 1) * pageSize;
+        var limit = pageSize;
 
         return await _products
             .Find(finalFilter)
@@ -162,28 +156,16 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
     {
         var builder = Builders<Product>.Filter;
 
-        var finalFilter = builder.Eq(p => p.SellerId, ObjectId.Parse(sellerId));
+        var filters = FormFilter(filter);
+        filters.Add(builder.Eq(p => p.SellerId, ObjectId.Parse(sellerId)));
 
-        if (filter.Include != null && filter.Include.Count > 0)
-        {
-            foreach (var kv in filter.Include)
-            {
-                var includeFilter = builder.Eq(kv.Key, BsonValue.Create(kv.Value));
-                finalFilter &= includeFilter;
-            }
-        }
+        var finalFilter = filters.Any() ? builder.And(filters) : builder.Empty;
 
-        if (filter.Exclude != null && filter.Exclude.Count > 0)
-        {
-            foreach (var kv in filter.Exclude)
-            {
-                var excludeFilter = builder.Ne(kv.Key, BsonValue.Create(kv.Value));
-                finalFilter &= excludeFilter;
-            }
-        }
+        var page = Math.Max(filter.Page, 1);
+        var pageSize = Math.Max(filter.PageSize, 1);
 
-        var skip = (filter.Page - 1) * filter.PageSize;
-        var limit = filter.PageSize;
+        var skip = (page - 1) * pageSize;
+        var limit = pageSize;
 
         return await _products
             .Find(finalFilter)
@@ -203,28 +185,13 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
     {
         var builder = Builders<Product>.Filter;
 
-        var finalFilter = builder.ElemMatch(
+        var filters = FormFilter(filter);
+        filters.Add(builder.ElemMatch(
             x => x.Variations,
             v => v.ModelId == modelId
-        );
+        ));
 
-        if (filter.Include != null && filter.Include.Count > 0)
-        {
-            foreach (var kv in filter.Include)
-            {
-                var includeFilter = builder.Eq(kv.Key, BsonValue.Create(kv.Value));
-                finalFilter &= includeFilter;
-            }
-        }
-
-        if (filter.Exclude != null && filter.Exclude.Count > 0)
-        {
-            foreach (var kv in filter.Exclude)
-            {
-                var excludeFilter = builder.Ne(kv.Key, BsonValue.Create(kv.Value));
-                finalFilter &= excludeFilter;
-            }
-        }
+        var finalFilter = filters.Any() ? builder.And(filters) : builder.Empty;
 
         var product = await _products.Find(finalFilter).FirstOrDefaultAsync();
         var variation = product?.Variations.FirstOrDefault(v => v.ModelId == modelId);
@@ -254,28 +221,14 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 
         var builder = Builders<Product>.Filter;
 
-        var finalFilter = builder.ElemMatch(
+        var filters = FormFilter(filter);
+        filters.Add(builder.ElemMatch(
             x => x.Variations,
             v => modelIds.Contains(v.ModelId)
+        )
         );
 
-        if (filter.Include != null && filter.Include.Count > 0)
-        {
-            foreach (var kv in filter.Include)
-            {
-                var includeFilter = builder.Eq(kv.Key, BsonValue.Create(kv.Value));
-                finalFilter &= includeFilter;
-            }
-        }
-
-        if (filter.Exclude != null && filter.Exclude.Count > 0)
-        {
-            foreach (var kv in filter.Exclude)
-            {
-                var excludeFilter = builder.Ne(kv.Key, BsonValue.Create(kv.Value));
-                finalFilter &= excludeFilter;
-            }
-        }
+        var finalFilter = filters.Any() ? builder.And(filters) : builder.Empty;
 
         var matchedProducts = await _products.Find(finalFilter).ToListAsync();
 
@@ -329,7 +282,8 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
     /// <returns>True if the product was deleted, otherwise false.</returns>
     public async Task<bool> DeleteAsync(string id)
     {
-        var result = await _products.DeleteOneAsync(p => p.Id.Equals(id));
+        var filter = Builders<Product>.Filter.Eq(p => p.Id, ObjectId.Parse(id));
+        var result = await _products.DeleteOneAsync(filter);
         return result.IsAcknowledged && result.DeletedCount > 0;
     }
 

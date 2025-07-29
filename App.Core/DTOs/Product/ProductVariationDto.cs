@@ -6,7 +6,6 @@ namespace App.Core.DTOs.Product;
 public class ProductVariationDto
 {
     public ProductVariationDto(
-        List<string>? media,
         List<ProductFeatureDto>? features,
         int quantity,
         double price,
@@ -15,7 +14,6 @@ public class ProductVariationDto
         string? description = null,
         string? quantityStatus = null)
     {
-        Media = media ?? [];
         Features = features ?? [];
         Quantity = quantity;
         Price = price;
@@ -25,14 +23,17 @@ public class ProductVariationDto
         ModelId = modelId;
     }
 
+    public ProductVariationDto()
+    {
+        
+    }
+
     [StringLength(100)]
     public string? ModelName { get; set; }
 
     public string ModelId { get; set; }
 
     public string? Description { get; set; }
-
-    public List<string> Media { get; set; } = [];
 
     public int Quantity { get; set; }
 

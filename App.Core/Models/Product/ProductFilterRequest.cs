@@ -22,9 +22,9 @@ public class ProductFilterRequest
     /// <param name="include">Features to include in the filter.</param>
     /// <param name="exclude">Features to exclude from the filter.</param>
     /// <param name="language">Language code for localization.</param>
-    public ProductFilterRequest(string productType, int page, int pageSize,
-        Dictionary<string, object>? include = null,
-        Dictionary<string, object>? exclude = null,
+    public ProductFilterRequest(string? productType, int page, int pageSize,
+        Dictionary<string, string>? include = null,
+        Dictionary<string, string>? exclude = null,
         string? language = "en")
     {
         ProductType = productType;
@@ -38,17 +38,17 @@ public class ProductFilterRequest
     /// <summary>
     ///     Type of product to filter.
     /// </summary>
-    public string ProductType { get; set; }
+    public string? ProductType { get; set; }
 
     /// <summary>
     ///     Features to include in filtering.
     /// </summary>
-    public Dictionary<string, object> Include { get; set; } = new();
+    public Dictionary<string, string> Include { get; set; } = new();
 
     /// <summary>
     ///     Features to exclude from filtering.
     /// </summary>
-    public Dictionary<string, object> Exclude { get; set; } = new();
+    public Dictionary<string, string> Exclude { get; set; } = new();
 
     /// <summary>
     ///     Current page number for pagination.
