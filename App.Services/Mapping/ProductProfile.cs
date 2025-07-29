@@ -48,6 +48,6 @@ public class ProductProfile : Profile
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.ProductId, opt => opt.MapFrom(dto => ObjectId.Parse(dto.ProductId)));
 
-        // Deleted
+        // Deleted unused mappings
     }
 }
