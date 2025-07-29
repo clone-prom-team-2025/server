@@ -6,6 +6,8 @@ using App.Core.Models;
 using AutoMapper;
 using MongoDB.Bson;
 using App.Core.DTOs;
+using App.Core.Models.FileStorage;
+using Microsoft.Extensions.Options;
 
 namespace App.Services;
 
@@ -13,12 +15,14 @@ namespace App.Services;
 /// Service responsible for handling operations related to product media (images and videos).
 /// Provides functionality to save, update, retrieve and delete media files associated with products.
 /// </summary>
-public class ProductMediaService(IProductMediaRepository repository, IFileService fileService, IMapper mapper) : IProductMediaService
+public class ProductMediaService(IProductMediaRepository repository, IFileService fileService, IMapper mapper, IOptions<ProductMediaKeys> productMediaKeys) : IProductMediaService
 {
     /// <summary>
     /// Repository interface for accessing product media data from the database.
     /// </summary>
     private readonly IProductMediaRepository _repository = repository;
+
+    private readonly ProductMediaKeys _productMediaKeys = productMediaKeys.Value;
 
     /// <summary>
     /// Service responsible for saving and deleting files on disk.
@@ -30,7 +34,7 @@ public class ProductMediaService(IProductMediaRepository repository, IFileServic
     /// </summary>
     private readonly IMapper _mapper = mapper;
 
-    private const string RootPrefix = "wwwroot/";
+    //private const string RootPrefix = "wwwroot/";
 
     /// <summary>
     /// Retrieves all product media from the database.
@@ -47,11 +51,12 @@ public class ProductMediaService(IProductMediaRepository repository, IFileServic
             {
                 Id = m.Id.ToString(),
                 ProductId = m.ProductId.ToString(),
-                FileName = m.FileName,
-                Url = TrimRoot(m.Url),
+                UrlFileName = m.UrlFileName,
+                Url = m.Url,
                 Type = m.Type,
                 Order = m.Order,
-                SecondaryUrl = TrimRoot(m.SecondaryUrl)
+                SecondaryUrl = m.SecondaryUrl,
+                SecondUrlFileName = m.SecondUrlFileName
             };
             dtos.Add(dto);
         }
@@ -78,20 +83,22 @@ public class ProductMediaService(IProductMediaRepository repository, IFileServic
 
         string url;
         string? secondaryUrl = null;
-        string savedFileName = "";
+        string urlFileName = "";
+        string? secondUrlFileName = null;
 
         if (type == MediaType.Image)
         {
-            var (fullHdPath, hdPath, _savedFileName) = await _fileService.SaveImageAsync(stream, fileName);
+            var (fullHdPath, hdPath, _urlFileName, _secondUrlFileName) = await _fileService.SaveImageAsync(stream, fileName, _productMediaKeys.Image);
             url = fullHdPath;
             secondaryUrl = hdPath;
-            savedFileName = _savedFileName;
+            urlFileName = _urlFileName;
+            secondUrlFileName = _secondUrlFileName;
         }
         else if (type == MediaType.Video)
         {
-            var (_url, _fileName) = await _fileService.SaveVideoAsync(stream, fileName);
+            var (_url, _fileName) = await _fileService.SaveVideoAsync(stream, fileName, _productMediaKeys.Video);
             url = _url;
-            savedFileName = _fileName;
+            urlFileName = _fileName;
         }
         else
         {
@@ -108,11 +115,12 @@ public class ProductMediaService(IProductMediaRepository repository, IFileServic
 
         var media = new ProductMedia(
             ObjectId.Parse(productId),
-            savedFileName,
+            urlFileName,
             url,
             type,
             order,
-            secondaryUrl
+            secondaryUrl,
+            secondUrlFileName
         );
 
         await _repository.SaveAsync(media);
@@ -121,11 +129,12 @@ public class ProductMediaService(IProductMediaRepository repository, IFileServic
         {
             Id = media.Id.ToString(),
             ProductId = media.ProductId.ToString(),
-            FileName = media.FileName,
-            Url = TrimRoot(media.Url),
+            UrlFileName = media.UrlFileName,
+            Url = media.Url,
             Type = media.Type,
             Order = media.Order,
-            SecondaryUrl = TrimRoot(media.SecondaryUrl)
+            SecondaryUrl = media.SecondaryUrl,
+            SecondUrlFileName = media.SecondUrlFileName
         };
 
         stream.Close();
@@ -146,8 +155,19 @@ public class ProductMediaService(IProductMediaRepository repository, IFileServic
             foreach (var media in existing)
             {
                 await _repository.RemoveAsync(media.Id.ToString());
-                _fileService.DeleteFile(media.Url);
-                if (media.SecondaryUrl != null) _fileService.DeleteFile(media.SecondaryUrl);
+                if (media.Type == MediaType.Image)
+                {
+                    //Console.WriteLine("Delete image: ");
+                    //Console.WriteLine(media.UrlFileName);
+                    await _fileService.DeleteFileAsync(_productMediaKeys.Image, media.UrlFileName);
+                    if (media.SecondaryUrl != null && media.SecondUrlFileName != null) await _fileService.DeleteFileAsync(_productMediaKeys.Image, media.SecondUrlFileName);
+                }
+                else if (media.Type == MediaType.Video)
+                {
+                    //Console.WriteLine("Delete video: ");
+                    //Console.WriteLine(media.UrlFileName);
+                    await _fileService.DeleteFileAsync(_productMediaKeys.Video, media.UrlFileName);
+                }
             }
         }
 
@@ -164,49 +184,6 @@ public class ProductMediaService(IProductMediaRepository repository, IFileServic
     }
 
     /// <summary>
-    /// Updates existing media data in the database.
-    /// </summary>
-    /// <param name="dto">The DTO containing updated media information.</param>
-    /// <returns>True if update was successful; otherwise, false.</returns>
-    public async Task<bool> UpdateAsync(ProductMediaDto dto)
-    {
-        var media = new ProductMedia(ObjectId.Parse(dto.ProductId), dto.FileName, dto.Url, dto.Type, dto.Order)
-        {
-            Id = ObjectId.Parse(dto.Id)
-        };
-        return await _repository.UpdateAsync(media);
-    }
-
-    /// <summary>
-    /// Performs upsert operation (update if exists, insert if not) for a collection of media DTOs.
-    /// </summary>
-    /// <param name="mediaDtos">Collection of <see cref="ProductMediaDto"/> objects.</param>
-    /// <returns>True if all operations succeeded; otherwise, false.</returns>
-    public async Task<bool> UpsertManyAsync(List<ProductMediaDto> mediaDtos)
-    {
-        bool result = true;
-
-        foreach (var dto in mediaDtos)
-        {
-            var exists = await _repository.GetByIdAsync(dto.Id);
-            if (exists != null)
-            {
-                result &= await UpdateAsync(dto);
-            }
-            else
-            {
-                var media = new ProductMedia(ObjectId.Parse(dto.ProductId), dto.FileName, dto.Url, dto.Type, dto.Order)
-                {
-                    Id = ObjectId.Parse(dto.Id)
-                };
-                await _repository.SaveAsync(media);
-            }
-        }
-
-        return result;
-    }
-
-    /// <summary>
     /// Deletes a media item by its ID.
     /// Also removes associated files from disk.
     /// </summary>
@@ -217,8 +194,8 @@ public class ProductMediaService(IProductMediaRepository repository, IFileServic
         var media = await _repository.GetByIdAsync(id);
         if (media == null) return false;
 
-        _fileService.DeleteFile(media.Url);
-        if (media.SecondaryUrl != null) _fileService.DeleteFile(media.SecondaryUrl);
+        await _fileService.DeleteFileAsync(_productMediaKeys.Image , media.Url);
+        if (media.SecondaryUrl != null) await _fileService.DeleteFileAsync(_productMediaKeys.Image, media.SecondaryUrl);
         return await _repository.RemoveAsync(id);
     }
 
@@ -236,8 +213,15 @@ public class ProductMediaService(IProductMediaRepository repository, IFileServic
 
         foreach (var m in media)
         {
-            _fileService.DeleteFile(m.Url);
-            if (m.SecondaryUrl != null) _fileService.DeleteFile(m.SecondaryUrl);
+            if (m.Type == MediaType.Image)
+            {
+                await _fileService.DeleteFileAsync(_productMediaKeys.Image, m.UrlFileName);
+                if (m.SecondaryUrl != null && m.SecondUrlFileName != null) await _fileService.DeleteFileAsync(_productMediaKeys.Image, m.SecondUrlFileName);
+            }
+            else if (m.Type == MediaType.Video)
+            {
+                await _fileService.DeleteFileAsync(_productMediaKeys.Video, m.UrlFileName);
+            }
         }
         
         return await _repository.RemoveByProdutIdAsync(productId);;
@@ -255,31 +239,12 @@ public class ProductMediaService(IProductMediaRepository repository, IFileServic
     }
 
     /// <summary>
-    /// Deletes all media entries related to a specific product.
-    /// Also deletes their files from disk.
-    /// </summary>
-    /// <param name="produtId">ID of the product (typo in parameter name preserved from original).</param>
-    /// <returns>True if deletion was successful; otherwise, false.</returns>
-    public async Task<bool> DeleteByProductId(string produtId)
-    {
-        var media = await _repository.GetByProductIdAsync(produtId);
-        if (media == null || media.Count == 0) return false;
-
-        foreach (var m in media)
-        {
-            if (m != null) _fileService.DeleteFile(m.Url);
-            if (m != null && m.SecondaryUrl != null) _fileService.DeleteFile(m.SecondaryUrl);
-        }
-        return await _repository.RemoveByProdutIdAsync(produtId);
-    }
-
-    /// <summary>
     /// Trims the "wwwroot/" prefix from a file path for frontend-friendly URLs.
     /// </summary>
     /// <param name="path">Path to trim.</param>
     /// <returns>Trimmed path or original if prefix not present.</returns>
-    private string? TrimRoot(string? path) =>
-            !string.IsNullOrWhiteSpace(path) && path.StartsWith(RootPrefix)
-                ? path.Substring(RootPrefix.Length)
-                : path;
+    // private string? TrimRoot(string? path) =>
+    //         !string.IsNullOrWhiteSpace(path) && path.StartsWith(RootPrefix)
+    //             ? path.Substring(RootPrefix.Length)
+    //             : path;
 }

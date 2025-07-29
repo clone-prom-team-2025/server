@@ -2,7 +2,7 @@ namespace App.Core.Interfaces;
 
 public interface IFileService
 {
-    Task<(string FullHdPath, string HdPath, string fileName)> SaveImageAsync(Stream imageStream, string fileName);
-    Task<(string Url, string FileName)> SaveVideoAsync(Stream videoStream, string fileName);
-    void DeleteFile(string path);
+    Task<(string FullHdUrl, string HdUrl, string UrlFileName, string SecondUrlFileName)> SaveImageAsync(Stream imageStream, string fileName, string key);
+    Task<(string Url, string FileName)> SaveVideoAsync(Stream videoStream, string fileName, string key);
+    Task DeleteFileAsync(string key, string fileName);
 }

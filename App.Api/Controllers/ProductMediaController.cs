@@ -19,15 +19,16 @@ public class ProductMediaController : ControllerBase
         _productMediaService = productMediaService;
     }
 
-    [HttpPost]
-    public async Task<ActionResult<ProductMediaDto>> SaveMediaAsync(string productId, IFormFile formFile, int order)
-    {
-        if (formFile.Length > 50 * 1024 * 1024) return BadRequest("File too large");
+    // Removed, may be deleted in the future
+    // [HttpPost]
+    // public async Task<ActionResult<ProductMediaDto>> SaveMediaAsync(string productId, IFormFile formFile, int order)
+    // {
+    //     if (formFile.Length > 50 * 1024 * 1024) return BadRequest("File too large");
 
-        using var stream = formFile.OpenReadStream();
+    //     using var stream = formFile.OpenReadStream();
 
-        return await _productMediaService.PushMediaAsync(productId, stream, formFile.FileName, order);
-    }
+    //     return await _productMediaService.PushMediaAsync(productId, stream, formFile.FileName, order);
+    // }
 
     [HttpGet]
     public async Task<ActionResult<List<ProductMediaDto>>> GetAll()

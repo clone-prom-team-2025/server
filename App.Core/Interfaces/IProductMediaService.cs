@@ -9,8 +9,6 @@ public interface IProductMediaService
     Task<List<ProductMediaDto>?> GetAll();
     Task<ProductMediaDto> PushMediaAsync(string productId, Stream stream, string fileName, int order);
     Task<List<ProductMediaDto>?> SyncMediaFromTempFilesAsync(List<FileArrayItemDto> files, string productId);
-    Task<bool> UpdateAsync(ProductMediaDto dto);
-    Task<bool> UpsertManyAsync(List<ProductMediaDto> mediaDtos);
     Task<bool> DeleteAsync(string id);
     Task<List<ProductMediaDto>?> GetByProductIdAsync(string productId);
     Task<bool> DeleteByProductIdAsync(string productId);
