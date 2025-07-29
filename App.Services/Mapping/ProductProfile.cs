@@ -48,20 +48,6 @@ public class ProductProfile : Profile
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.ProductId, opt => opt.MapFrom(dto => ObjectId.Parse(dto.ProductId)));
 
-        CreateMap<ProductDto, ProductStringDto>()
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => JsonConvert.SerializeObject(src.Name)))
-            .ForMember(dest => dest.CategoryPath, opt => opt.MapFrom(src => JsonConvert.SerializeObject(src.CategoryPath)))
-            .ForMember(dest => dest.Variations, opt => opt.MapFrom(src => JsonConvert.SerializeObject(src.Variations)))
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
-            .ForMember(dest => dest.ProductType, opt => opt.MapFrom(src => src.ProductType))
-            .ForMember(dest => dest.SellerId, opt => opt.MapFrom(src => src.SellerId));
-
-        CreateMap<ProductStringDto, ProductDto>()
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(src => JsonConvert.DeserializeObject<Dictionary<string, string>>(src.Name)))
-            .ForMember(dest => dest.CategoryPath, opt => opt.MapFrom(src => JsonConvert.DeserializeObject<List<string>>(src.CategoryPath)))
-            .ForMember(dest => dest.Variations, opt => opt.MapFrom(src => JsonConvert.DeserializeObject<List<ProductVariationDto>>(src.Variations)))
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
-            .ForMember(dest => dest.ProductType, opt => opt.MapFrom(src => src.ProductType))
-            .ForMember(dest => dest.SellerId, opt => opt.MapFrom(src => src.SellerId));
+        // Deleted
     }
 }

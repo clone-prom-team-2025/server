@@ -28,13 +28,3 @@ public class ProductDto
 
     public string SellerId { get; set; }
 }
-
-public class ProductStringDto
-{
-    public string Id { get; set; }
-    public string Name { get; set; } // JSON stringified dictionary
-    public string ProductType { get; set; }
-    public string CategoryPath { get; set; } // JSON stringified list
-    public string Variations { get; set; } // JSON stringified list
-    public string SellerId { get; set; }
-}
