@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using App.Core.Enums;
+using App.Core.Models.User;
 
 namespace App.Core.DTOs;
 

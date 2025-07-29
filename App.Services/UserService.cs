@@ -1,6 +1,7 @@
 using App.Core.Enums;
 using App.Core.Interfaces;
 using App.Core.Models.User;
+using App.Core.DTOs;
 using AutoMapper;
 
 namespace App.Services;

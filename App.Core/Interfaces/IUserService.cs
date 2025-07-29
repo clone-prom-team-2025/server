@@ -1,5 +1,6 @@
 using App.Core.Enums;
 using App.Core.Models.User;
+using App.Core.DTOs;
 
 namespace App.Core.Interfaces;
 
