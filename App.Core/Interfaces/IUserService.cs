@@ -5,10 +5,10 @@ namespace App.Core.Interfaces;
 
 public interface IUserService
 {
-    Task<List<User>?> GetAllUsersAsync();
-    Task<List<User>?> GetAllUsersAsync(int pageNumber, int pageSize);
-    Task<User> GetUserByIdAsync(string userId);
-    Task<User> GetUserByUsernameAsync(string username);
+    Task<List<UserDto>?> GetAllUsersAsync();
+    Task<List<UserDto>?> GetAllUsersAsync(int pageNumber, int pageSize);
+    Task<UserDto> GetUserByIdAsync(string userId);
+    Task<UserDto> GetUserByUsernameAsync(string username);
     Task<User> GetUserByEmailAsync(string email);
     Task<User> GetUserByAvatarUrlAsync(string avatarUrl);
     Task<User> GetUserByPhoneNumberAsync(string phoneNumber);
