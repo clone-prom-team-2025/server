@@ -41,6 +41,8 @@ builder.Services.AddSingleton<IUserService, UserService>();
 builder.Services.AddSingleton<IProductMediaService, ProductMediaService>();
 builder.Services.AddSingleton<IFileService, FileService>();
 builder.Services.AddSingleton<IJwtService, JwtService>();
+builder.Services.AddSingleton<IEmailService, EmailService>();
+
 
 // --- Controllers ---
 builder.Services.AddControllers();
