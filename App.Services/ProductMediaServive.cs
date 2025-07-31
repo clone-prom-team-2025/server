@@ -237,14 +237,4 @@ public class ProductMediaService(IProductMediaRepository repository, IFileServic
         var list = await _repository.GetByProductIdAsync(productId);
         return _mapper.Map<List<ProductMediaDto>?>(list);
     }
-
-    /// <summary>
-    /// Trims the "wwwroot/" prefix from a file path for frontend-friendly URLs.
-    /// </summary>
-    /// <param name="path">Path to trim.</param>
-    /// <returns>Trimmed path or original if prefix not present.</returns>
-    // private string? TrimRoot(string? path) =>
-    //         !string.IsNullOrWhiteSpace(path) && path.StartsWith(RootPrefix)
-    //             ? path.Substring(RootPrefix.Length)
-    //             : path;
 }

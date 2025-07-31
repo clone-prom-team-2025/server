@@ -15,7 +15,7 @@ public class ProductReview
     /// </summary>
     /// <param name="productId">The ID of the related product.</param>
     /// <param name="modelId">The model id of the variation.</param>
-    public ProductReview(ObjectId productId, ObjectId modelId)
+    public ProductReview(ObjectId productId, string modelId)
     {
         Id = ObjectId.GenerateNewId();
         ProductId = productId;
@@ -38,7 +38,7 @@ public class ProductReview
     /// <summary>
     /// The name of the product variation model being reviewed.
     /// </summary>
-    public ObjectId ModelId { get; set; }
+    public string ModelId { get; set; }
 
     /// <summary>
     /// The average rating calculated from all submitted comments.
@@ -48,7 +48,7 @@ public class ProductReview
     /// <summary>
     /// The list of individual user review comments.
     /// </summary>
-    public List<ProductReviewComment> Items { get; set; } = new();
+    public List<ProductReviewComment> Comments { get; set; } = new();
 
     /// <summary>
     /// Adds a new comment to the review and updates the average rating.
@@ -56,7 +56,7 @@ public class ProductReview
     /// <param name="comment">The review comment to add.</param>
     public void AddComment(ProductReviewComment comment)
     {
-        Items.Add(comment);
+        Comments.Add(comment);
         CalculateAverageRating();
     }
 
@@ -65,13 +65,13 @@ public class ProductReview
     /// </summary>
     public void CalculateAverageRating()
     {
-        if (Items.Count == 0)
+        if (Comments.Count == 0)
         {
             AverageRating = 0.0;
             return;
         }
 
-        var totalRating = Items.Sum(item => item.Rating);
-        AverageRating = totalRating / Items.Count;
+        var totalRating = Comments.Sum(item => item.Rating);
+        AverageRating = totalRating / Comments.Count;
     }
 }
