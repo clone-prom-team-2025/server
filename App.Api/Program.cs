@@ -1,10 +1,14 @@
 using App.Api.Middleware;
 using App.Core.Interfaces;
+using App.Core.Models.Auth;
 using App.Core.Models.FileStorage;
 using App.Data;
 using App.Data.Repositories;
 using App.Services;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,9 +17,11 @@ builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("Mo
 
 // --- File storage settings
 builder.Services.Configure<FileStorageOptions>(builder.Configuration.GetSection("FileStorage"));
-
 builder.Services.Configure<CloudflareR2Options>(builder.Configuration.GetSection("CloudflareR2"));
 builder.Services.Configure<ProductMediaKeys>(builder.Configuration.GetSection("ProductMediaKeys"));
+
+// --- Jwt service settings ---
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 
 // --- Infrastructure ---
 builder.Services.AddSingleton<MongoDbContext>();
@@ -35,6 +41,7 @@ builder.Services.AddSingleton<IUserService, UserService>();
 builder.Services.AddSingleton<IProductMediaService, ProductMediaService>();
 builder.Services.AddSingleton<IFileService, FileService>();
 builder.Services.AddSingleton<IProductReviewService, ProductReviewService>();
+builder.Services.AddSingleton<IJwtService, JwtService>();
 
 // --- Controllers ---
 builder.Services.AddControllers();
@@ -45,6 +52,24 @@ builder.Services.AddSwaggerGen();
 
 // --- Mapper ----
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        var config = builder.Configuration;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = config["Jwt:Issuer"],
+            ValidAudience = config["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(config["Jwt:Key"] ?? throw new InvalidOperationException("JWT key is missing in configuration."))
+            )
+        };
+    });
 
 // --- Create app ---
 var app = builder.Build();
@@ -74,7 +99,7 @@ using (var scope = app.Services.CreateScope())
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseAuthorization();
+builder.Services.AddAuthorization();
 
 app.MapControllers();
 
