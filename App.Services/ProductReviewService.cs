@@ -23,6 +23,7 @@ public class ProductReviewService(IProductReviewRepository repository, IMapper m
     {
         var newComment = _mapper.Map<ProductReviewComment>(comment);
         newComment.Id = Guid.NewGuid().ToString();
+        newComment.CreatedAt = DateTime.UtcNow;
         await _repository.AddCommentToReviewAsync(reviewId, newComment);
     }
 

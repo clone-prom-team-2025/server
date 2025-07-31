@@ -120,7 +120,7 @@ public class ProductProfile : Profile
             .ConstructUsing(dto =>
                 new ProductReviewComment(dto.Rating, ObjectId.Parse(dto.UserId), dto.Comment))
             .ForMember(dest => dest.Id, opt => opt.Ignore())
-            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(dto => dto.CreatedAt))
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.Reactions, opt => opt.Ignore());
     }
 }
