@@ -21,8 +21,6 @@ public class ProductController : ControllerBase
     [HttpPost("get-all")]
     public async Task<ActionResult<List<ProductDto>?>> GetAllAsync(ProductFilterRequest filter)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-
         var products = await _productService.GetAllAsync(filter);
         if (products == null || products.Count == 0)
             return NoContent();
@@ -83,16 +81,12 @@ public class ProductController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ProductDto>> CreateAsync(ProductCreateDto productDto)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-
         return Ok(await _productService.CreateAsync(productDto));
     }
 
     [HttpPut]
     public async Task<ActionResult<ProductDto?>> UpdateAsync(ProductDto productDto)
     {
-        if (!ModelState.IsValid) return BadRequest(productDto);
-
         var product = await _productService.UpdateAsync(productDto);
         return product == null ? NotFound() : Ok(product);
     }

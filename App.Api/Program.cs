@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using FluentValidation.AspNetCore;
+using FluentValidation;
+using App.Core.Validations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,6 +44,10 @@ builder.Services.AddSingleton<IUserService, UserService>();
 builder.Services.AddSingleton<IProductMediaService, ProductMediaService>();
 builder.Services.AddSingleton<IFileService, FileService>();
 builder.Services.AddSingleton<IJwtService, JwtService>();
+
+// --- Validation ---
+builder.Services.AddValidatorsFromAssemblyContaining<ProductCreateDtoValidator>();
+builder.Services.AddFluentValidationAutoValidation();
 
 // --- Controllers ---
 builder.Services.AddControllers();
