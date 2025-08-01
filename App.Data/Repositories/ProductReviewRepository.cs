@@ -66,7 +66,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     /// <returns>The product review or null if not found.</returns>
     public async Task<ProductReview?> GetReviewByModelIdAsync(string modelId)
     {
-        var filters = Builders<ProductReview>.Filter.Eq(r => r.ModelId, ObjectId.Parse(modelId));
+        var filters = Builders<ProductReview>.Filter.Eq(r => r.ModelId, modelId);
         return await _reviews.Find(filters).FirstOrDefaultAsync();
     }
 
@@ -111,7 +111,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     public async Task<List<ProductReviewComment>?> GetCommentsByReviewIdAsync(string reviewId)
     {
         var filter = Builders<ProductReview>.Filter.Eq(r => r.Id.ToString(), reviewId);
-        var projection = Builders<ProductReview>.Projection.Expression(r => r.Items);
+        var projection = Builders<ProductReview>.Projection.Expression(r => r.Comments);
         var comments = await _reviews.Find(filter).Project(projection).FirstOrDefaultAsync();
 
         return comments ?? null;
@@ -127,7 +127,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     {
         var productReview = await GetReviewByIdAsync(reviewId);
         if (productReview == null) return false;
-        productReview.Items.Add(comment);
+        productReview.Comments.Add(comment);
 
         return await UpdateReviewAsync(productReview);
     }
@@ -143,11 +143,11 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
         var productReview = await GetReviewByIdAsync(reviewId);
         if (productReview == null) return false;
 
-        var index = productReview.Items.FindIndex(c => c.Id == comment.Id);
+        var index = productReview.Comments.FindIndex(c => c.Id == comment.Id);
         if (index == -1)
             return false;
 
-        productReview.Items[index] = comment;
+        productReview.Comments[index] = comment;
 
         return await UpdateReviewAsync(productReview);
     }
@@ -163,12 +163,12 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
         var productReview = await GetReviewByIdAsync(reviewId);
         if (productReview == null) return false;
 
-        var index = productReview.Items.FindIndex(c => c.Id == commentId);
+        var index = productReview.Comments.FindIndex(c => c.Id == commentId);
 
         if (index == -1)
             return false;
 
-        productReview.Items.RemoveAt(index);
+        productReview.Comments.RemoveAt(index);
         return await UpdateReviewAsync(productReview);
     }
 
@@ -185,7 +185,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
         if (productReview == null)
             return false;
             
-        var comment = productReview.Items.FirstOrDefault(c => c.Id == commentId);
+        var comment = productReview.Comments.FirstOrDefault(c => c.Id == commentId);
         if (comment == null)
             return false;
 

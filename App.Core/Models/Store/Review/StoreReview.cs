@@ -42,7 +42,7 @@ public class StoreReview
     /// <summary>
     /// The list of individual user review comments.
     /// </summary>
-    public List<StoreReviewComment> Items { get; set; } = new List<StoreReviewComment>();
+    public List<StoreReviewComment> Comments { get; set; } = new List<StoreReviewComment>();
 
     /// <summary>
     /// Adds a new comment to the review and updates the average rating.
@@ -50,7 +50,7 @@ public class StoreReview
     /// <param name="comment">The review comment to add.</param>
     public void AddComment(StoreReviewComment comment)
     {
-        Items.Add(comment);
+        Comments.Add(comment);
         CalculateAverageRating();
     }
 
@@ -59,13 +59,13 @@ public class StoreReview
     /// </summary>
     public void CalculateAverageRating()
     {
-        if (Items.Count == 0)
+        if (Comments.Count == 0)
         {
             AverageRating = 0.0;
             return;
         }
 
-        var totalRating = Items.Sum(item => item.Rating);
-        AverageRating = totalRating / Items.Count;
+        var totalRating = Comments.Sum(item => item.Rating);
+        AverageRating = totalRating / Comments.Count;
     }
 }
