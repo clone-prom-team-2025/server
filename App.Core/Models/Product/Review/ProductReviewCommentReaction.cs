@@ -13,7 +13,7 @@ public class ProductReviewCommentReaction
     /// </summary>
     /// <param name="userId">The identifier of the user who reacted.</param>
     /// <param name="positive">Indicates whether the reaction is positive (like) or negative (dislike).</param>
-    public ProductReviewCommentReaction(string userId, bool positive)
+    public ProductReviewCommentReaction(ObjectId userId, bool positive)
     {
         UserId = userId;
         Positive = positive;
@@ -23,7 +23,7 @@ public class ProductReviewCommentReaction
     /// The ID of the user who gave the reaction.
     /// </summary>
     [BsonRepresentation(BsonType.ObjectId)]
-    public string UserId { get; set; }
+    public ObjectId UserId { get; set; }
 
     /// <summary>
     /// Indicates whether the reaction is positive (true = like) or negative (false = dislike).

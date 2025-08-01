@@ -144,7 +144,7 @@ public class MongoDbContext
         if (!productIdIndexExists)
         {
             var indexKeys = Builders<ProductReview>.IndexKeys.Ascending(p => p.ProductId);
-            var indexOptions = new CreateIndexOptions { Unique = false };
+            var indexOptions = new CreateIndexOptions { Unique = true };
             var indexModel = new CreateIndexModel<ProductReview>(indexKeys, indexOptions);
             
             await collection.Indexes.CreateOneAsync(indexModel);
