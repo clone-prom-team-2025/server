@@ -70,9 +70,7 @@ public class CategoryController : ControllerBase
     /// <returns>Created category.</returns>
     [HttpPost]
     public async Task<ActionResult> Create([FromBody] CategoryCreateDto categoryDto)
-    {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-        
+    {        
         var category = await _categoryService.CreateAsync(categoryDto);
         return CreatedAtAction(nameof(GetById), new { id = category.Id }, category);
     }
@@ -87,7 +85,6 @@ public class CategoryController : ControllerBase
     public async Task<ActionResult> Update([FromBody] CategoryDto categoryDto)
     {
         var category = await _categoryService.UpdateAsync(categoryDto);
-        if (category == null) return BadRequest(ModelState);
 
         return Ok(category);
     }

@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using FluentValidation.AspNetCore;
+using FluentValidation;
+using App.Core.Validations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +47,10 @@ builder.Services.AddSingleton<IProductReviewService, ProductReviewService>();
 builder.Services.AddSingleton<IJwtService, JwtService>();
 builder.Services.AddSingleton<IEmailService, EmailService>();
 
+
+// --- Validation ---
+builder.Services.AddValidatorsFromAssemblyContaining<ProductCreateDtoValidator>();
+builder.Services.AddFluentValidationAutoValidation();
 
 // --- Controllers ---
 builder.Services.AddControllers();

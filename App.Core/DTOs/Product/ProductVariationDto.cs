@@ -28,7 +28,6 @@ public class ProductVariationDto
         
     }
 
-    [StringLength(100)]
     public string? ModelName { get; set; }
 
     public string ModelId { get; set; }
@@ -39,7 +38,6 @@ public class ProductVariationDto
 
     public double Price { get; set; }
 
-    [StringLength(40)]
     public string? QuantityStatus { get; set; }
 
     public List<ProductFeatureDto> Features { get; set; }
