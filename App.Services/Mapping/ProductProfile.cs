@@ -1,5 +1,7 @@
+using App.Core.DTOs.AvailableFilters;
 using App.Core.DTOs.Product;
 using App.Core.DTOs.Product.Review;
+using App.Core.Models.AvailableFilters;
 using App.Core.Models.Product;
 using App.Core.Models.Product.Review;
 using AutoMapper;
@@ -122,5 +124,25 @@ public class ProductProfile : Profile
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.Reactions, opt => opt.Ignore());
+
+        CreateMap<ProductFilterRequest, ProductFilterRequestDto>()
+            .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => src.CategoryId.ToString()));
+        
+        CreateMap<ProductFilterRequestDto, ProductFilterRequest>()
+            .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => ObjectId.Parse(src.CategoryId)));
+
+        CreateMap<AvailableFilters, AvailableFiltersDto>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
+            .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => src.CategoryId.ToString()));
+        
+        CreateMap<AvailableFiltersDto, AvailableFilters>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => ObjectId.Parse(src.Id)))
+            .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => ObjectId.Parse(src.CategoryId)));
+
+        CreateMap<AvailableFiltersCreateDto, AvailableFilters>()
+            .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => ObjectId.Parse(src.CategoryId)))
+            .ForMember(dest => dest.Id, opt => opt.Ignore());
+        
+        CreateMap<AvailableFiltersItem, AvailableFiltersItemDto>().ReverseMap();
     }
 }

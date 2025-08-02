@@ -7,13 +7,13 @@ namespace App.Core.Interfaces;
 
 public interface IProductService
 {
-    Task<List<ProductDto>?> GetAllAsync(ProductFilterRequest filter);
+    Task<List<ProductDto>?> GetAllAsync(ProductFilterRequestDto filter);
     Task<ProductDto?> GetByIdAsync(string id);
-    Task<List<ProductDto>?> GetByNameAsync(string name, ProductFilterRequest filter);
-    Task<List<ProductDto>?> GetByCategoryAsync(string categoryId, ProductFilterRequest filter);
-    Task<List<ProductDto>?> GetBySellerIdAsync(string sellerId, ProductFilterRequest filter);
-    Task<ProductDto?> GetByModelIdAsync(string modelId, ProductFilterRequest filter);
-    Task<List<ProductDto>?> GetByModelIdsAsync(List<string> modelId, ProductFilterRequest filter);
+    Task<List<ProductDto>?> GetByNameAsync(string name, ProductFilterRequestDto filter);
+    Task<List<ProductDto>?> GetByCategoryAsync(string categoryId, ProductFilterRequestDto filter);
+    Task<List<ProductDto>?> GetBySellerIdAsync(string sellerId, ProductFilterRequestDto filter);
+    Task<ProductDto?> GetByModelIdAsync(string modelId, ProductFilterRequestDto filter);
+    Task<List<ProductDto>?> GetByModelIdsAsync(List<string> modelId, ProductFilterRequestDto filter);
     Task<ProductDto> CreateAsync(ProductCreateDto productDto);
     Task<ProductDto?> UpdateAsync(ProductDto productDto);
     Task<bool> DeleteAsync(string id);
@@ -25,4 +25,4 @@ public interface IProductService
     Task<bool> RemoveVariationAsync(string productId, string modelId);
 
     //
-} 
+}

@@ -36,6 +36,7 @@ builder.Services.AddSingleton<ProductRepository>();
 builder.Services.AddSingleton<IProductReviewRepository, ProductReviewRepository>();
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
 builder.Services.AddSingleton<IProductMediaRepository, ProductMediaRepository>();
+builder.Services.AddSingleton<IAvailableFiltersRepository, AvailableFiltersRepository>();
 
 // --- Services ---
 builder.Services.AddSingleton<ICategoryService, CategoryService>();
@@ -46,7 +47,7 @@ builder.Services.AddSingleton<IFileService, FileService>();
 builder.Services.AddSingleton<IProductReviewService, ProductReviewService>();
 builder.Services.AddSingleton<IJwtService, JwtService>();
 builder.Services.AddSingleton<IEmailService, EmailService>();
-
+builder.Services.AddSingleton<IAvailableFiltersService, AvailableFiltersService>();
 
 // --- Validation ---
 builder.Services.AddValidatorsFromAssemblyContaining<ProductCreateDtoValidator>();
@@ -101,6 +102,7 @@ using (var scope = app.Services.CreateScope())
     await dbContext.CreateProductIndexesAsync();
     await dbContext.CreateProductReviewIndexesAsync();
     await dbContext.CreateStoreReviewIndexesAsync();
+    await dbContext.CreateAvailableFiltersIndexesAsync();
 }
 
 // --- HTTP request pipeline ---

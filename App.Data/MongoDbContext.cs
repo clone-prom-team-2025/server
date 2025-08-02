@@ -1,4 +1,5 @@
 using App.Core.Models;
+using App.Core.Models.AvailableFilters;
 using App.Core.Models.Product;
 using App.Core.Models.Product.Review;
 using App.Core.Models.User;
@@ -59,6 +60,11 @@ public class MongoDbContext
     /// Gets the MongoDB collection for <see cref="StoreReview"/> document
     /// </summary>
     public IMongoCollection<StoreReview> StoreReviews => _database.GetCollection<StoreReview>("StoreReviews");
+    
+    /// <summary>
+    /// Gets the MongoDB collection for <see cref="AvailableFilters"/>
+    /// </summary>
+    public IMongoCollection<AvailableFilters> AvailableFilters => _database.GetCollection<AvailableFilters>("AvailableFilters");
 
     /// <summary>
     ///     Ensures that the necessary indexes for the <see cref="Category"/> collection are created.
@@ -200,6 +206,26 @@ public class MongoDbContext
             var indexKeys = Builders<StoreReview>.IndexKeys.Ascending(p => p.AverageRating);
             var indexOptions = new CreateIndexOptions { Unique = false };
             var indexModel = new CreateIndexModel<StoreReview>(indexKeys, indexOptions);
+            
+            await collection.Indexes.CreateOneAsync(indexModel);
+        }
+    }
+    
+    public async Task CreateAvailableFiltersIndexesAsync()
+    {
+        var collection = AvailableFilters;
+        
+        var existingIndexesCursor = await collection.Indexes.ListAsync();
+        var existingIndexes = await existingIndexesCursor.ToListAsync();
+        
+        var categoryIdReviewIndexExists = existingIndexes
+            .Any(index => index["name"] == "CategoryId_1");
+
+        if (!categoryIdReviewIndexExists)
+        {
+            var indexKeys = Builders<AvailableFilters>.IndexKeys.Ascending(p => p.CategoryId);
+            var indexOptions = new CreateIndexOptions { Unique = true };
+            var indexModel = new CreateIndexModel<AvailableFilters>(indexKeys, indexOptions);
             
             await collection.Indexes.CreateOneAsync(indexModel);
         }

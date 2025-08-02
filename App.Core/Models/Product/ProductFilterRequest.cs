@@ -1,3 +1,5 @@
+using MongoDB.Bson;
+
 namespace App.Core.Models.Product;
 
 /// <summary>
@@ -16,18 +18,18 @@ public class ProductFilterRequest
     /// <summary>
     ///     Creates a new filtering request with the given parameters.
     /// </summary>
-    /// <param name="productType">Type of products to filter.</param>
+    /// <param name="categoryId">Category of products to filter.</param>
     /// <param name="page">Page number for pagination.</param>
     /// <param name="pageSize">Number of items per page.</param>
     /// <param name="include">Features to include in the filter.</param>
     /// <param name="exclude">Features to exclude from the filter.</param>
     /// <param name="language">Language code for localization.</param>
-    public ProductFilterRequest(string? productType, int page, int pageSize,
+    public ProductFilterRequest(ObjectId? categoryId, int page, int pageSize,
         Dictionary<string, string>? include = null,
         Dictionary<string, string>? exclude = null,
         string? language = "en")
     {
-        ProductType = productType;
+        CategoryId = categoryId;
         Include = include ?? new();
         Page = page;
         PageSize = pageSize;
@@ -38,7 +40,7 @@ public class ProductFilterRequest
     /// <summary>
     ///     Type of product to filter.
     /// </summary>
-    public string? ProductType { get; set; }
+    public ObjectId? CategoryId { get; set; }
 
     /// <summary>
     ///     Features to include in filtering.

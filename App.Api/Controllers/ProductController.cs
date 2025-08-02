@@ -19,7 +19,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpPost("get-all")]
-    public async Task<ActionResult<List<ProductDto>?>> GetAllAsync(ProductFilterRequest filter)
+    public async Task<ActionResult<List<ProductDto>?>> GetAllAsync(ProductFilterRequestDto filter)
     {
         var products = await _productService.GetAllAsync(filter);
         if (products == null || products.Count == 0)
@@ -36,7 +36,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpPost("get-by-name/{name}")]
-    public async Task<ActionResult<List<ProductDto>?>> GetByNameAsync([FromQuery]string name, ProductFilterRequest filter)
+    public async Task<ActionResult<List<ProductDto>?>> GetByNameAsync([FromQuery]string name, ProductFilterRequestDto filter)
     {
         var products = await _productService.GetByNameAsync(name, filter);
         if (products == null || products.Count == 0)
@@ -45,7 +45,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpPost("get-by-category-id/{categoryId}")]
-    public async Task<ActionResult<List<ProductDto>?>> GetByCategoryAsync([FromQuery]string categoryId, ProductFilterRequest filter)
+    public async Task<ActionResult<List<ProductDto>?>> GetByCategoryAsync([FromQuery]string categoryId, ProductFilterRequestDto filter)
     {
         var products = await _productService.GetByCategoryAsync(categoryId, filter);
         if (products == null || products.Count == 0)
@@ -54,7 +54,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpPost("get-by-seller-id/{sellerId}")]
-    public async Task<ActionResult<List<ProductDto>?>> GetBySellerIdAsync([FromQuery]string sellerId, ProductFilterRequest filter)
+    public async Task<ActionResult<List<ProductDto>?>> GetBySellerIdAsync([FromQuery]string sellerId, ProductFilterRequestDto filter)
     {
         var products = await _productService.GetBySellerIdAsync(sellerId, filter);
         if (products == null || products.Count == 0)
@@ -63,14 +63,14 @@ public class ProductController : ControllerBase
     }
 
     [HttpPost("get-by-model-id/{modelId}")]
-    public async Task<ActionResult<ProductDto?>> GetByModelIdAsync([FromQuery]string modelId, ProductFilterRequest filter)
+    public async Task<ActionResult<ProductDto?>> GetByModelIdAsync([FromQuery]string modelId, ProductFilterRequestDto filter)
     {
         var product = await _productService.GetByModelIdAsync(modelId, filter);
         return product == null ? NotFound() : Ok(product);
     }
 
     [HttpPost("get-by-model-id-many")]
-    public async Task<ActionResult<List<ProductDto>?>> GetByModelIdsAsync([FromQuery] List<string> modelId, [FromBody] ProductFilterRequest filter)
+    public async Task<ActionResult<List<ProductDto>?>> GetByModelIdsAsync([FromQuery] List<string> modelId, [FromBody] ProductFilterRequestDto filter)
     {
         var products = await _productService.GetByModelIdsAsync(modelId, filter);
         if (products == null || products.Count == 0)

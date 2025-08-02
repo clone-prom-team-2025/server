@@ -23,9 +23,9 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
     /// </summary>
     /// <param name="filter">Filtering options.</param>
     /// <returns>A list of matching products or null.</returns>
-    public async Task<List<ProductDto>?> GetAllAsync(ProductFilterRequest filter)
+    public async Task<List<ProductDto>?> GetAllAsync(ProductFilterRequestDto filter)
     {
-        var products = await _productRepository.GetAllAsync(filter);
+        var products = await _productRepository.GetAllAsync(_mapper.Map<ProductFilterRequest>(filter));
         return _mapper.Map<List<ProductDto>?>(products);
     }
 
@@ -46,9 +46,9 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
     /// <param name="name">Product name (partial or full).</param>
     /// <param name="filter">Additional filtering options.</param>
     /// <returns>A list of matching products or null.</returns>
-    public async Task<List<ProductDto>?> GetByNameAsync(string name, ProductFilterRequest filter)
+    public async Task<List<ProductDto>?> GetByNameAsync(string name, ProductFilterRequestDto filter)
     {
-        var products = await _productRepository.GetByNameAsync(name, filter);
+        var products = await _productRepository.GetByNameAsync(name, _mapper.Map<ProductFilterRequest>(filter));
         return _mapper.Map<List<ProductDto>?>(products);
     }
 
@@ -58,9 +58,9 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
     /// <param name="categoryId">The category identifier.</param>
     /// <param name="filter">Filtering options.</param>
     /// <returns>A list of products in the category or null.</returns>
-    public async Task<List<ProductDto>?> GetByCategoryAsync(string categoryId, ProductFilterRequest filter)
+    public async Task<List<ProductDto>?> GetByCategoryAsync(string categoryId, ProductFilterRequestDto filter)
     {
-        var products = await _productRepository.GetByCategoryAsync(categoryId, filter);
+        var products = await _productRepository.GetByCategoryAsync(categoryId, _mapper.Map<ProductFilterRequest>(filter));
         return _mapper.Map<List<ProductDto>?>(products);
     }
 
@@ -70,9 +70,9 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
     /// <param name="sellerId">The seller identifier.</param>
     /// <param name="filter">Filtering options.</param>
     /// <returns>A list of products by the seller or null.</returns>
-    public async Task<List<ProductDto>?> GetBySellerIdAsync(string sellerId, ProductFilterRequest filter)
+    public async Task<List<ProductDto>?> GetBySellerIdAsync(string sellerId, ProductFilterRequestDto filter)
     {
-        var products = await _productRepository.GetBySellerIdAsync(sellerId, filter);
+        var products = await _productRepository.GetBySellerIdAsync(sellerId, _mapper.Map<ProductFilterRequest>(filter));
         return _mapper.Map<List<ProductDto>?>(products);
     }
 
@@ -82,9 +82,9 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
     /// <param name="modelId">The model ID of the product variation.</param>
     /// <param name="filter">Filtering options.</param>
     /// <returns>The product containing the specified variation or null.</returns>
-    public async Task<ProductDto?> GetByModelIdAsync(string modelId, ProductFilterRequest filter)
+    public async Task<ProductDto?> GetByModelIdAsync(string modelId, ProductFilterRequestDto filter)
     {
-        var product = await _productRepository.GetByModelIdAsync(modelId, filter);
+        var product = await _productRepository.GetByModelIdAsync(modelId, _mapper.Map<ProductFilterRequest>(filter));
         return _mapper.Map<ProductDto?>(product);
     }
 
@@ -94,9 +94,9 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
     /// <param name="modelId">List of model IDs.</param>
     /// <param name="filter">Filtering options.</param>
     /// <returns>A list of products or null.</returns>
-    public async Task<List<ProductDto>?> GetByModelIdsAsync(List<string> modelId, ProductFilterRequest filter)
+    public async Task<List<ProductDto>?> GetByModelIdsAsync(List<string> modelId, ProductFilterRequestDto filter)
     {
-        var products = await _productRepository.GetByModelIdsAsync(modelId, filter);
+        var products = await _productRepository.GetByModelIdsAsync(modelId, _mapper.Map<ProductFilterRequest>(filter));
         return _mapper.Map<List<ProductDto>?>(products);
     }
 
