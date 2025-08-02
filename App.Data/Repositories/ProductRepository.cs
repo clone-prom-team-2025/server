@@ -20,9 +20,9 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         var builder = Builders<Product>.Filter;
         var filters = new List<FilterDefinition<Product>>();
 
-        if (!string.IsNullOrEmpty(filter.ProductType))
+        if (filter.CategoryId.HasValue)
         {
-            filters.Add(builder.Eq(p => p.ProductType, filter.ProductType));
+            filters.Add(builder.Eq(p => p.CategoryPath[0], filter.CategoryId.Value));
         }
 
         foreach (var kv in filter.Include)
@@ -100,7 +100,7 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         var builder = Builders<Product>.Filter;
 
         var filters = FormFilter(filter);
-        filters.Add(builder.Eq($"Name.{filter.Language ?? "en"}", name));
+        filters.Add(builder.Eq($"Name.{filter.Language}", name));
 
         var finalFilter = filters.Any() ? builder.And(filters) : builder.Empty;
 
@@ -216,7 +216,7 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
     /// <returns>List of products with only one matching variation each, or null if none found.</returns>
     public async Task<List<Product>?> GetByModelIdsAsync(List<string> modelIds, ProductFilterRequest filter)
     {
-        if (modelIds == null || modelIds.Count == 0)
+        if (modelIds.Count == 0)
             return null;
 
         var builder = Builders<Product>.Filter;

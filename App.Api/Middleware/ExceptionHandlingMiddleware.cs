@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 
 namespace App.Api.Middleware;
 
@@ -23,29 +24,12 @@ public class ExceptionHandlingMiddleware
         }
         catch (FormatException ex) when (ex.Message.Contains("is not a valid 24 digit hex string"))
         {
-            //_logger.LogWarning("Invalid ObjectId provided: {Message}", ex.Message);
-
-            var objectIdParamName = GetObjectIdParamName(context);
-
-            context.Response.StatusCode = StatusCodes.Status400BadRequest;
-            context.Response.ContentType = "application/problem+json";
-
-            var problemDetails = new
-            {
-                type = "https://tools.ietf.org/html/rfc9110#section-15.5.1",
-                title = "One or more validation errors occurred.",
-                status = 400,
-                errors = new Dictionary<string, string[]>
-                {
-                    {
-                        objectIdParamName ?? "id",
-                        new[] { $"The {objectIdParamName ?? "id"} field must be a 24-character hex string." }
-                    }
-                },
-                traceId = context.TraceIdentifier
-            };
-
-            await context.Response.WriteAsync(JsonSerializer.Serialize(problemDetails));
+            await HandleValidationErrorAsync(context, "id", "The id field must be a 24-character hex string.");
+        }
+        catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
+        {
+            string duplicateField = GetDuplicateFieldFromMessage(ex.Message) ?? "UnknownField";
+            await HandleValidationErrorAsync(context, duplicateField, $"{duplicateField} must be unique.");
         }
         catch (Exception ex)
         {
@@ -66,10 +50,7 @@ public class ExceptionHandlingMiddleware
             await context.Response.WriteAsync(JsonSerializer.Serialize(problemDetails));
         }
     }
-
-    /// <summary>
-    /// Спроба витягнути ім'я параметра, в якому, ймовірно, був невалідний ObjectId
-    /// </summary>
+    
     private string? GetObjectIdParamName(HttpContext context)
     {
         var routeValues = context.Request.RouteValues;
@@ -90,5 +71,40 @@ public class ExceptionHandlingMiddleware
 
         return null;
     }
+    
+    private async Task HandleValidationErrorAsync(HttpContext context, string field, string message)
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        context.Response.ContentType = "application/problem+json";
 
+        var problemDetails = new
+        {
+            type = "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+            title = "One or more validation errors occurred.",
+            status = 400,
+            errors = new Dictionary<string, string[]>
+            {
+                { field, new[] { message } }
+            },
+            traceId = context.TraceIdentifier
+        };
+
+        await context.Response.WriteAsync(JsonSerializer.Serialize(problemDetails));
+    }
+    
+    private string? GetDuplicateFieldFromMessage(string message)
+    {
+        var prefix = "index: ";
+        var startIndex = message.IndexOf(prefix);
+        if (startIndex == -1) return null;
+
+        startIndex += prefix.Length;
+        var endIndex = message.IndexOf(" ", startIndex);
+        if (endIndex == -1) return null;
+
+        var indexName = message[startIndex..endIndex];
+        var fieldName = indexName.Split('_').FirstOrDefault(); // For example: CategoryId_1 -> CategoryId
+
+        return fieldName;
+    }
 }
