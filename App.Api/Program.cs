@@ -28,6 +28,7 @@ builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
 
 // --- Infrastructure ---
 builder.Services.AddSingleton<MongoDbContext>();
+builder.Services.AddSingleton<MongoDbSeeder>();
 
 // --- Repositories ---
 builder.Services.AddSingleton<ICategoryRepository, CategoryRepository>();
@@ -48,6 +49,7 @@ builder.Services.AddSingleton<IProductReviewService, ProductReviewService>();
 builder.Services.AddSingleton<IJwtService, JwtService>();
 builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddSingleton<IAvailableFiltersService, AvailableFiltersService>();
+builder.Services.AddSingleton<IAuthService, AuthService>();
 
 // --- Validation ---
 builder.Services.AddValidatorsFromAssemblyContaining<ProductCreateDtoValidator>();
@@ -58,7 +60,39 @@ builder.Services.AddControllers();
 
 // --- Swagger ---
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "App API",
+        Version = "v1"
+    });
+
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Enter JWT token like: **Bearer {your token}**"
+    });
+
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 // --- Mapper ----
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
@@ -103,6 +137,9 @@ using (var scope = app.Services.CreateScope())
     await dbContext.CreateProductReviewIndexesAsync();
     await dbContext.CreateStoreReviewIndexesAsync();
     await dbContext.CreateAvailableFiltersIndexesAsync();
+    
+    var dbSeeder = scope.ServiceProvider.GetRequiredService<MongoDbSeeder>();
+    await dbSeeder.SeedUserAsync();
 }
 
 // --- HTTP request pipeline ---

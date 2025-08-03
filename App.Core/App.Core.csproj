@@ -13,6 +13,9 @@
         <PackageReference Include="MimeKit" Version="4.13.0" />
         <PackageReference Include="MongoDB.Bson" Version="3.4.0" />
         <PackageReference Include="Nanoid" Version="3.1.0" />
+        <PackageReference Include="SkiaSharp" Version="3.119.0" />
+        <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.0" />
+        <PackageReference Include="System.Drawing.Common" Version="10.0.0-preview.6.25358.103" />
     </ItemGroup>
 
 </Project>

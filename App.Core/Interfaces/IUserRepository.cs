@@ -7,11 +7,11 @@ public interface IUserRepository
 {
     Task<List<User>?> GetAllUsersAsync();
     Task<List<User>?> GetAllUsersAsync(int pageNumber, int pageSize);
-    Task<User> GetUserByIdAsync(string userId);
-    Task<User> GetUserByUsernameAsync(string username);
-    Task<User> GetUserByEmailAsync(string email);
-    Task<User> GetUserByAvatarUrlAsync(string avatarUrl);
-    Task<User> GetUserByPhoneNumberAsync(string phoneNumber);
+    Task<User?> GetUserByIdAsync(string userId);
+    Task<User?> GetUserByUsernameAsync(string username);
+    Task<User?> GetUserByEmailAsync(string email);
+    Task<User?> GetUserByAvatarUrlAsync(UserAvatar avatarUrl);
+    Task<User?> GetUserByPhoneNumberAsync(string phoneNumber);
     Task<List<User>?> GetUsersByRoleAsync(string role);
     Task<List<User>?> GetUsersByRoleAsync(string role, int pageNumber, int pageSize);
     Task CreateUserAsync(User user);

@@ -10,19 +10,14 @@ public class User
 {
     [BsonId]
     public ObjectId Id { get; set; }
-
-    [Required]
-    [MaxLength(50)]
+    
     public string Username { get; set; }
-
-    [EmailAddress]
-    [MaxLength(100)]
+    
     public string? Email { get; set; }
     
     public bool EmailConfirmed { get; set; }
-
-    [Url]
-    public string AvatarUrl { get; set; }
+    
+    public UserAvatar AvatarUrl { get; set; }
 
     public string? PasswordHash { get; set; }
     
@@ -35,7 +30,7 @@ public class User
 
     public UserBlockInfo? BlockInfo { get; set; }
     
-    public User(string username, string avatarUrl, List<UserRole> roles)
+    public User(string username, UserAvatar avatarUrl, List<UserRole> roles)
     {
         Id = ObjectId.GenerateNewId();
         this.Username = username;
@@ -44,7 +39,7 @@ public class User
         CreatedAt = DateTime.UtcNow;
     }
     
-    public User(string username, string password, string email, string avatarUrl, List<UserRole> roles)
+    public User(string username, string password, string email, UserAvatar avatarUrl, List<UserRole> roles)
     {
         Id = ObjectId.GenerateNewId();
         this.Username = username;

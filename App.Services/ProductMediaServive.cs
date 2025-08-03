@@ -88,7 +88,7 @@ public class ProductMediaService(IProductMediaRepository repository, IFileServic
 
         if (type == MediaType.Image)
         {
-            var (fullHdPath, hdPath, _urlFileName, _secondUrlFileName) = await _fileService.SaveImageAsync(stream, fileName, _productMediaKeys.Image);
+            var (fullHdPath, hdPath, _urlFileName, _secondUrlFileName) = await _fileService.SaveImageFullHdAndHdAsync(stream, fileName, _productMediaKeys.Image);
             url = fullHdPath;
             secondaryUrl = hdPath;
             urlFileName = _urlFileName;

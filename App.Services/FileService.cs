@@ -149,7 +149,7 @@ public class FileService : IFileService
         };
     }
 
-    public async Task<(string FullHdUrl, string HdUrl, string UrlFileName, string SecondUrlFileName)> SaveImageAsync(Stream imageStream, string fileName, string key)
+    public async Task<(string FullHdUrl, string HdUrl, string UrlFileName, string SecondUrlFileName)> SaveImageFullHdAndHdAsync(Stream imageStream, string fileName, string key)
     {
         using var image = await Image.LoadAsync(imageStream);
 
@@ -168,26 +168,50 @@ public class FileService : IFileService
         var fullHdPath = Path.Combine(tempDir, fullHdName);
         var hdPath = Path.Combine(tempDir, hdName);
 
-        // Full HD
         image.Mutate(x => x.Resize(new ResizeOptions { Size = fullHdSize, Mode = ResizeMode.Max }));
         await image.SaveAsync(fullHdPath, new WebpEncoder());
 
-        // HD
         image.Mutate(x => x.Resize(new ResizeOptions { Size = hdSize, Mode = ResizeMode.Max }));
         await image.SaveAsync(hdPath, new WebpEncoder());
 
-        // Завантажуємо в R2
         await using var fullHdFileStream = File.OpenRead(fullHdPath);
         var fullHdUrl = await UploadToR2Async(key, fullHdFileStream, fullHdName);
 
         await using var hdFileStream = File.OpenRead(hdPath);
         var hdUrl = await UploadToR2Async(key, hdFileStream, hdName);
 
-        // Видаляємо тимчасові файли
         File.Delete(fullHdPath);
         File.Delete(hdPath);
 
         return (fullHdUrl, hdUrl, fullHdName, hdName);
+    }
+    
+    public async Task<(string FullHdUrl, string UrlFileName)> SaveImageFullHdAsync(Stream imageStream, string fileName, string key)
+    {
+        using var image = await Image.LoadAsync(imageStream);
+
+        var fullHdSize = new Size(Math.Min(1920, image.Width), Math.Min(1080, image.Height));
+        
+        var baseFileName = Path.GetFileNameWithoutExtension(fileName);
+        var id = NanoIdGenerator.Generate(fileUniqueidLength);
+
+        var fullHdName = GenerateFileName(id, baseFileName, "_fullhd", ".webp");
+
+        var tempDir = Path.Combine("wwwroot", "temp");
+        Directory.CreateDirectory(tempDir);
+
+        var fullHdPath = Path.Combine(tempDir, fullHdName);
+
+        image.Mutate(x => x.Resize(new ResizeOptions { Size = fullHdSize, Mode = ResizeMode.Max }));
+        await image.SaveAsync(fullHdPath, new WebpEncoder());
+
+        await using var fullHdFileStream = File.OpenRead(fullHdPath);
+        var fullHdUrl = await UploadToR2Async(key, fullHdFileStream, fullHdName);
+        
+
+        File.Delete(fullHdPath);
+
+        return (fullHdUrl, fullHdName);
     }
 
     public async Task<(string Url, string FileName)> SaveVideoAsync(Stream videoStream, string fileName, string key)
