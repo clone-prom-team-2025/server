@@ -1,10 +1,12 @@
 using App.Core.Models;
+using App.Core.Models.Auth;
 using App.Core.Models.AvailableFilters;
 using App.Core.Models.Product;
 using App.Core.Models.Product.Review;
 using App.Core.Models.User;
 using App.Core.Models.Store.Review;
 using App.Core.Models.Store;
+using App.Data.Repositories;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 
@@ -65,7 +67,6 @@ public class MongoDbContext
     /// Gets the MongoDB collection for <see cref="AvailableFilters"/>
     /// </summary>
     public IMongoCollection<AvailableFilters> AvailableFilters => _database.GetCollection<AvailableFilters>("AvailableFilters");
-
     /// <summary>
     ///     Ensures that the necessary indexes for the <see cref="Category"/> collection are created.
     ///     Specifically, creates a unique ascending index on the Name field if it does not already exist.

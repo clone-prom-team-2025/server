@@ -42,7 +42,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     /// </summary>
     /// <param name="userId">The user's ObjectId as string.</param>
     /// <returns>The user matching the ID or null if not found.</returns>
-    public async Task<User> GetUserByIdAsync(string userId)
+    public async Task<User?> GetUserByIdAsync(string userId)
     {
         var filter = Builders<User>.Filter.Eq(u => u.Id, ObjectId.Parse(userId));
 
@@ -54,7 +54,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     /// </summary>
     /// <param name="username">The username to search for.</param>
     /// <returns>The matching user or null.</returns>
-    public async Task<User> GetUserByUsernameAsync(string username)
+    public async Task<User?> GetUserByUsernameAsync(string username)
     {
         var filter = Builders<User>.Filter.Eq(u => u.Username, username);
 
@@ -66,13 +66,12 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     /// </summary>
     /// <param name="email">The email address to search for.</param>
     /// <returns>The matching user or null.</returns>
-    public async Task<User> GetUserByEmailAsync(string email)
+    public async Task<User?> GetUserByEmailAsync(string email)
     {
         var filter = Builders<User>.Filter.And(
             Builders<User>.Filter.Ne(u => u.Email, null),
             Builders<User>.Filter.Eq(u => u.Email, email)
         );
-
         return await _users.Find(filter).FirstOrDefaultAsync();
     }
 
@@ -81,7 +80,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     /// </summary>
     /// <param name="avatarUrl">The avatar URL to search for.</param>
     /// <returns>The matching user or null.</returns>
-    public async Task<User> GetUserByAvatarUrlAsync(string avatarUrl)
+    public async Task<User?> GetUserByAvatarUrlAsync(UserAvatar avatarUrl)
     {
         var filter = Builders<User>.Filter.Eq(u => u.AvatarUrl, avatarUrl);
 
@@ -93,12 +92,12 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     /// </summary>
     /// <param name="phoneNumber">The phone number to search for.</param>
     /// <returns>The matching user or null.</returns>
-    public async Task<User> GetUserByPhoneNumberAsync(string phoneNumber)
+    public async Task<User?> GetUserByPhoneNumberAsync(string phoneNumber)
     {
         var filter = Builders<User>.Filter.And(
             Builders<User>.Filter.Ne(u => u.AdditionalInfo, null),
-            Builders<User>.Filter.Ne(u => u.AdditionalInfo.PhoneNumber, null),
-            Builders<User>.Filter.Eq(u => u.AdditionalInfo.PhoneNumber, phoneNumber)
+            Builders<User>.Filter.Ne(u => u.AdditionalInfo!.PhoneNumber, null),
+            Builders<User>.Filter.Eq(u => u.AdditionalInfo!.PhoneNumber, phoneNumber)
         );
 
         return await _users.Find(filter).FirstOrDefaultAsync();

@@ -2,6 +2,7 @@ using App.Core.Enums;
 using App.Core.Interfaces;
 using App.Core.Models.User;
 using App.Core.DTOs;
+using App.Core.DTOs.User;
 using AutoMapper;
 
 namespace App.Services;
@@ -35,15 +36,14 @@ public class UserService : IUserService
         return _mapper.Map<UserDto>(user);
     }
 
-    public async Task<UserDto> GetUserByUsernameAsync(string username)
+    public async Task<UserDto?> GetUserByUsernameAsync(string username)
     {
-        var user = await _userRepository.GetUserByUsernameAsync(username);
-        return _mapper.Map<UserDto>(user);
+        return _mapper.Map<UserDto>(await _userRepository.GetUserByUsernameAsync(username));
     }
 
-    public async Task<User> GetUserByEmailAsync(string email)
+    public async Task<UserDto?> GetUserByEmailAsync(string email)
     {
-        throw new NotImplementedException();
+        return _mapper.Map<UserDto?>(await _userRepository.GetUserByEmailAsync(email));
     }
 
     public async Task<User> GetUserByAvatarUrlAsync(string avatarUrl)
@@ -66,9 +66,9 @@ public class UserService : IUserService
         throw new NotImplementedException();
     }
 
-    public async Task CreateUserAsync(User user)
+    public async Task CreateUserAsync(UserCreateDto user)
     {
-        throw new NotImplementedException();
+        await _userRepository.CreateUserAsync(_mapper.Map<User>(user));
     }
 
     public async Task<bool> UpdateUserAsync(User user)

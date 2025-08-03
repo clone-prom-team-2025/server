@@ -1,5 +1,6 @@
 using FluentValidation;
 using App.Core.DTOs;
+using App.Core.DTOs.User;
 
 namespace App.Core.Validations;
 
@@ -18,9 +19,6 @@ public class UserDtoValidator : AbstractValidator<UserDto>
         RuleFor(x => x.Email)
             .EmailAddress()
             .When(x => x != null);
-
-        RuleFor(x => x.AvatarUrl)
-            .Must(x => !string.IsNullOrWhiteSpace(x)).WithMessage("AvatarUrl must be non-empty.");
 
         RuleFor(x => x.Roles)
             .Must(x => x.Count > 0).WithMessage("At least one role must be specified.");
