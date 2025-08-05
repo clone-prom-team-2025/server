@@ -128,6 +128,7 @@ using (var scope = app.Services.CreateScope())
     await dbContext.CreateProductReviewIndexesAsync();
     await dbContext.CreateStoreReviewIndexesAsync();
     await dbContext.CreateAvailableFiltersIndexesAsync();
+    await dbContext.CreateUserIndexesAsync();
     
     var dbSeeder = scope.ServiceProvider.GetRequiredService<MongoDbSeeder>();
     await dbSeeder.SeedUserAsync();

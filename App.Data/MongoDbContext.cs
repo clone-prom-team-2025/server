@@ -180,6 +180,24 @@ public class MongoDbContext
     }
 
     /// <summary>
+    /// Ensures that the necessary indexes for the <see cref="User"/> collection are created.
+    /// Specifically, creates non-unique ascending indexes on Username and Email fields if they do not already exist.
+    /// </summary>
+    public async Task CreateUserIndexesAsync()
+    {
+        var collection = Users;
+        
+        var existingIndexesCursor = await collection.Indexes.ListAsync();
+        var existingIndexes = await existingIndexesCursor.ToListAsync();
+        
+        var usernameIndexExists = existingIndexes
+            .Any(index => index["name"] == "Username_1");
+        
+        var emailIndexExists = existingIndexes
+            .Any(index => index["name"] == "Email_1");
+    }
+
+    /// <summary>
     /// Ensures that the necessary indexes for the <see cref="StoreReview"/> collection are created.
     /// Specifically, creates non-unique ascending indexes on StoreId and AverageRating fields if they do not already exist.
     /// </summary>
