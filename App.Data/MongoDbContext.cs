@@ -67,6 +67,9 @@ public class MongoDbContext
     /// Gets the MongoDB collection for <see cref="AvailableFilters"/>
     /// </summary>
     public IMongoCollection<AvailableFilters> AvailableFilters => _database.GetCollection<AvailableFilters>("AvailableFilters");
+
+    public IMongoCollection<UserSession> UserSessions => _database.GetCollection<UserSession>("UserSessions");
+    
     /// <summary>
     ///     Ensures that the necessary indexes for the <see cref="Category"/> collection are created.
     ///     Specifically, creates a unique ascending index on the Name field if it does not already exist.
