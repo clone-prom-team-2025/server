@@ -26,8 +26,8 @@ builder.Services.Configure<FileStorageOptions>(builder.Configuration.GetSection(
 builder.Services.Configure<CloudflareR2Options>(builder.Configuration.GetSection("CloudflareR2"));
 builder.Services.Configure<ProductMediaKeys>(builder.Configuration.GetSection("ProductMediaKeys"));
 
-// --- Jwt service settings ---
-builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+// --- Auth sessions settings ---
+builder.Services.Configure<SessionsOptions>(builder.Configuration.GetSection("SessionsSettings"));
 
 // --- Infrastructure ---
 builder.Services.AddSingleton<MongoDbContext>();

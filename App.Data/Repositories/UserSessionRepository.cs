@@ -1,13 +1,15 @@
 using App.Core.Interfaces;
 using App.Core.Models.Auth;
+using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace App.Data.Repositories;
 
-public class UserSessionRepository(MongoDbContext mongoDbContext) : IUserSessionRepository
+public class UserSessionRepository(MongoDbContext mongoDbContext, IOptions<SessionsOptions> options) : IUserSessionRepository
 {
     private readonly IMongoCollection<UserSession> _collection = mongoDbContext.UserSessions;
+    private readonly SessionsOptions _options = options.Value;
     
     public async Task<UserSession> CreateSessionAsync(ObjectId userId, string deviceInfo)
     {
@@ -15,7 +17,7 @@ public class UserSessionRepository(MongoDbContext mongoDbContext) : IUserSession
         {
             CreatedAt = DateTime.UtcNow, 
             DeviceInfo = deviceInfo, 
-            ExpiresAt = DateTime.UtcNow.AddHours(168),
+            ExpiresAt = DateTime.UtcNow.AddHours(_options.ExpiresIn),
             Id = ObjectId.GenerateNewId(), 
             UserId = userId, 
             IsRevoked = false
