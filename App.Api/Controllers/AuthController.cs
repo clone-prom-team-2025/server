@@ -43,4 +43,13 @@ public class AuthController : ControllerBase
     {
         return Ok("Authorized");
     }
+
+    [HttpDelete("delete-account-test")]
+    public async Task<ActionResult> DeleteAccount(string email)
+    {
+        if (await _authService.DeleteAccountAsync(email))
+            return Ok("Deleted");
+        else
+            return Unauthorized("Invalid email");
+    }
 }

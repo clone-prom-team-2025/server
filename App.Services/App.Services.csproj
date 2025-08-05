@@ -25,4 +25,8 @@
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>
 
+    <ItemGroup>
+        <EmbeddedResource Include="EmailTemplates/ConfirmEmail.html" />
+    </ItemGroup>
+
 </Project>

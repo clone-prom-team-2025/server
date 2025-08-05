@@ -7,4 +7,5 @@ public interface IAuthService
 {
     Task<string?> LoginAsync(LoginDto model);
     Task<string?> RegisterAsync(RegisterDto model);
+    Task<bool> DeleteAccountAsync(string email);
 }
