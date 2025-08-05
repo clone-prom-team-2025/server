@@ -38,18 +38,46 @@ public class AuthController : ControllerBase
     }
 
     [Authorize]
+    [HttpPost("logout")]
+    public async Task<ActionResult> Logout()
+    {
+        var sessionId = User.FindFirstValue(ClaimTypes.Sid);
+        if (string.IsNullOrEmpty(sessionId))
+            return Unauthorized("Session ID not found in token");
+        
+        var result = await _authService.LogoutAsync(sessionId);
+        
+        return result ? Ok() : Unauthorized("Invalid username, email, or password");
+    }
+
+    [Authorize]
     [HttpGet("check-login")]
     public ActionResult CheckLogin()
     {
         return Ok("Authorized");
     }
 
-    [HttpDelete("delete-account-test")]
-    public async Task<ActionResult> DeleteAccount(string email)
+    [Authorize]
+    [HttpPost("send-email-verification-code")]
+    public async Task<ActionResult> SendEmailVerificationCode(string? language = null)
     {
-        if (await _authService.DeleteAccountAsync(email))
-            return Ok("Deleted");
-        else
-            return Unauthorized("Invalid email");
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized("Session ID not found in token");
+        
+        await _authService.SendEmailVerificationCodeAsync(userId);
+        return Ok("Email verification code sent");
+    }
+
+    [Authorize]
+    [HttpGet("verify-email-code")]
+    public async Task<ActionResult> VerifyEmailCode(string code)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized("Session ID not found in token");
+        
+        var result = await _authService.VerifyCode(userId, code);
+        return result ? Ok() : Unauthorized("Invalid code");
     }
 }

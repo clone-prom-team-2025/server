@@ -9,9 +9,12 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using App.Api.Handlers;
 using FluentValidation.AspNetCore;
 using FluentValidation;
 using App.Core.Validations;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,8 +26,8 @@ builder.Services.Configure<FileStorageOptions>(builder.Configuration.GetSection(
 builder.Services.Configure<CloudflareR2Options>(builder.Configuration.GetSection("CloudflareR2"));
 builder.Services.Configure<ProductMediaKeys>(builder.Configuration.GetSection("ProductMediaKeys"));
 
-// --- Jwt service settings ---
-builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
+// --- Auth sessions settings ---
+builder.Services.Configure<SessionsOptions>(builder.Configuration.GetSection("SessionsSettings"));
 
 // --- Infrastructure ---
 builder.Services.AddSingleton<MongoDbContext>();
@@ -46,10 +49,11 @@ builder.Services.AddSingleton<IUserService, UserService>();
 builder.Services.AddSingleton<IProductMediaService, ProductMediaService>();
 builder.Services.AddSingleton<IFileService, FileService>();
 builder.Services.AddSingleton<IProductReviewService, ProductReviewService>();
-builder.Services.AddSingleton<IJwtService, JwtService>();
+builder.Services.AddSingleton<IUserSessionRepository, UserSessionRepository>();
 builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddSingleton<IAvailableFiltersService, AvailableFiltersService>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
+builder.Services.AddMemoryCache();
 
 // --- Validation ---
 builder.Services.AddValidatorsFromAssemblyContaining<ProductCreateDtoValidator>();
@@ -68,14 +72,14 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v1"
     });
 
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
+        Description = "Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
         Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
         Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Enter JWT token like: **Bearer {your token}**"
+        BearerFormat = "JWT"
     });
 
     options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
@@ -97,23 +101,10 @@ builder.Services.AddSwaggerGen(options =>
 // --- Mapper ----
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        var config = builder.Configuration;
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = config["Jwt:Issuer"],
-            ValidAudience = config["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(config["Jwt:Key"] ?? throw new InvalidOperationException("JWT key is missing in configuration."))
-            )
-        };
-    });
+builder.Services.AddAuthentication("ReferenceToken")
+    .AddScheme<AuthenticationSchemeOptions, ReferenceTokenAuthHandler>("ReferenceToken", null);
+
+builder.Services.AddAuthorization();
 
 // --- Create app ---
 var app = builder.Build();
@@ -137,6 +128,7 @@ using (var scope = app.Services.CreateScope())
     await dbContext.CreateProductReviewIndexesAsync();
     await dbContext.CreateStoreReviewIndexesAsync();
     await dbContext.CreateAvailableFiltersIndexesAsync();
+    await dbContext.CreateUserIndexesAsync();
     
     var dbSeeder = scope.ServiceProvider.GetRequiredService<MongoDbSeeder>();
     await dbSeeder.SeedUserAsync();
@@ -147,7 +139,8 @@ using (var scope = app.Services.CreateScope())
 app.UseSwagger();
 app.UseSwaggerUI();
 
-builder.Services.AddAuthorization();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

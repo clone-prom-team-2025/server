@@ -67,6 +67,9 @@ public class MongoDbContext
     /// Gets the MongoDB collection for <see cref="AvailableFilters"/>
     /// </summary>
     public IMongoCollection<AvailableFilters> AvailableFilters => _database.GetCollection<AvailableFilters>("AvailableFilters");
+
+    public IMongoCollection<UserSession> UserSessions => _database.GetCollection<UserSession>("UserSessions");
+    
     /// <summary>
     ///     Ensures that the necessary indexes for the <see cref="Category"/> collection are created.
     ///     Specifically, creates a unique ascending index on the Name field if it does not already exist.
@@ -174,6 +177,24 @@ public class MongoDbContext
             
             await collection.Indexes.CreateOneAsync(indexModel);
         }
+    }
+
+    /// <summary>
+    /// Ensures that the necessary indexes for the <see cref="User"/> collection are created.
+    /// Specifically, creates non-unique ascending indexes on Username and Email fields if they do not already exist.
+    /// </summary>
+    public async Task CreateUserIndexesAsync()
+    {
+        var collection = Users;
+        
+        var existingIndexesCursor = await collection.Indexes.ListAsync();
+        var existingIndexes = await existingIndexesCursor.ToListAsync();
+        
+        var usernameIndexExists = existingIndexes
+            .Any(index => index["name"] == "Username_1");
+        
+        var emailIndexExists = existingIndexes
+            .Any(index => index["name"] == "Email_1");
     }
 
     /// <summary>
