@@ -1,3 +1,4 @@
+using App.Core.Enums;
 using MongoDB.Bson;
 
 namespace App.Core.Models.Product;
@@ -24,10 +25,11 @@ public class ProductFilterRequest
     /// <param name="include">Features to include in the filter.</param>
     /// <param name="exclude">Features to exclude from the filter.</param>
     /// <param name="language">Language code for localization.</param>
+    /// <param name="sortDirection">Sort direction</param>
     public ProductFilterRequest(ObjectId? categoryId, int page, int pageSize,
         Dictionary<string, string>? include = null,
         Dictionary<string, string>? exclude = null,
-        string? language = "en")
+        string? language = "en", SortDirection sortDirection = SortDirection.None)
     {
         CategoryId = categoryId;
         Include = include ?? new();
@@ -35,6 +37,7 @@ public class ProductFilterRequest
         PageSize = pageSize;
         Exclude = exclude ?? new();
         Language = language ?? "en";
+        Sort = sortDirection;
     }
 
     /// <summary>
@@ -66,4 +69,9 @@ public class ProductFilterRequest
     ///     Language code for localized results.
     /// </summary>
     public string Language { get; set; } = "en";
+    
+    /// <summary>
+    /// Sort direction
+    /// </summary>
+    public SortDirection Sort { get; set; } = SortDirection.None;
 }

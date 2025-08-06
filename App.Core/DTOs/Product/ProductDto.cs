@@ -32,4 +32,8 @@ public class ProductDto
     public List<ProductVariationDto> Variations { get; set; }
 
     public string SellerId { get; set; }
+    
+    public double MinPrice { get; set; }
+    
+    public double MaxPrice { get; set; }
 }

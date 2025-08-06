@@ -254,5 +254,34 @@ public class CategoryRepository(MongoDbContext mongoDbContext, IMapper mapper) :
 
         return result;
     }
+    
+    public async Task<List<ObjectId>> GetCategoryPathAsync(string categoryId)
+    {
+        if (!ObjectId.TryParse(categoryId, out var currentId))
+            throw new ArgumentException("Invalid category ID format", nameof(categoryId));
 
+        var path = new List<ObjectId>();
+
+        while (currentId != ObjectId.Empty)
+        {
+            var filter = Builders<Category>.Filter.Eq(c => c.Id, currentId);
+            var category = await _categories.Find(filter).FirstOrDefaultAsync();
+
+            if (category == null)
+                break;
+
+            path.Add(category.Id);
+
+            if (category.ParentId.HasValue)
+            {
+                currentId = category.ParentId.Value;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return path;
+    }
 }

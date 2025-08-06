@@ -13,10 +13,11 @@ namespace App.Services;
 /// <summary>
 /// Service for managing products, their variations, and media.
 /// </summary>
-public class ProductService(IProductRepository productRepository, IMapper mapper) : IProductService
+public class ProductService(IProductRepository productRepository, IMapper mapper, ICategoryRepository categoryRepository) : IProductService
 {
     private readonly IProductRepository _productRepository = productRepository;
     private readonly IMapper _mapper = mapper;
+    private readonly ICategoryRepository _categoryRepository = categoryRepository;
 
     /// <summary>
     /// Retrieves all products matching the specified filter.
@@ -107,8 +108,10 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
     /// <returns>The created product DTO.</returns>
     public async Task<ProductDto> CreateAsync(ProductCreateDto productDto)
     {
+        var categories = await _categoryRepository.GetCategoryPathAsync(productDto.Category);
         var product = _mapper.Map<Product>(productDto);
         product.Id = ObjectId.GenerateNewId();
+        product.CategoryPath = [..categories];
         await _productRepository.CreateAsync(product);
         return _mapper.Map<ProductDto>(product);
     }

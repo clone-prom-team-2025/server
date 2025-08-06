@@ -16,16 +16,9 @@ public class ProductCreateDtoValidator : AbstractValidator<ProductCreateDto>
             .Must(x => !string.IsNullOrWhiteSpace(x)).WithMessage("Product type must be non-empty.")
             .MaximumLength(50);
 
-        RuleFor(x => x.CategoryPath)
-            .NotNull()
-            .Must(name => name.All(item => !string.IsNullOrWhiteSpace(item)))
-            .Must(path => path.Count > 0).WithMessage("At least one category path must be specified.")
-            .ForEach(pathRule =>
-            {
-                pathRule
-                    .Matches("^[a-fA-F0-9]{24}$")
-                    .WithMessage("CategoryId must be a 24-character hex string");
-            });
+        RuleFor(x => x.Category)
+            .NotEmpty()
+            .Matches("^[a-fA-F0-9]{24}$").WithMessage("Category must be a 24-character hex string");
 
         RuleFor(x => x.Variations)
             .NotNull()
