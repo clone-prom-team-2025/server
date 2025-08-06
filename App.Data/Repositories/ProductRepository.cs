@@ -3,6 +3,8 @@ using App.Core.Models.Product;
 using App.Core.Models.Product.Review;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using App.Core.Enums;
+using SortDirection = App.Core.Enums.SortDirection;
 
 namespace App.Data.Repositories;
 
@@ -14,7 +16,6 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 {
     private readonly IMongoCollection<Product> _products = mongoDbContext.Products;
 
-
     private List<FilterDefinition<Product>> FormFilter(ProductFilterRequest filter)
     {
         var builder = Builders<Product>.Filter;
@@ -22,7 +23,7 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 
         if (filter.CategoryId.HasValue)
         {
-            filters.Add(builder.Eq(p => p.CategoryPath[0], filter.CategoryId.Value));
+            filters.Add(builder.AnyEq(p => p.CategoryPath, filter.CategoryId.Value));
         }
 
         foreach (var kv in filter.Include)
@@ -51,17 +52,32 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 
         return filters;
     }
-    /// <summary>
-    /// Retrieves all products with optional filtering.
-    /// </summary>
-    /// <param name="filter">Additional filter parameters (currently unused).</param>
-    /// <returns>A list of all products, or null if none found.</returns>
+    
+    private SortDefinition<Product>? BuildSort(SortDirection sortDirection)
+    {
+        var sortBuilder = Builders<Product>.Sort;
+
+        return sortDirection switch
+        {
+            SortDirection.PriceAsc => sortBuilder.Ascending(p => p.MinPrice),
+            SortDirection.PriceDesc => sortBuilder.Descending(p => p.MaxPrice),
+            _ => null
+        };
+    }
+    
+    private void UpdatePriceRange(Product product)
+    {
+        if (product.Variations.Any())
+        {
+            product.MinPrice = product.Variations.Min(v => v.Price);
+            product.MaxPrice = product.Variations.Max(v => v.Price);
+        }
+    }
+    
     public async Task<List<Product>?> GetAllAsync(ProductFilterRequest filter)
     {
         var builder = Builders<Product>.Filter;
-
         var filters = FormFilter(filter);
-
         var finalFilter = filters.Any() ? builder.And(filters) : builder.Empty;
 
         var page = Math.Max(filter.Page, 1);
@@ -70,31 +86,29 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         var skip = (page - 1) * pageSize;
         var limit = pageSize;
 
+        var sortDefinition = BuildSort(filter.Sort);
 
-        return await _products
-            .Find(finalFilter)
+        var query = _products.Find(finalFilter);
+
+        if (sortDefinition is not null)
+        {
+            query = query.Sort(sortDefinition);
+        }
+        
+        
+
+        return await query
             .Skip(skip)
             .Limit(limit)
             .ToListAsync();
     }
 
-    /// <summary>
-    /// Retrieves a product by its unique ID.
-    /// </summary>
-    /// <param name="id">The product ID.</param>
-    /// <returns>The product if found, otherwise null.</returns>
     public async Task<Product?> GetByIdAsync(string id)
     {
         var filter = Builders<Product>.Filter.Eq(p => p.Id, ObjectId.Parse(id));
         return await _products.Find(filter).FirstOrDefaultAsync();
     }
 
-    /// <summary>
-    /// Retrieves products by localized name (exact match).
-    /// </summary>
-    /// <param name="name">The name to search for.</param>
-    /// <param name="filter">Additional filter parameters (currently unused).</param>
-    /// <returns>List of products with the specified name, or null if none found.</returns>
     public async Task<List<Product>?> GetByNameAsync(string name, ProductFilterRequest filter)
     {
         var builder = Builders<Product>.Filter;
@@ -110,26 +124,28 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         var skip = (page - 1) * pageSize;
         var limit = pageSize;
 
-        return await _products
-            .Find(finalFilter)
+        var sortDefinition = BuildSort(filter.Sort);
+
+        var query = _products.Find(finalFilter);
+
+        if (sortDefinition is not null)
+        {
+            query = query.Sort(sortDefinition);
+        }
+
+        return await query
             .Skip(skip)
             .Limit(limit)
             .ToListAsync();
     }
 
-    /// <summary>
-    /// Retrieves products based on their top-level category.
-    /// </summary>
-    /// <param name="categoryId">The first category in the category path.</param>
-    /// <param name="filter">Additional filter parameters (currently unused).</param>
-    /// <returns>List of products in the specified category, or null if none found.</returns>
     public async Task<List<Product>?> GetByCategoryAsync(string categoryId, ProductFilterRequest filter)
     {
         var builder = Builders<Product>.Filter;
 
         var filters = FormFilter(filter);
 
-        filters.Add(builder.Eq("CategoryPath.0", categoryId));
+        filters.Add(builder.Eq("Category.0", categoryId));
 
         var finalFilter = filters.Any() ? builder.And(filters) : builder.Empty;
 
@@ -139,19 +155,21 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         var skip = (page - 1) * pageSize;
         var limit = pageSize;
 
-        return await _products
-            .Find(finalFilter)
+        var sortDefinition = BuildSort(filter.Sort);
+
+        var query = _products.Find(finalFilter);
+
+        if (sortDefinition is not null)
+        {
+            query = query.Sort(sortDefinition);
+        }
+
+        return await query
             .Skip(skip)
             .Limit(limit)
             .ToListAsync();
     }
 
-    /// <summary>
-    /// Retrieves all products associated with a specific seller.
-    /// </summary>
-    /// <param name="sellerId">The seller's ID.</param>
-    /// <param name="filter">Additional filter parameters (currently unused).</param>
-    /// <returns>List of products by the seller, or null if none found.</returns>
     public async Task<List<Product>?> GetBySellerIdAsync(string sellerId, ProductFilterRequest filter)
     {
         var builder = Builders<Product>.Filter;
@@ -167,20 +185,21 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         var skip = (page - 1) * pageSize;
         var limit = pageSize;
 
-        return await _products
-            .Find(finalFilter)
+        var sortDefinition = BuildSort(filter.Sort);
+
+        var query = _products.Find(finalFilter);
+
+        if (sortDefinition is not null)
+        {
+            query = query.Sort(sortDefinition);
+        }
+
+        return await query
             .Skip(skip)
             .Limit(limit)
             .ToListAsync();
     }
 
-    /// <summary>
-    /// Retrieves a product by a specific variation model ID.
-    /// Returns a copy of the product that contains only the matched variation.
-    /// </summary>
-    /// <param name="modelId">The variation's model ID.</param>
-    /// <param name="filter">Additional filter parameters (currently unused).</param>
-    /// <returns>The product with a single variation, or null if not found.</returns>
     public async Task<Product?> GetByModelIdAsync(string modelId, ProductFilterRequest filter)
     {
         var builder = Builders<Product>.Filter;
@@ -192,8 +211,17 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         ));
 
         var finalFilter = filters.Any() ? builder.And(filters) : builder.Empty;
+        
+        var sortDefinition = BuildSort(filter.Sort);
 
-        var product = await _products.Find(finalFilter).FirstOrDefaultAsync();
+        var query = _products.Find(finalFilter);
+
+        if (sortDefinition is not null)
+        {
+            query = query.Sort(sortDefinition);
+        }
+
+        var product = await query.FirstOrDefaultAsync();
         var variation = product?.Variations.FirstOrDefault(v => v.ModelId == modelId);
 
         if (product is null || variation is null)
@@ -202,18 +230,12 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         var newProduct = new Product(product);
         newProduct.Variations.Clear();
         newProduct.Variations.Add(variation);
+        newProduct.MinPrice = variation.Price;
+        newProduct.MaxPrice = variation.Price;
 
         return newProduct;
     }
 
-
-    /// <summary>
-    /// Retrieves a list of products by multiple variation model IDs.
-    /// Each returned product includes only the matched variation.
-    /// </summary>
-    /// <param name="modelIds">List of model IDs to search for.</param>
-    /// <param name="filter">Additional filter parameters (currently unused).</param>
-    /// <returns>List of products with only one matching variation each, or null if none found.</returns>
     public async Task<List<Product>?> GetByModelIdsAsync(List<string> modelIds, ProductFilterRequest filter)
     {
         if (modelIds.Count == 0)
@@ -230,8 +252,17 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 
         var finalFilter = filters.Any() ? builder.And(filters) : builder.Empty;
 
-        var matchedProducts = await _products.Find(finalFilter).ToListAsync();
+        var sortDefinition = BuildSort(filter.Sort);
 
+        var query = _products.Find(finalFilter);
+
+        if (sortDefinition is not null)
+        {
+            query = query.Sort(sortDefinition);
+        }
+        
+        var matchedProducts = await query.ToListAsync();
+        
         if (matchedProducts.Count == 0)
             return null;
 
@@ -248,6 +279,8 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
                 var newProduct = new Product(product);
                 newProduct.Variations.Clear();
                 newProduct.Variations.Add(variation);
+                newProduct.MinPrice = variation.Price;
+                newProduct.MaxPrice = variation.Price;
                 result.Add(newProduct);
             }
         }
@@ -255,31 +288,19 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         return result;
     }
 
-    /// <summary>
-    /// Creates a new product in the database.
-    /// </summary>
-    /// <param name="product">The product to insert.</param>
     public async Task CreateAsync(Product product)
     {
+        UpdatePriceRange(product);
         await _products.InsertOneAsync(product);
     }
     
-    /// <summary>
-    /// Replaces an existing product document with a new version.
-    /// </summary>
-    /// <param name="product">The updated product.</param>
-    /// <returns>True if the update succeeded, otherwise false.</returns>
     public async Task<bool> UpdateAsync(Product product)
     {
+        UpdatePriceRange(product);
         var result = await _products.ReplaceOneAsync(p => p.Id.Equals(product.Id), product);
         return result.IsAcknowledged && result.ModifiedCount > 0;
     }
 
-    /// <summary>
-    /// Deletes a product by its ID.
-    /// </summary>
-    /// <param name="id">The product ID to delete.</param>
-    /// <returns>True if the product was deleted, otherwise false.</returns>
     public async Task<bool> DeleteAsync(string id)
     {
         var filter = Builders<Product>.Filter.Eq(p => p.Id, ObjectId.Parse(id));
@@ -287,13 +308,6 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         return result.IsAcknowledged && result.DeletedCount > 0;
     }
 
-    /// <summary>
-    /// Searches for products by localized name or variation model name.
-    /// Supports partial case-insensitive matching with basic highlighting.
-    /// </summary>
-    /// <param name="name">The name or substring to search for.</param>
-    /// <param name="languageCode">The localization language code (e.g., "en", "ua").</param>
-    /// <returns>List of search results with highlighted matches and rankings.</returns>
     public async Task<List<ProductSearchResult>?> SearchByNameAsync(string name, string languageCode = "en")
     {
         var nameRegex = new BsonRegularExpression(name, "i");

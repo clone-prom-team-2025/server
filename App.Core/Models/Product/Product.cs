@@ -88,4 +88,7 @@ public class Product
     ///     Identifier of the associated seller.
     /// </summary>
     public ObjectId SellerId { get; set; }
+    
+    public double MinPrice { get; set; }
+    public double MaxPrice { get; set; }
 }

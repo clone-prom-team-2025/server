@@ -96,7 +96,7 @@ public class MongoDbContext
 
     /// <summary>
     /// Ensures that the necessary indexes for the <see cref="Product"/> collection are created.
-    /// Specifically, creates non-unique ascending indexes on SellerId and CategoryPath fields if they do not already exist.
+    /// Specifically, creates non-unique ascending indexes on SellerId and Category fields if they do not already exist.
     /// </summary>
     public async Task CreateProductIndexesAsync()
     {

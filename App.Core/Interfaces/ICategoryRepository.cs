@@ -1,5 +1,6 @@
 using App.Core.DTOs.Categoty;
 using App.Core.Models;
+using MongoDB.Bson;
 
 namespace App.Core.Interfaces;
 
@@ -17,4 +18,5 @@ public interface ICategoryRepository
     Task<CategoryNode?> GetCategoryTreeAsync(string parentId);
     Task<List<CategoryNode>?> GetChildrenAsync(string parentId);
     Task<List<CategoryNode>?> GetFullTreeAsync();
+    Task<List<ObjectId>> GetCategoryPathAsync(string categoryId);
 }

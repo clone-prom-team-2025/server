@@ -6,11 +6,11 @@ namespace App.Core.DTOs.Product;
 
 public class ProductCreateDto
 {
-    public ProductCreateDto(Dictionary<string, string> name, string productType, List<string> categoryPath, List<ProductVariationDto> variations, string sellerId)
+    public ProductCreateDto(Dictionary<string, string> name, string productType, string category, List<ProductVariationDto> variations, string sellerId)
     {
         Name = new Dictionary<string, string>(name);
         ProductType = productType;
-        CategoryPath = new List<string>(categoryPath);
+        Category = category;
         Variations = new List<ProductVariationDto>(variations);
         SellerId = sellerId;
     }
@@ -24,7 +24,7 @@ public class ProductCreateDto
     [StringLength(50)]
     public string ProductType { get; set; }
 
-    public List<string> CategoryPath { get; set; }
+    public string Category { get; set; }
 
     public List<ProductVariationDto> Variations { get; set; }
 
