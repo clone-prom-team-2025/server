@@ -4,6 +4,7 @@ using App.Core.Models.User;
 using App.Core.Utils;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
+using App.Core.Constants;
 
 namespace App.Data;
 
@@ -30,7 +31,7 @@ public class MongoDbSeeder(MongoDbContext context, ILogger<MongoDbSeeder> logger
                 ("https://www.cariblist.com/admin/assets/img/UserLogos/1473851754-avatar-generic.jpg")),
             "admin-avatar",
             "user-avatars");
-        var defaultUser = new User("admin", "password", "admin@sellpoint.pp.ua", new UserAvatar(url, fileName), new List<UserRole> { UserRole.Admin});
+        var defaultUser = new User("admin", "password", "admin@sellpoint.pp.ua", new UserAvatar(url, fileName), new List<string> { RoleNames.Admin, RoleNames.User });
 
         await usersCollection.InsertOneAsync(defaultUser);
         _logger.LogInformation("Default admin user has been created.");

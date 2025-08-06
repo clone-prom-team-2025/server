@@ -110,9 +110,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     /// <returns>A list of users with that role or null if the role is invalid.</returns>
     public async Task<List<User>?> GetUsersByRoleAsync(string role)
     {
-        if (!Enum.TryParse<UserRole>(role, ignoreCase: true, out var parsedRole)) return null;
-
-        var filter = Builders<User>.Filter.AnyEq(u => u.Roles, parsedRole);
+        var filter = Builders<User>.Filter.AnyEq(u => u.Roles, role);
 
         return await _users.Find(filter).ToListAsync();
     }
@@ -126,9 +124,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     /// <returns>A list of users matching the role and page parameters, or null if role is invalid.</returns>
     public async Task<List<User>?> GetUsersByRoleAsync(string role, int pageNumber, int pageSize)
     {
-        if (!Enum.TryParse<UserRole>(role, ignoreCase: true, out var parsedRole)) return null;
-
-        var filter = Builders<User>.Filter.AnyEq(u => u.Roles, parsedRole);
+        var filter = Builders<User>.Filter.AnyEq(u => u.Roles, role);
 
         return await _users
             .Find(filter)
@@ -177,7 +173,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     /// </summary>
     /// <param name="userId">The user's ObjectId as string.</param>
     /// <returns>List of user roles or empty list if not found.</returns>
-    public async Task<List<UserRole>> GetUserRolesAsync(string userId)
+    public async Task<List<string>> GetUserRolesAsync(string userId)
     {
         var filter = Builders<User>.Filter.Eq(u => u.Id, ObjectId.Parse(userId));
         var projection = Builders<User>.Projection.Expression(u => u.Roles);
