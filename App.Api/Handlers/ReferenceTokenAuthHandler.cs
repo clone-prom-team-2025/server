@@ -43,8 +43,12 @@ public class ReferenceTokenAuthHandler : AuthenticationHandler<AuthenticationSch
         {
             new Claim(ClaimTypes.NameIdentifier, session.UserId.ToString()),
             new Claim(ClaimTypes.Sid, session.Id.ToString()),
-            new Claim("DeviceInfo", session.DeviceInfo ?? "")
+            new Claim("DeviceInfo", session.DeviceInfo ?? ""),
         };
+        foreach (var role in session.Roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
 
         var identity = new ClaimsIdentity(claims, Scheme.Name);
         var principal = new ClaimsPrincipal(identity);

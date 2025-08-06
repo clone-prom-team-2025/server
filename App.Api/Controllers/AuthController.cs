@@ -51,13 +51,6 @@ public class AuthController : ControllerBase
     }
 
     [Authorize]
-    [HttpGet("check-login")]
-    public ActionResult CheckLogin()
-    {
-        return Ok("Authorized");
-    }
-
-    [Authorize]
     [HttpPost("send-email-verification-code")]
     public async Task<ActionResult> SendEmailVerificationCode(string? language = null)
     {

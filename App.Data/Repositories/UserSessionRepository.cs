@@ -1,5 +1,7 @@
+using App.Core.Enums;
 using App.Core.Interfaces;
 using App.Core.Models.Auth;
+using App.Core.Models.User;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -11,16 +13,20 @@ public class UserSessionRepository(MongoDbContext mongoDbContext, IOptions<Sessi
     private readonly IMongoCollection<UserSession> _collection = mongoDbContext.UserSessions;
     private readonly SessionsOptions _options = options.Value;
     
-    public async Task<UserSession> CreateSessionAsync(ObjectId userId, string deviceInfo)
+    public async Task<UserSession?> CreateSessionAsync(ObjectId userId, string deviceInfo)
     {
+        var userFilter = Builders<User>.Filter.Eq(u => u.Id, userId);
+        var user = await mongoDbContext.Users.Find(userFilter).FirstOrDefaultAsync();
+        if (user == null) return null;
         var session = new UserSession()
         {
             CreatedAt = DateTime.UtcNow, 
             DeviceInfo = deviceInfo, 
             ExpiresAt = DateTime.UtcNow.AddHours(_options.ExpiresIn),
             Id = ObjectId.GenerateNewId(), 
-            UserId = userId, 
-            IsRevoked = false
+            UserId = userId,
+            IsRevoked = false,
+            Roles = [..user.Roles]
         };
         await _collection.InsertOneAsync(session);
         return session;

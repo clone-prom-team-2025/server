@@ -19,7 +19,7 @@ public interface IUserService
     Task CreateUserAsync(UserCreateDto user);
     Task<bool> UpdateUserAsync(User user);
     Task<bool> DeleteUserAsync(string userId);
-    Task<List<UserRole>> GetUserRolesAsync(string userId);
+    Task<List<string>> GetUserRolesAsync(string userId);
     
     // additionalInfo
     Task<bool> UpdateUserAdditionalInfoByUserIdAsync(string userId, UserAdditionalInfo userAdditionalInfo);

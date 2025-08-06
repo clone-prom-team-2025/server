@@ -1,3 +1,4 @@
+using App.Core.Enums;
 using MongoDB.Bson;
 
 namespace App.Core.Models.Auth;
@@ -9,5 +10,6 @@ public class UserSession
     public DateTime CreatedAt { get; set; }
     public DateTime ExpiresAt { get; set; }
     public string DeviceInfo { get; set; }
+    public List<string> Roles { get; set; }
     public bool IsRevoked { get; set; }
 }

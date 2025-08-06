@@ -21,7 +21,7 @@ public class User
 
     public string? PasswordHash { get; set; }
     
-    public List<UserRole> Roles { get; set; }
+    public List<string> Roles { get; set; }
 
     [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
     public DateTime CreatedAt { get; set; }
@@ -30,23 +30,23 @@ public class User
 
     public UserBlockInfo? BlockInfo { get; set; }
     
-    public User(string username, UserAvatar avatarUrl, List<UserRole> roles)
+    public User(string username, UserAvatar avatarUrl, List<string> roles)
     {
         Id = ObjectId.GenerateNewId();
         this.Username = username;
         this.AvatarUrl = avatarUrl;
-        this.Roles = new List<UserRole>(roles);
+        this.Roles = new List<string>(roles);
         CreatedAt = DateTime.UtcNow;
     }
     
-    public User(string username, string password, string email, UserAvatar avatarUrl, List<UserRole> roles)
+    public User(string username, string password, string email, UserAvatar avatarUrl, List<string> roles)
     {
         Id = ObjectId.GenerateNewId();
         this.Username = username;
         this.PasswordHash = PasswordHasher.HashPassword(password);
         this.Email = email;
         this.AvatarUrl = avatarUrl;
-        this.Roles = new List<UserRole>(roles);
+        this.Roles = new List<string>(roles);
         CreatedAt = DateTime.UtcNow;
     }
 }

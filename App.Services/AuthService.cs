@@ -10,6 +10,7 @@ using App.Core.Utils;
 using AutoMapper;
 using Microsoft.Extensions.Caching.Memory;
 using MongoDB.Bson;
+using App.Core.Constants;
 
 namespace App.Services;
 
@@ -68,7 +69,7 @@ public class AuthService(
         {
             var (url, fileName) = await _fileService.SaveImageFullHdAsync(image, username + "-avatar", "user-avatars");
             var user = new User(username, model.Password, model.Email,
-                new UserAvatar(url, fileName), new List<UserRole> { UserRole.User });
+                new UserAvatar(url, fileName), new List<string> { RoleNames.User });
 
             await _userRepository.CreateUserAsync(user);
         }

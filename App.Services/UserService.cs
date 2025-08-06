@@ -81,7 +81,7 @@ public class UserService : IUserService
         throw new NotImplementedException();
     }
 
-    public async Task<List<UserRole>> GetUserRolesAsync(string userId)
+    public async Task<List<string>> GetUserRolesAsync(string userId)
     {
         throw new NotImplementedException();
     }

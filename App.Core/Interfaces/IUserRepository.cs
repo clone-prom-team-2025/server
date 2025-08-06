@@ -17,7 +17,7 @@ public interface IUserRepository
     Task CreateUserAsync(User user);
     Task<bool> UpdateUserAsync(User user);
     Task<bool> DeleteUserAsync(string userId);
-    Task<List<UserRole>> GetUserRolesAsync(string userId);
+    Task<List<string>> GetUserRolesAsync(string userId);
     
     // additionalInfo
     Task<bool> UpdateUserAdditionalInfoByUserIdAsync(string userId, UserAdditionalInfo userAdditionalInfo);
