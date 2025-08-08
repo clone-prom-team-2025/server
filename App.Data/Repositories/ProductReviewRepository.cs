@@ -19,10 +19,10 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     /// </summary>
     /// <param name="sellerId">The ID of the seller whose products' reviews to fetch.</param>
     /// <returns>List of product reviews or null if none found.</returns>
-    public async Task<List<ProductReview>?> GetReviewsBySellerIdAsync(string sellerId)
+    public async Task<List<ProductReview>?> GetReviewsBySellerIdAsync(ObjectId sellerId)
     {
         var products = await productRepository.GetBySellerIdAsync(sellerId, new ProductFilterRequest());
-        if (products == null || products.Count == 0) return null;
+        if (products == null || !products.Any()) return null;
 
         List<ProductReview>? reviews = new();
         foreach (var product in products)
@@ -42,9 +42,9 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     /// </summary>
     /// <param name="reviewId">The review ID (MongoDB ObjectId as string).</param>
     /// <returns>The product review or null if not found.</returns>
-    public async Task<ProductReview?> GetReviewByIdAsync(string reviewId)
+    public async Task<ProductReview?> GetReviewByIdAsync(ObjectId reviewId)
     {
-        var filter = Builders<ProductReview>.Filter.Eq(r => r.Id, ObjectId.Parse(reviewId));
+        var filter = Builders<ProductReview>.Filter.Eq(r => r.Id, reviewId);
         return await _reviews.Find(filter).FirstOrDefaultAsync();
     }
 
@@ -53,20 +53,9 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     /// </summary>
     /// <param name="productId">The product ID to find the review for.</param>
     /// <returns>The product review or null if not found.</returns>
-    public async Task<ProductReview?> GetReviewByProductIdAsync(string productId)
+    public async Task<ProductReview?> GetReviewByProductIdAsync(ObjectId productId)
     {
-        var filters = Builders<ProductReview>.Filter.Eq(r => r.ProductId, ObjectId.Parse(productId));
-        return await _reviews.Find(filters).FirstOrDefaultAsync();
-    }
-
-    /// <summary>
-    /// Retrieves a product review by the associated model ID of the product variation.
-    /// </summary>
-    /// <param name="modelId">The model ID of the product variation.</param>
-    /// <returns>The product review or null if not found.</returns>
-    public async Task<ProductReview?> GetReviewByModelIdAsync(string modelId)
-    {
-        var filters = Builders<ProductReview>.Filter.Eq(r => r.ModelId, modelId);
+        var filters = Builders<ProductReview>.Filter.Eq(r => r.ProductId, productId);
         return await _reviews.Find(filters).FirstOrDefaultAsync();
     }
 
@@ -96,9 +85,9 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     /// </summary>
     /// <param name="reviewId">The review ID to delete.</param>
     /// <returns>True if deletion was acknowledged and deleted a document; otherwise false.</returns>
-    public async Task<bool> DeleteReviewAsync(string reviewId)
+    public async Task<bool> DeleteReviewAsync(ObjectId reviewId)
     {
-        var filter = Builders<ProductReview>.Filter.Eq(r => r.Id, ObjectId.Parse(reviewId));
+        var filter = Builders<ProductReview>.Filter.Eq(r => r.Id, reviewId);
         var result = await _reviews.DeleteOneAsync(filter);
         return result.IsAcknowledged && result.DeletedCount > 0;
     }
@@ -108,9 +97,9 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     /// </summary>
     /// <param name="reviewId">The review ID whose comments to retrieve.</param>
     /// <returns>List of review comments or null if review not found.</returns>
-    public async Task<List<ProductReviewComment>?> GetCommentsByReviewIdAsync(string reviewId)
+    public async Task<List<ProductReviewComment>?> GetCommentsByReviewIdAsync(ObjectId reviewId)
     {
-        var filter = Builders<ProductReview>.Filter.Eq(r => r.Id.ToString(), reviewId);
+        var filter = Builders<ProductReview>.Filter.Eq(r => r.Id, reviewId);
         var projection = Builders<ProductReview>.Projection.Expression(r => r.Comments);
         var comments = await _reviews.Find(filter).Project(projection).FirstOrDefaultAsync();
 
@@ -123,7 +112,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     /// <param name="reviewId">The review ID to add the comment to.</param>
     /// <param name="comment">The comment to add.</param>
     /// <returns>True if update was successful; otherwise false.</returns>
-    public async Task<bool> AddCommentToReviewAsync(string reviewId, ProductReviewComment comment)
+    public async Task<bool> AddCommentToReviewAsync(ObjectId reviewId, ProductReviewComment comment)
     {
         var productReview = await GetReviewByIdAsync(reviewId);
         if (productReview == null) return false;
@@ -138,7 +127,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     /// <param name="reviewId">The review ID containing the comment.</param>
     /// <param name="comment">The updated comment object (must have existing comment ID).</param>
     /// <returns>True if update was successful; otherwise false.</returns>
-    public async Task<bool> UpdateCommentInReviewAsync(string reviewId, ProductReviewComment comment)
+    public async Task<bool> UpdateCommentInReviewAsync(ObjectId reviewId, ProductReviewComment comment)
     {
         var productReview = await GetReviewByIdAsync(reviewId);
         if (productReview == null) return false;
@@ -158,7 +147,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     /// <param name="reviewId">The review ID containing the comment.</param>
     /// <param name="commentId">The comment ID to delete.</param>
     /// <returns>True if deletion was successful; otherwise false.</returns>
-    public async Task<bool> DeleteCommentFromReviewAsync(string reviewId, string commentId)
+    public async Task<bool> DeleteCommentFromReviewAsync(ObjectId reviewId, string commentId)
     {
         var productReview = await GetReviewByIdAsync(reviewId);
         if (productReview == null) return false;
@@ -179,7 +168,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     /// <param name="commentId">The comment ID to add the reaction to.</param>
     /// <param name="reaction">The reaction to add.</param>
     /// <returns>True if update was successful; otherwise false.</returns>
-    public async Task<bool> AddReactionToCommentAsync(string reviewId, string commentId, ProductReviewCommentReaction reaction)
+    public async Task<bool> AddReactionToCommentAsync(ObjectId reviewId, string commentId, ProductReviewCommentReaction reaction)
     {
         var productReview = await GetReviewByIdAsync(reviewId);
         if (productReview == null)

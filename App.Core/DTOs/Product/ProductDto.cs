@@ -4,14 +4,18 @@ namespace App.Core.DTOs.Product;
 
 public class ProductDto
 {
-    public ProductDto(string id, Dictionary<string, string> name, string productType, List<string> categoryPath, List<ProductVariationDto> variations, string sellerId)
+    public ProductDto(string id, string name, string productType, List<string> categoryPath, List<ProductFeatureDto> features, string sellerId, int quantity, string quantityStatus, decimal price, decimal? discountPrice = null)
     {
         Id = id;
-        Name = new Dictionary<string, string>(name);
+        Name = name;
         ProductType = productType;
         CategoryPath = new List<string>(categoryPath);
-        Variations = new List<ProductVariationDto>(variations);
+        Features = [..features];
         SellerId = sellerId;
+        Price = price;
+        DiscountPrice = discountPrice;
+        QuantityStatus = quantityStatus;
+        Quantity = quantity;
     }
 
     public ProductDto()
@@ -20,20 +24,30 @@ public class ProductDto
     }
 
     public string Id { get; set; }
-
-    [Required]
-    public Dictionary<string, string> Name { get; set; }
-
-    [StringLength(50)]
+    
+    public string Name { get; set; }
+    
     public string ProductType { get; set; }
 
     public List<string> CategoryPath { get; set; }
 
-    public List<ProductVariationDto> Variations { get; set; }
+    public List<ProductFeatureDto> Features { get; set; }
+    
+    public decimal Price { get; set; }
+
+    public decimal? DiscountPrice { get; set; }
+    
+    public bool HasDiscount => DiscountPrice.HasValue && DiscountPrice.Value < Price;
+
+    public decimal FinalPrice => HasDiscount ? DiscountPrice!.Value : Price;
+
+    public decimal? DiscountPercentage => HasDiscount
+        ? Math.Round(100 * (Price - DiscountPrice!.Value) / Price, 2)
+        : null;
 
     public string SellerId { get; set; }
     
-    public double MinPrice { get; set; }
+    public string QuantityStatus { get; set; }
     
-    public double MaxPrice { get; set; }
+    public int Quantity { get; set; }
 }

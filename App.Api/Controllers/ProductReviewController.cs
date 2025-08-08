@@ -56,13 +56,6 @@ public class ProductReviewController : ControllerBase
         return review is null ? NotFound() : Ok(review);
     }
 
-    [HttpGet("model/{modelId}")]
-    public async Task<IActionResult> GetReviewByModelId(string modelId)
-    {
-        var review = await _productReviewService.GetReviewByModelIdAsync(modelId);
-        return review is null ? NotFound() : Ok(review);
-    }
-
     [HttpGet("seller/{sellerId}")]
     public async Task<IActionResult> GetReviewsBySellerId(string sellerId)
     {

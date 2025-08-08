@@ -1,19 +1,19 @@
 ﻿using App.Core.Models.Product.Review;
+using MongoDB.Bson;
 
 namespace App.Core.Interfaces;
 
 public interface IProductReviewRepository
 {
-    Task<List<ProductReview>?> GetReviewsBySellerIdAsync(string sellerId);
-    Task<ProductReview?> GetReviewByIdAsync(string reviewId);
-    Task<ProductReview?> GetReviewByProductIdAsync(string productId);
-    Task<ProductReview?> GetReviewByModelIdAsync(string modelId);
+    Task<List<ProductReview>?> GetReviewsBySellerIdAsync(ObjectId sellerId);
+    Task<ProductReview?> GetReviewByIdAsync(ObjectId reviewId);
+    Task<ProductReview?> GetReviewByProductIdAsync(ObjectId productId);
     Task CreateReviewAsync(ProductReview review);
     Task<bool> UpdateReviewAsync(ProductReview review);
-    Task<bool> DeleteReviewAsync(string reviewId);
-    Task<List<ProductReviewComment>?> GetCommentsByReviewIdAsync(string reviewId);
-    Task<bool> AddCommentToReviewAsync(string reviewId, ProductReviewComment comment);
-    Task<bool> UpdateCommentInReviewAsync(string reviewId, ProductReviewComment comment);
-    Task<bool> DeleteCommentFromReviewAsync(string reviewId, string commentId);
-    Task<bool> AddReactionToCommentAsync(string reviewId, string commentId, ProductReviewCommentReaction reaction);
+    Task<bool> DeleteReviewAsync(ObjectId reviewId);
+    Task<List<ProductReviewComment>?> GetCommentsByReviewIdAsync(ObjectId reviewId);
+    Task<bool> AddCommentToReviewAsync(ObjectId reviewId, ProductReviewComment comment);
+    Task<bool> UpdateCommentInReviewAsync(ObjectId reviewId, ProductReviewComment comment);
+    Task<bool> DeleteCommentFromReviewAsync(ObjectId reviewId, string commentId);
+    Task<bool> AddReactionToCommentAsync(ObjectId reviewId, string commentId, ProductReviewCommentReaction reaction);
 }

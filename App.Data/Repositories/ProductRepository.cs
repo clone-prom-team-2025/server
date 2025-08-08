@@ -1,4 +1,5 @@
-﻿using App.Core.Interfaces;
+﻿using System.Text.RegularExpressions;
+using App.Core.Interfaces;
 using App.Core.Models.Product;
 using App.Core.Models.Product.Review;
 using MongoDB.Bson;
@@ -28,10 +29,9 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 
         foreach (var kv in filter.Include)
         {
-            var includeFilter = builder.ElemMatch(p => p.Variations,
-                variation => variation.Features.Any(f =>
-                    f.Features.ContainsKey(kv.Key) && f.Features[kv.Key].Value == kv.Value
-                )
+            var includeFilter = builder.ElemMatch(p => p.Features,
+                feature => feature.Features.ContainsKey(kv.Key) &&
+                           feature.Features[kv.Key].Value == kv.Value
             );
 
             filters.Add(includeFilter);
@@ -40,10 +40,9 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         foreach (var kv in filter.Exclude)
         {
             var excludeFilter = builder.Not(
-                builder.ElemMatch(p => p.Variations,
-                    variation => variation.Features.Any(f =>
-                        f.Features.ContainsKey(kv.Key) && f.Features[kv.Key].Value == kv.Value
-                    )
+                builder.ElemMatch(p => p.Features,
+                    feature => feature.Features.ContainsKey(kv.Key) &&
+                               feature.Features[kv.Key].Value == kv.Value
                 )
             );
 
@@ -53,28 +52,7 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         return filters;
     }
     
-    private SortDefinition<Product>? BuildSort(SortDirection sortDirection)
-    {
-        var sortBuilder = Builders<Product>.Sort;
-
-        return sortDirection switch
-        {
-            SortDirection.PriceAsc => sortBuilder.Ascending(p => p.MinPrice),
-            SortDirection.PriceDesc => sortBuilder.Descending(p => p.MaxPrice),
-            _ => null
-        };
-    }
-    
-    private void UpdatePriceRange(Product product)
-    {
-        if (product.Variations.Any())
-        {
-            product.MinPrice = product.Variations.Min(v => v.Price);
-            product.MaxPrice = product.Variations.Max(v => v.Price);
-        }
-    }
-    
-    public async Task<List<Product>?> GetAllAsync(ProductFilterRequest filter)
+    public async Task<IEnumerable<Product>?> GetAllAsync(ProductFilterRequest filter)
     {
         var builder = Builders<Product>.Filter;
         var filters = FormFilter(filter);
@@ -85,36 +63,45 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 
         var skip = (page - 1) * pageSize;
         var limit = pageSize;
-
-        var sortDefinition = BuildSort(filter.Sort);
-
-        var query = _products.Find(finalFilter);
-
-        if (sortDefinition is not null)
-        {
-            query = query.Sort(sortDefinition);
-        }
         
-        
-
-        return await query
+        return await _products.Find(finalFilter)
             .Skip(skip)
             .Limit(limit)
             .ToListAsync();
     }
 
-    public async Task<Product?> GetByIdAsync(string id)
+    public async Task<Product?> GetByIdAsync(ObjectId id)
     {
-        var filter = Builders<Product>.Filter.Eq(p => p.Id, ObjectId.Parse(id));
+        var filter = Builders<Product>.Filter.Eq(p => p.Id, id);
         return await _products.Find(filter).FirstOrDefaultAsync();
     }
 
-    public async Task<List<Product>?> GetByNameAsync(string name, ProductFilterRequest filter)
+    public async Task<IEnumerable<Product>?> GetByNameAsync(string name, ProductFilterRequest filter)
     {
         var builder = Builders<Product>.Filter;
 
         var filters = FormFilter(filter);
-        filters.Add(builder.Eq($"Name.{filter.Language}", name));
+
+        var finalFilter = filters.Any() ? builder.And(filters) : builder.Empty;
+
+        var page = Math.Max(filter.Page, 1);
+        var pageSize = Math.Max(filter.PageSize, 1);
+
+        var skip = (page - 1) * pageSize;
+        var limit = pageSize;
+        
+        return await _products.Find(finalFilter) 
+            .Skip(skip)
+            .Limit(limit)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Product>?> GetBySellerIdAsync(ObjectId sellerId, ProductFilterRequest filter)
+    {
+        var builder = Builders<Product>.Filter;
+
+        var filters = FormFilter(filter);
+        filters.Add(builder.Eq(p => p.SellerId, sellerId));
 
         var finalFilter = filters.Any() ? builder.And(filters) : builder.Empty;
 
@@ -124,250 +111,104 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         var skip = (page - 1) * pageSize;
         var limit = pageSize;
 
-        var sortDefinition = BuildSort(filter.Sort);
-
-        var query = _products.Find(finalFilter);
-
-        if (sortDefinition is not null)
-        {
-            query = query.Sort(sortDefinition);
-        }
-
-        return await query
+        return await _products.Find(finalFilter)
             .Skip(skip)
             .Limit(limit)
             .ToListAsync();
     }
-
-    public async Task<List<Product>?> GetByCategoryAsync(string categoryId, ProductFilterRequest filter)
+    
+    public async Task<Product> CreateAsync(Product product)
     {
-        var builder = Builders<Product>.Filter;
-
-        var filters = FormFilter(filter);
-
-        filters.Add(builder.Eq("Category.0", categoryId));
-
-        var finalFilter = filters.Any() ? builder.And(filters) : builder.Empty;
-
-        var page = Math.Max(filter.Page, 1);
-        var pageSize = Math.Max(filter.PageSize, 1);
-
-        var skip = (page - 1) * pageSize;
-        var limit = pageSize;
-
-        var sortDefinition = BuildSort(filter.Sort);
-
-        var query = _products.Find(finalFilter);
-
-        if (sortDefinition is not null)
-        {
-            query = query.Sort(sortDefinition);
-        }
-
-        return await query
-            .Skip(skip)
-            .Limit(limit)
-            .ToListAsync();
-    }
-
-    public async Task<List<Product>?> GetBySellerIdAsync(string sellerId, ProductFilterRequest filter)
-    {
-        var builder = Builders<Product>.Filter;
-
-        var filters = FormFilter(filter);
-        filters.Add(builder.Eq(p => p.SellerId, ObjectId.Parse(sellerId)));
-
-        var finalFilter = filters.Any() ? builder.And(filters) : builder.Empty;
-
-        var page = Math.Max(filter.Page, 1);
-        var pageSize = Math.Max(filter.PageSize, 1);
-
-        var skip = (page - 1) * pageSize;
-        var limit = pageSize;
-
-        var sortDefinition = BuildSort(filter.Sort);
-
-        var query = _products.Find(finalFilter);
-
-        if (sortDefinition is not null)
-        {
-            query = query.Sort(sortDefinition);
-        }
-
-        return await query
-            .Skip(skip)
-            .Limit(limit)
-            .ToListAsync();
-    }
-
-    public async Task<Product?> GetByModelIdAsync(string modelId, ProductFilterRequest filter)
-    {
-        var builder = Builders<Product>.Filter;
-
-        var filters = FormFilter(filter);
-        filters.Add(builder.ElemMatch(
-            x => x.Variations,
-            v => v.ModelId == modelId
-        ));
-
-        var finalFilter = filters.Any() ? builder.And(filters) : builder.Empty;
-        
-        var sortDefinition = BuildSort(filter.Sort);
-
-        var query = _products.Find(finalFilter);
-
-        if (sortDefinition is not null)
-        {
-            query = query.Sort(sortDefinition);
-        }
-
-        var product = await query.FirstOrDefaultAsync();
-        var variation = product?.Variations.FirstOrDefault(v => v.ModelId == modelId);
-
-        if (product is null || variation is null)
-            return null;
-
-        var newProduct = new Product(product);
-        newProduct.Variations.Clear();
-        newProduct.Variations.Add(variation);
-        newProduct.MinPrice = variation.Price;
-        newProduct.MaxPrice = variation.Price;
-
-        return newProduct;
-    }
-
-    public async Task<List<Product>?> GetByModelIdsAsync(List<string> modelIds, ProductFilterRequest filter)
-    {
-        if (modelIds.Count == 0)
-            return null;
-
-        var builder = Builders<Product>.Filter;
-
-        var filters = FormFilter(filter);
-        filters.Add(builder.ElemMatch(
-            x => x.Variations,
-            v => modelIds.Contains(v.ModelId)
-        )
-        );
-
-        var finalFilter = filters.Any() ? builder.And(filters) : builder.Empty;
-
-        var sortDefinition = BuildSort(filter.Sort);
-
-        var query = _products.Find(finalFilter);
-
-        if (sortDefinition is not null)
-        {
-            query = query.Sort(sortDefinition);
-        }
-        
-        var matchedProducts = await query.ToListAsync();
-        
-        if (matchedProducts.Count == 0)
-            return null;
-
-        var result = new List<Product>();
-
-        foreach (var product in matchedProducts)
-        {
-            var matchingVariations = product.Variations
-                .Where(v => modelIds.Contains(v.ModelId))
-                .ToList();
-
-            foreach (var variation in matchingVariations)
-            {
-                var newProduct = new Product(product);
-                newProduct.Variations.Clear();
-                newProduct.Variations.Add(variation);
-                newProduct.MinPrice = variation.Price;
-                newProduct.MaxPrice = variation.Price;
-                result.Add(newProduct);
-            }
-        }
-
-        return result;
-    }
-
-    public async Task CreateAsync(Product product)
-    {
-        UpdatePriceRange(product);
         await _products.InsertOneAsync(product);
+        return product;
     }
     
     public async Task<bool> UpdateAsync(Product product)
     {
-        UpdatePriceRange(product);
         var result = await _products.ReplaceOneAsync(p => p.Id.Equals(product.Id), product);
         return result.IsAcknowledged && result.ModifiedCount > 0;
     }
 
-    public async Task<bool> DeleteAsync(string id)
+    public async Task<bool> DeleteAsync(ObjectId id)
     {
-        var filter = Builders<Product>.Filter.Eq(p => p.Id, ObjectId.Parse(id));
+        var filter = Builders<Product>.Filter.Eq(p => p.Id, id);
         var result = await _products.DeleteOneAsync(filter);
         return result.IsAcknowledged && result.DeletedCount > 0;
     }
 
-    public async Task<List<ProductSearchResult>?> SearchByNameAsync(string name, string languageCode = "en")
+    public async Task<List<ProductSearchResult>> SearchByNameAsync(string name)
     {
-        var nameRegex = new BsonRegularExpression(name, "i");
+        if (string.IsNullOrWhiteSpace(name))
+            return new List<ProductSearchResult>();
 
-        var nameFilter = Builders<Product>.Filter.Regex($"Name.{languageCode}", nameRegex);
-        var modelFilter = Builders<Product>.Filter.ElemMatch(p => p.Variations, v => v.ModelName.ToLower().Contains(name.ToLower()));
-        var filter = Builders<Product>.Filter.Or(nameFilter, modelFilter);
+        var normalizedName = Regex.Replace(name.Trim(), @"\s+", "");
 
+        var pattern = string.Join(@"\s*", normalizedName.Select(c => Regex.Escape(c.ToString())));
+        var nameRegex = new BsonRegularExpression(pattern, "i");
+
+        var filter = Builders<Product>.Filter.Regex(p => p.Name, nameRegex);
         var products = await _products.Find(filter).ToListAsync();
 
-        var results = new List<ProductSearchResult>();
+        var results = new List<ProductSearchResult>(products.Count);
 
         foreach (var product in products)
         {
-            if (product.Name.TryGetValue(languageCode, out var localizedName))
+            var cleanProductName = Regex.Replace(product.Name, @"\s+", "");
+            var index = cleanProductName.IndexOf(normalizedName, StringComparison.OrdinalIgnoreCase);
+
+            if (index >= 0)
             {
-                var index = localizedName.IndexOf(name, StringComparison.OrdinalIgnoreCase);
-                if (index >= 0)
+                var original = product.Name;
+
+                int originalStartIndex = FindOriginalIndexWithoutSpaces(original, index);
+
+                int originalEndIndex = FindOriginalEndIndex(original, originalStartIndex, normalizedName.Length);
+
+                var highlighted = original[..originalStartIndex] +
+                                  "[" + original.Substring(originalStartIndex, originalEndIndex - originalStartIndex) + "]" +
+                                  original[originalEndIndex..];
+
+                results.Add(new ProductSearchResult
                 {
-                    var highlighted = localizedName[..index] +
-                                      "[" + localizedName.Substring(index, name.Length) + "]" +
-                                      localizedName[(index + name.Length)..];
-
-                    results.Add(new ProductSearchResult
-                    {
-                        ProductId = product.Id,
-                        Highlighted = highlighted,
-                        Rank = index
-                    });
-
-                    continue;
-                }
-            }
-
-            foreach (var variation in product.Variations)
-            {
-                if (!string.IsNullOrEmpty(variation.ModelName))
-                {
-                    var index = variation.ModelName.IndexOf(name, StringComparison.OrdinalIgnoreCase);
-                    if (index >= 0)
-                    {
-                        var highlighted = variation.ModelName[..index] +
-                                          "[" + variation.ModelName.Substring(index, name.Length) + "]" +
-                                          variation.ModelName[(index + name.Length)..];
-
-                        results.Add(new ProductSearchResult
-                        {
-                            ProductId = product.Id,
-                            Highlighted = highlighted,
-                            Rank = index
-                        });
-
-                        break;
-                    }
-                }
+                    ProductId = product.Id,
+                    Highlighted = highlighted,
+                    Rank = index
+                });
             }
         }
 
         return results
             .OrderBy(r => r.Rank)
             .ToList();
+    }
+
+    private static int FindOriginalIndexWithoutSpaces(string text, int indexInClean)
+    {
+        int cleanCount = 0;
+        for (int i = 0; i < text.Length; i++)
+        {
+            if (!char.IsWhiteSpace(text[i]))
+            {
+                if (cleanCount == indexInClean)
+                    return i;
+                cleanCount++;
+            }
+        }
+        return text.Length;
+    }
+
+    private static int FindOriginalEndIndex(string text, int startIndex, int lengthWithoutSpaces)
+    {
+        int cleanCount = 0;
+        for (int i = startIndex; i < text.Length; i++)
+        {
+            if (!char.IsWhiteSpace(text[i]))
+            {
+                cleanCount++;
+                if (cleanCount == lengthWithoutSpaces)
+                    return i + 1;
+            }
+        }
+        return text.Length;
     }
 }

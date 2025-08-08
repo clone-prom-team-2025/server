@@ -8,7 +8,6 @@ public interface IProductReviewService
     Task<List<ProductReviewDto>?> GetReviewsBySellerIdAsync(string sellerId);
     Task<ProductReviewDto?> GetReviewByIdAsync(string reviewId);
     Task<ProductReviewDto?> GetReviewByProductIdAsync(string productId);
-    Task<ProductReviewDto?> GetReviewByModelIdAsync(string modelId);
     Task CreateReviewAsync(ProductReviewCreateDto review);
     Task<bool> UpdateReviewAsync(ProductReviewDto review);
     Task<bool> DeleteReviewAsync(string reviewId);

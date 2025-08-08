@@ -10,14 +10,13 @@ public class ProductFilterRequestDto
     public ProductFilterRequestDto(string? categoryId, int page, int pageSize,
         Dictionary<string, string>? include = null,
         Dictionary<string, string>? exclude = null,
-        string? language = "en", SortDirection sort = SortDirection.None)
+        SortDirection sort = SortDirection.None)
     {
         CategoryId = categoryId;
         Include = include ?? new();
         Page = page;
         PageSize = pageSize;
         Exclude = exclude ?? new();
-        Language = language ?? "en";
         Sort = sort;
     }
     
@@ -30,8 +29,6 @@ public class ProductFilterRequestDto
     public int Page { get; set; } = 1;
     
     public int PageSize { get; set; } = 20;
-    
-    public string Language { get; set; } = "en";
     
     public SortDirection Sort { get; set; } = SortDirection.None;
 }

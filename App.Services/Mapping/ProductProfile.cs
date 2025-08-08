@@ -26,9 +26,7 @@ public class ProductProfile : Profile
     public ProductProfile()
     {
         CreateMap<ProductFeatureItem, ProductFeatureDto>().ReverseMap();
-
-        CreateMap<ProductVariation, ProductVariationDto>()
-            .ReverseMap();
+        
 
         CreateMap<Product, ProductDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
@@ -41,13 +39,13 @@ public class ProductProfile : Profile
             .ForMember(dest => dest.CategoryPath, opt => opt.MapFrom(dto => dto.CategoryPath.Select(ObjectId.Parse).ToList()))
             .ForMember(dest => dest.Name, opt => opt.MapFrom(dto => dto.Name))
             .ForMember(dest => dest.ProductType, opt => opt.MapFrom(dto => dto.ProductType))
-            .ForMember(dest => dest.Variations, opt => opt.MapFrom(dto => dto.Variations));
+            .ForMember(dest => dest.Features, opt => opt.MapFrom(dto => dto.Features));
 
         CreateMap<ProductCreateDto, Product>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.SellerId, opt => opt.MapFrom(dto => ObjectId.Parse(dto.SellerId)))
             .ForMember(dest => dest.CategoryPath, opt => opt.Ignore())
-            .ForMember(dest => dest.Variations, opt => opt.MapFrom(dto => dto.Variations))
+            .ForMember(dest => dest.Features, opt => opt.MapFrom(dto => dto.Features))
             .ForMember(dest => dest.Name, opt => opt.MapFrom(dto => dto.Name))
             .ForMember(dest => dest.ProductType, opt => opt.MapFrom(dto => dto.ProductType));
 
@@ -144,5 +142,11 @@ public class ProductProfile : Profile
             .ForMember(dest => dest.Id, opt => opt.Ignore());
         
         CreateMap<AvailableFiltersItem, AvailableFiltersItemDto>().ReverseMap();
+
+        CreateMap<ProductSearchResult, ProductSearchResultDto>()
+            .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductId.ToString()));
+        
+        CreateMap<ProductSearchResultDto, ProductSearchResult>()
+            .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => ObjectId.Parse(src.ProductId)));
     }
 }
