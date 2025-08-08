@@ -6,27 +6,34 @@ namespace App.Core.DTOs.Product;
 
 public class ProductCreateDto
 {
-    public ProductCreateDto(Dictionary<string, string> name, string productType, string category, List<ProductVariationDto> variations, string sellerId)
+    public ProductCreateDto(string name, string productType, string category, List<ProductFeatureDto> features, string sellerId, int quantity, string quantityStatus, decimal price, decimal? discountPrice = null)
     {
-        Name = new Dictionary<string, string>(name);
+        Name = name;
         ProductType = productType;
         Category = category;
-        Variations = new List<ProductVariationDto>(variations);
+        Features = [..features];
         SellerId = sellerId;
+        Price = price;
+        DiscountPrice = discountPrice;
+        QuantityStatus = quantityStatus;
+        Quantity = quantity;
     }
-
-    public ProductCreateDto() { }
-
-
-    [Required]
-    public Dictionary<string, string> Name { get; set; }
-
-    [StringLength(50)]
+    
+    public string Name { get; set; }
+    
     public string ProductType { get; set; }
 
     public string Category { get; set; }
 
-    public List<ProductVariationDto> Variations { get; set; }
+    public List<ProductFeatureDto> Features { get; set; }
+    
+    public decimal Price { get; set; }
 
+    public decimal? DiscountPrice { get; set; }
+    
     public string SellerId { get; set; }
+    
+    public string QuantityStatus { get; set; }
+    
+    public int Quantity { get; set; }
 }

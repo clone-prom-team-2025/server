@@ -11,9 +11,8 @@ public class ProductDtoValidator : AbstractValidator<ProductDto>
             .Matches("^[a-fA-F0-9]{24}$").WithMessage("Id must be a 24-character hex string");
 
         RuleFor(x => x.Name)
-            .NotEmpty()
-            .Must(name => name.All(pair => !string.IsNullOrWhiteSpace(pair.Value))).WithMessage("All name translations must be non-empty.")
-            .Must(name => name.All(pair => !string.IsNullOrWhiteSpace(pair.Key))).WithMessage("All language keys must be non-empty.");
+            .Must(x => !string.IsNullOrWhiteSpace(x)).WithMessage("Name must be non-empty.")
+            .MaximumLength(128);
 
         RuleFor(x => x.ProductType)
             .Must(x => !string.IsNullOrWhiteSpace(x)).WithMessage("ProductType must be non-empty.")
@@ -29,10 +28,6 @@ public class ProductDtoValidator : AbstractValidator<ProductDto>
                     .Matches("^[a-fA-F0-9]{24}$")
                     .WithMessage("CategoryId must be a 24-character hex string");
             });
-
-        RuleFor(x => x.Variations)
-            .NotNull()
-            .Must(v => v.Count > 0).WithMessage("At least one vatiation must be specified.");
 
         RuleFor(x => x.SellerId)
             .NotEmpty()

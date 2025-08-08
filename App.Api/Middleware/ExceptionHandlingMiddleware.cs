@@ -26,6 +26,12 @@ public class ExceptionHandlingMiddleware
         {
             await HandleValidationErrorAsync(context, "id", "The id field must be a 24-character hex string.");
         }
+        catch (ArgumentException ex)
+        {
+            // Використовуємо paramName, якщо є, інакше дефолтне значення
+            var field = string.IsNullOrWhiteSpace(ex.ParamName) ? "value" : ex.ParamName;
+            await HandleValidationErrorAsync(context, field, ex.Message);
+        }
         catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
         {
             string duplicateField = GetDuplicateFieldFromMessage(ex.Message) ?? "UnknownField";

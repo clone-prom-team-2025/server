@@ -11,84 +11,100 @@ namespace App.Core.Models.Product;
 public class Product
 {
     /// <summary>
-    ///     Default constructor initializing ID and collections.
+    ///     Empty constructor.
     /// </summary>
     public Product()
-    {
-        Id = ObjectId.GenerateNewId();
-        CategoryPath = [];
-        Variations = [];
-        Name = [];
-    }
+    { }
 
     public Product(Product product)
     {
         Id = product.Id;
-        Name = new Dictionary<string, string>(product.Name);
+        Name = product.Name;
         ProductType = product.ProductType;
         CategoryPath = new List<ObjectId>(product.CategoryPath);
-        Variations = new List<ProductVariation>(product.Variations);
+        Features = new List<ProductFeature>(product.Features);
         SellerId = product.SellerId;
-        
+        Price = product.Price;
+        DiscountPrice = product.DiscountPrice;
+        Quantity = product.Quantity;
+        QuantityStatus = product.QuantityStatus;
     }
 
     /// <summary>
     ///     Constructs a new Product instance with provided values.
     /// </summary>
-    /// <param name="name">Localized product names.</param>
+    /// <param name="name">Product names.</param>
     /// <param name="productType">Product type or classification.</param>
     /// <param name="categoryPath">Hierarchy of categories.</param>
-    /// <param name="variations">List of product variations.</param>
+    /// <param name="features">List of product features.</param>
     /// <param name="sellerId">Seller's identifier.</param>
+    /// <param name="price">Price of product</param>
+    /// <param name="discountPrice">Discount of product</param>
     public Product(
-        Dictionary<string, string> name,
+        string name,
         string productType,
         List<ObjectId> categoryPath,
-        List<ProductVariation> variations,
-        ObjectId sellerId)
+        List<ProductFeature> features,
+        ObjectId sellerId,
+        int quantity,
+        string quantityStatus,
+        decimal price,
+        decimal? discountPrice = null)
     {
-        Id = ObjectId.GenerateNewId();
         Name = name;
         ProductType = productType;
         CategoryPath = categoryPath;
-        Variations = variations;
+        Features = features;
         SellerId = sellerId;
+        Quantity = quantity;
+        QuantityStatus = quantityStatus;
+        Price = price;
+        DiscountPrice = discountPrice;
     }
 
     /// <summary>
     ///     Unique product identifier (MongoDB ObjectId as string).
     /// </summary>
     [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public ObjectId Id { get; set; }
+    public ObjectId Id { get; set; } = ObjectId.GenerateNewId();
 
     /// <summary>
-    ///     Localized product names (e.g., {"en": "Lamp", "ua": "Лампа"}).
+    ///     Product name
     /// </summary>
-    [Required]
-    public Dictionary<string, string> Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
     /// <summary>
     ///     Product type or category.
     /// </summary>
-    [StringLength(50)]
-    public string ProductType { get; set; }
+    public string ProductType { get; set; } = string.Empty;
 
     /// <summary>
     ///     Product category hierarchy.
     /// </summary>
-    public List<ObjectId> CategoryPath { get; set; }
+    public List<ObjectId> CategoryPath { get; set; } = [];
 
     /// <summary>
-    ///     List of product variations (e.g., different configurations).
+    /// Gets or sets a list of additional product features specific to this product.
+    /// Any unknown fields will also be deserialized into this list.
     /// </summary>
-    public List<ProductVariation> Variations { get; set; }
+    public List<ProductFeature> Features { get; set; } = [];
+    
+    /// <summary>
+    /// Price of product
+    /// </summary>
+    public decimal Price { get; set; }
+    
+    /// <summary>
+    /// Discount of product
+    /// </summary>
+    public decimal? DiscountPrice { get; set; }
 
     /// <summary>
     ///     Identifier of the associated seller.
     /// </summary>
-    public ObjectId SellerId { get; set; }
+    public ObjectId SellerId { get; set; } = ObjectId.Empty;
     
-    public double MinPrice { get; set; }
-    public double MaxPrice { get; set; }
+    public string QuantityStatus { get; set; }
+    
+    public int Quantity { get; set; }
 }

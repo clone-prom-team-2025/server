@@ -6,7 +6,6 @@ namespace App.Core.Models.Product;
 /// <summary>
 ///     Request model to filter products by features and other criteria.
 ///     Includes pagination and inclusion/exclusion filters.
-/// </summary>/// <summary>
 ///     Request object for filtering products by criteria.
 /// </summary>
 public class ProductFilterRequest
@@ -24,19 +23,17 @@ public class ProductFilterRequest
     /// <param name="pageSize">Number of items per page.</param>
     /// <param name="include">Features to include in the filter.</param>
     /// <param name="exclude">Features to exclude from the filter.</param>
-    /// <param name="language">Language code for localization.</param>
     /// <param name="sortDirection">Sort direction</param>
     public ProductFilterRequest(ObjectId? categoryId, int page, int pageSize,
         Dictionary<string, string>? include = null,
         Dictionary<string, string>? exclude = null,
-        string? language = "en", SortDirection sortDirection = SortDirection.None)
+        SortDirection sortDirection = SortDirection.None)
     {
         CategoryId = categoryId;
         Include = include ?? new();
         Page = page;
         PageSize = pageSize;
         Exclude = exclude ?? new();
-        Language = language ?? "en";
         Sort = sortDirection;
     }
 
@@ -64,11 +61,6 @@ public class ProductFilterRequest
     ///     Number of items per page.
     /// </summary>
     public int PageSize { get; set; } = 20;
-
-    /// <summary>
-    ///     Language code for localized results.
-    /// </summary>
-    public string Language { get; set; } = "en";
     
     /// <summary>
     /// Sort direction

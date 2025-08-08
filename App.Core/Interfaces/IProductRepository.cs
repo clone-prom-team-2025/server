@@ -1,18 +1,17 @@
 ﻿using App.Core.Models.Product;
+using MongoDB.Bson;
 
 namespace App.Core.Interfaces;
 
 public interface IProductRepository
 {
-    Task<List<Product>?> GetAllAsync(ProductFilterRequest filter);
-    Task<Product?> GetByIdAsync(string id);
-    Task<List<Product>?> GetByNameAsync(string name, ProductFilterRequest filter);
-    Task<List<Product>?> GetByCategoryAsync(string categoryId, ProductFilterRequest filter);
-    Task<List<Product>?> GetBySellerIdAsync(string sellerId, ProductFilterRequest filter);
-    Task<Product?> GetByModelIdAsync(string modelId, ProductFilterRequest filter);
-    Task<List<Product>?> GetByModelIdsAsync(List<string> modelId, ProductFilterRequest filter);
-    Task CreateAsync(Product product);
+    Task<IEnumerable<Product>?> GetAllAsync(ProductFilterRequest filter);
+    Task<Product?> GetByIdAsync(ObjectId id);
+    Task<IEnumerable<Product>?> GetByNameAsync(string name, ProductFilterRequest filter);
+    //Task<IEnumerable<Product>?> GetByCategoryAsync(ObjectId categoryId, ProductFilterRequest filter);
+    Task<IEnumerable<Product>?> GetBySellerIdAsync(ObjectId sellerId, ProductFilterRequest filter);
+    Task<Product> CreateAsync(Product product);
     Task<bool> UpdateAsync(Product product);
-    Task<bool> DeleteAsync(string id);
-    Task<List<ProductSearchResult>?> SearchByNameAsync(string name, string languageCode = "en");
+    Task<bool> DeleteAsync(ObjectId id);
+    Task<List<ProductSearchResult>> SearchByNameAsync(string name);
 }
