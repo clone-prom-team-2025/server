@@ -100,7 +100,7 @@ public class FileService : IFileService
         return $"{id}_{sanitized}{suffix}{extension}";
     }
 
-    private async Task<string> UploadToR2Async(string keyPrefix, Stream fileStream, string fileName)
+    private async Task<string> UploadAsync(string keyPrefix, Stream fileStream, string fileName)
     {
         var tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         try
@@ -118,13 +118,13 @@ public class FileService : IFileService
                     BucketName = _r2Options.BucketName,
                     Key = r2Key,
                     InputStream = fs,
-                    DisablePayloadSigning = true,
+                    //DisablePayloadSigning = true,
                     ContentType = GetMimeType(fileName),
                 };
                 await _s3Client.PutObjectAsync(request);
-                return $"{_r2Options.PublicBaseUrl!.TrimEnd('/')}/{_r2Options.BucketName}/{r2Key}";
-                //return $"{_r2Options.Endpoint.TrimEnd('/')}/{r2Key}";
-                //return GetPreSignedURL(_r2Options.BucketName, r2Key);
+
+                // Використовуємо PublicBaseUrl як корінь для публічних URL
+                return $"{_r2Options.PublicBaseUrl.TrimEnd('/')}/{r2Key}";
             }
         }
         finally
@@ -175,10 +175,10 @@ public class FileService : IFileService
         await image.SaveAsync(hdPath, new WebpEncoder());
 
         await using var fullHdFileStream = File.OpenRead(fullHdPath);
-        var fullHdUrl = await UploadToR2Async(key, fullHdFileStream, fullHdName);
+        var fullHdUrl = await UploadAsync(key, fullHdFileStream, fullHdName);
 
         await using var hdFileStream = File.OpenRead(hdPath);
-        var hdUrl = await UploadToR2Async(key, hdFileStream, hdName);
+        var hdUrl = await UploadAsync(key, hdFileStream, hdName);
 
         File.Delete(fullHdPath);
         File.Delete(hdPath);
@@ -206,7 +206,7 @@ public class FileService : IFileService
         await image.SaveAsync(fullHdPath, new WebpEncoder());
 
         await using var fullHdFileStream = File.OpenRead(fullHdPath);
-        var fullHdUrl = await UploadToR2Async(key, fullHdFileStream, fullHdName);
+        var fullHdUrl = await UploadAsync(key, fullHdFileStream, fullHdName);
         
 
         File.Delete(fullHdPath);
@@ -241,7 +241,7 @@ public class FileService : IFileService
         File.Delete(inputPath);
 
         await using var outputStream = File.OpenRead(outputPath);
-        var url = await UploadToR2Async(key, outputStream, outputFileName);
+        var url = await UploadAsync(key, outputStream, outputFileName);
 
         File.Delete(outputPath);
 
@@ -250,8 +250,8 @@ public class FileService : IFileService
 
     public async Task DeleteFileAsync(string key, string fileName)
     {
-        string r2Key = $"{key}/{fileName}";
+        string Key = $"{key}/{fileName}";
         //Console.WriteLine(r2Key);
-        var result = await _s3Client.DeleteObjectAsync(_r2Options.BucketName, r2Key);
+        var result = await _s3Client.DeleteObjectAsync(_r2Options.BucketName, Key);
     }
 }
