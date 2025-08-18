@@ -14,10 +14,6 @@ public class ProductDtoValidator : AbstractValidator<ProductDto>
             .Must(x => !string.IsNullOrWhiteSpace(x)).WithMessage("Name must be non-empty.")
             .MaximumLength(128);
 
-        RuleFor(x => x.ProductType)
-            .Must(x => !string.IsNullOrWhiteSpace(x)).WithMessage("ProductType must be non-empty.")
-            .MaximumLength(50);
-
         RuleFor(x => x.CategoryPath)
             .NotNull()
             .Must(name => name.All(item => !string.IsNullOrWhiteSpace(item)))

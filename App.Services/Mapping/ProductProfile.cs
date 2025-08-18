@@ -38,7 +38,6 @@ public class ProductProfile : Profile
             .ForMember(dest => dest.SellerId, opt => opt.MapFrom(dto => ObjectId.Parse(dto.SellerId)))
             .ForMember(dest => dest.CategoryPath, opt => opt.MapFrom(dto => dto.CategoryPath.Select(ObjectId.Parse).ToList()))
             .ForMember(dest => dest.Name, opt => opt.MapFrom(dto => dto.Name))
-            .ForMember(dest => dest.ProductType, opt => opt.MapFrom(dto => dto.ProductType))
             .ForMember(dest => dest.Features, opt => opt.MapFrom(dto => dto.Features));
 
         CreateMap<ProductCreateDto, Product>()
@@ -46,8 +45,7 @@ public class ProductProfile : Profile
             .ForMember(dest => dest.SellerId, opt => opt.MapFrom(dto => ObjectId.Parse(dto.SellerId)))
             .ForMember(dest => dest.CategoryPath, opt => opt.Ignore())
             .ForMember(dest => dest.Features, opt => opt.MapFrom(dto => dto.Features))
-            .ForMember(dest => dest.Name, opt => opt.MapFrom(dto => dto.Name))
-            .ForMember(dest => dest.ProductType, opt => opt.MapFrom(dto => dto.ProductType));
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(dto => dto.Name));
 
         CreateMap<ProductMedia, ProductMediaDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
