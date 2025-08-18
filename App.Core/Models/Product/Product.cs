@@ -20,7 +20,6 @@ public class Product
     {
         Id = product.Id;
         Name = product.Name;
-        ProductType = product.ProductType;
         CategoryPath = new List<ObjectId>(product.CategoryPath);
         Features = new List<ProductFeature>(product.Features);
         SellerId = product.SellerId;
@@ -42,7 +41,6 @@ public class Product
     /// <param name="discountPrice">Discount of product</param>
     public Product(
         string name,
-        string productType,
         List<ObjectId> categoryPath,
         List<ProductFeature> features,
         ObjectId sellerId,
@@ -52,7 +50,6 @@ public class Product
         decimal? discountPrice = null)
     {
         Name = name;
-        ProductType = productType;
         CategoryPath = categoryPath;
         Features = features;
         SellerId = sellerId;
@@ -72,11 +69,6 @@ public class Product
     ///     Product name
     /// </summary>
     public string Name { get; set; } = string.Empty;
-
-    /// <summary>
-    ///     Product type or category.
-    /// </summary>
-    public string ProductType { get; set; } = string.Empty;
 
     /// <summary>
     ///     Product category hierarchy.
