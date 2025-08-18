@@ -26,6 +26,16 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         {
             filters.Add(builder.AnyEq(p => p.CategoryPath, filter.CategoryId.Value));
         }
+        
+        if (filter.PriceMin.HasValue)
+        {
+            filters.Add(builder.Gte(p => p.Price, filter.PriceMin.Value));
+        }
+
+        if (filter.PriceMax.HasValue)
+        {
+            filters.Add(builder.Lte(p => p.Price, filter.PriceMax.Value));
+        }
 
         foreach (var kv in filter.Include)
         {

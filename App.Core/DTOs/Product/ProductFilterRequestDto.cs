@@ -10,7 +10,9 @@ public class ProductFilterRequestDto
     public ProductFilterRequestDto(string? categoryId, int page, int pageSize,
         Dictionary<string, string>? include = null,
         Dictionary<string, string>? exclude = null,
-        SortDirection sort = SortDirection.None)
+        SortDirection sort = SortDirection.None,
+        decimal? priceMax = null,
+        decimal? priceMin = null)
     {
         CategoryId = categoryId;
         Include = include ?? new();
@@ -18,6 +20,8 @@ public class ProductFilterRequestDto
         PageSize = pageSize;
         Exclude = exclude ?? new();
         Sort = sort;
+        PriceMax = priceMax;
+        PriceMin = priceMin;
     }
     
     public string? CategoryId { get; set; }
@@ -29,6 +33,10 @@ public class ProductFilterRequestDto
     public int Page { get; set; } = 1;
     
     public int PageSize { get; set; } = 20;
+    
+    public decimal? PriceMin { get; set; }
+    
+    public decimal? PriceMax { get; set; }
     
     public SortDirection Sort { get; set; } = SortDirection.None;
 }
