@@ -51,10 +51,10 @@ public class ProductMediaRepository(MongoDbContext mongoDbContext) : IProductMed
         var filter = Builders<ProductMedia>.Filter.Eq(m => m.ProductId, ObjectId.Parse(productId));
         return await _productMedia.Find(filter).ToListAsync();
     }
-
-    public async Task<ProductMedia?> GetFilenameAsync(string fileName)
-    {
-        var filter = Builders<ProductMedia>.Filter.Eq(m => m.UrlFileName, fileName);
-        return await _productMedia.Find(filter).FirstOrDefaultAsync();
-    }
+    //
+    // public async Task<ProductMedia?> GetFilenameAsync(string fileName)
+    // {
+    //     var filter = Builders<ProductMedia>.Filter.Eq(m => m.UrlFileName, fileName);
+    //     return await _productMedia.Find(filter).FirstOrDefaultAsync();
+    // }
 }

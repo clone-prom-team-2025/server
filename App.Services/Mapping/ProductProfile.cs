@@ -57,9 +57,7 @@ public class ProductProfile : Profile
             .ForMember(dest => dest.Id, opt => opt.MapFrom(dto =>
                 string.IsNullOrWhiteSpace(dto.Id) ? ObjectId.GenerateNewId() : ObjectId.Parse(dto.Id)))
             .ForMember(dest => dest.ProductId, opt => opt.MapFrom(dto => ObjectId.Parse(dto.ProductId)))
-            .ForMember(dest => dest.Url, opt => opt.MapFrom(dto => RootPrefix + dto.Url))
-            .ForMember(dest => dest.SecondaryUrl, opt => opt.MapFrom(dto =>
-                string.IsNullOrWhiteSpace(dto.SecondaryUrl) ? null : RootPrefix + dto.SecondaryUrl));
+            .ForMember(dest => dest.Files, opt => opt.MapFrom(dto => RootPrefix + dto.Files));
 
 
         CreateMap<ProductMediaCreateDto, ProductMedia>()

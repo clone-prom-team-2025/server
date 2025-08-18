@@ -5,6 +5,7 @@ using App.Core.Utils;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using App.Core.Constants;
+using App.Core.Models.FileStorage;
 
 namespace App.Data;
 
@@ -26,12 +27,14 @@ public class MongoDbSeeder(MongoDbContext context, ILogger<MongoDbSeeder> logger
             return;
         }
         
-        var (url, fileName) = await _fileService.SaveImageFullHdAsync(
+        BaseFile file = new();
+        (file.SourceUrl, file.CompressedUrl, file.SourceFileName, file.CompressedFileName) = await _fileService.SaveImageAsync(
             await GetImageStreamAsync(
                 ("https://www.cariblist.com/admin/assets/img/UserLogos/1473851754-avatar-generic.jpg")),
             "admin-avatar",
             "user-avatars");
-        var defaultUser = new User("admin", "password", "admin@sellpoint.pp.ua", new UserAvatar(url, fileName), new List<string> { RoleNames.Admin, RoleNames.User });
+        var defaultUser = new User("admin", "password", "admin@sellpoint.pp.ua", file,
+            [RoleNames.Admin, RoleNames.User]);
 
         await usersCollection.InsertOneAsync(defaultUser);
         _logger.LogInformation("Default admin user has been created.");

@@ -102,36 +102,16 @@ public class FileService : IFileService
 
     private async Task<string> UploadAsync(string keyPrefix, Stream fileStream, string fileName)
     {
-        var tempPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-        try
+        var r2Key = $"{keyPrefix.TrimEnd('/')}/{fileName}";
+        var request = new Amazon.S3.Model.PutObjectRequest
         {
-            using (var tempFile = File.Create(tempPath))
-            {
-                await fileStream.CopyToAsync(tempFile);
-            }
-
-            using (var fs = File.OpenRead(tempPath))
-            {
-                var r2Key = $"{keyPrefix.TrimEnd('/')}/{fileName}";
-                var request = new Amazon.S3.Model.PutObjectRequest
-                {
-                    BucketName = _r2Options.BucketName,
-                    Key = r2Key,
-                    InputStream = fs,
-                    //DisablePayloadSigning = true,
-                    ContentType = GetMimeType(fileName),
-                };
-                await _s3Client.PutObjectAsync(request);
-
-                // Використовуємо PublicBaseUrl як корінь для публічних URL
-                return $"{_r2Options.PublicBaseUrl.TrimEnd('/')}/{r2Key}";
-            }
-        }
-        finally
-        {
-            if (File.Exists(tempPath))
-                File.Delete(tempPath);
-        }
+            BucketName = _r2Options.BucketName,
+            Key = r2Key,
+            InputStream = fileStream,
+            ContentType = GetMimeType(fileName),
+        };
+        await _s3Client.PutObjectAsync(request);
+        return $"{_r2Options.PublicBaseUrl.TrimEnd('/')}/{r2Key}";
     }
 
     private string GetMimeType(string fileName)
@@ -149,75 +129,60 @@ public class FileService : IFileService
         };
     }
 
-    public async Task<(string FullHdUrl, string HdUrl, string UrlFileName, string SecondUrlFileName)> SaveImageFullHdAndHdAsync(Stream imageStream, string fileName, string key)
+    public async Task<(string SourceUrl, string CompressedUrl, string SourceName, string CompressedFileName)> SaveImageAsync(Stream imageStream, string fileName, string key)
     {
-        using var image = await Image.LoadAsync(imageStream);
-
-        var fullHdSize = new Size(Math.Min(1920, image.Width), Math.Min(1080, image.Height));
-        var hdSize = new Size(1280, 720);
-
-        var baseFileName = Path.GetFileNameWithoutExtension(fileName);
         var id = NanoIdGenerator.Generate(fileUniqueidLength);
-
-        var fullHdName = GenerateFileName(id, baseFileName, "_fullhd", ".webp");
-        var hdName = GenerateFileName(id, baseFileName, "_hd", ".webp");
-
-        var tempDir = Path.Combine("wwwroot", "temp");
-        Directory.CreateDirectory(tempDir);
-
-        var fullHdPath = Path.Combine(tempDir, fullHdName);
-        var hdPath = Path.Combine(tempDir, hdName);
-
-        image.Mutate(x => x.Resize(new ResizeOptions { Size = fullHdSize, Mode = ResizeMode.Max }));
-        await image.SaveAsync(fullHdPath, new WebpEncoder());
-
-        image.Mutate(x => x.Resize(new ResizeOptions { Size = hdSize, Mode = ResizeMode.Max }));
-        await image.SaveAsync(hdPath, new WebpEncoder());
-
-        await using var fullHdFileStream = File.OpenRead(fullHdPath);
-        var fullHdUrl = await UploadAsync(key, fullHdFileStream, fullHdName);
-
-        await using var hdFileStream = File.OpenRead(hdPath);
-        var hdUrl = await UploadAsync(key, hdFileStream, hdName);
-
-        File.Delete(fullHdPath);
-        File.Delete(hdPath);
-
-        return (fullHdUrl, hdUrl, fullHdName, hdName);
-    }
-    
-    public async Task<(string FullHdUrl, string UrlFileName)> SaveImageFullHdAsync(Stream imageStream, string fileName, string key)
-    {
-        using var image = await Image.LoadAsync(imageStream);
-
-        var fullHdSize = new Size(Math.Min(1920, image.Width), Math.Min(1080, image.Height));
-        
         var baseFileName = Path.GetFileNameWithoutExtension(fileName);
-        var id = NanoIdGenerator.Generate(fileUniqueidLength);
 
-        var fullHdName = GenerateFileName(id, baseFileName, "_fullhd", ".webp");
+        var sourceName = GenerateFileName(id, baseFileName, "_source", ".webp");
+        var compressedName = GenerateFileName(id, baseFileName, "_compressed", ".webp");
 
-        var tempDir = Path.Combine("wwwroot", "temp");
-        Directory.CreateDirectory(tempDir);
+        var tempInput = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}{Path.GetExtension(fileName)}");
+        var tempSource = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}_source.webp");
+        var tempCompressed = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}_compressed.webp");
 
-        var fullHdPath = Path.Combine(tempDir, fullHdName);
+        try
+        {
+            await using (var fs = File.Create(tempInput))
+                await imageStream.CopyToAsync(fs);
 
-        image.Mutate(x => x.Resize(new ResizeOptions { Size = fullHdSize, Mode = ResizeMode.Max }));
-        await image.SaveAsync(fullHdPath, new WebpEncoder());
+            var sourceConversion = FFmpeg.Conversions.New()
+                .AddParameter($"-hwaccel cuda -i \"{tempInput}\"", ParameterPosition.PreInput)
+                .AddParameter("-c:v libwebp -preset picture -compression_level 4 -quality 100 -threads 0")
+                .SetOutput(tempSource);
 
-        await using var fullHdFileStream = File.OpenRead(fullHdPath);
-        var fullHdUrl = await UploadAsync(key, fullHdFileStream, fullHdName);
-        
+            var compressedConversion = FFmpeg.Conversions.New()
+                .AddParameter($"-hwaccel cuda -i \"{tempInput}\"", ParameterPosition.PreInput)
+                .AddParameter("-vf scale_npp='min(1280,iw)':'min(720,ih)'")
+                .AddParameter("-c:v libwebp -preset picture -compression_level 6 -quality 70 -threads 0")
+                .SetOutput(tempCompressed);
 
-        File.Delete(fullHdPath);
+            var sourceTask = sourceConversion.Start();
+            var compressedTask = compressedConversion.Start();
+            await Task.WhenAll(sourceTask, compressedTask);
 
-        return (fullHdUrl, fullHdName);
+            await using var sourceStream = File.OpenRead(tempSource);
+            await using var compressedStream = File.OpenRead(tempCompressed);
+
+            var uploadSource = UploadAsync(key, sourceStream, sourceName);
+            var uploadCompressed = UploadAsync(key, compressedStream, compressedName);
+
+            await Task.WhenAll(uploadSource, uploadCompressed);
+
+            return (uploadSource.Result, uploadCompressed.Result, sourceName, compressedName);
+        }
+        finally
+        {
+            if (File.Exists(tempInput)) File.Delete(tempInput);
+            if (File.Exists(tempSource)) File.Delete(tempSource);
+            if (File.Exists(tempCompressed)) File.Delete(tempCompressed);
+        }
     }
 
     public async Task<(string Url, string FileName)> SaveVideoAsync(Stream videoStream, string fileName, string key)
     {
         var id = NanoIdGenerator.Generate(fileUniqueidLength);
-        var baseFileName = Path.GetFileNameWithoutExtension(fileName);
+        var baseFileName = Path.GetFileNameWithoutExtension(videoStream.Length > 0 ? fileName : "video");
         var outputFileName = GenerateFileName(id, baseFileName, "", ".webm");
 
         var tempDir = Path.Combine("wwwroot", "temp");
@@ -232,8 +197,9 @@ public class FileService : IFileService
         }
 
         var conversion = FFmpeg.Conversions.New()
-            .AddParameter($"-i \"{inputPath}\"", ParameterPosition.PreInput)
+            .AddParameter($"-hwaccel cuda -i \"{inputPath}\"", ParameterPosition.PreInput)
             .AddParameter("-vf scale='min(1280,iw)':'min(720,ih)'")
+            .AddParameter("-c:v h264_nvenc")
             .SetOutput(outputPath);
 
         await conversion.Start();
