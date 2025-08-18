@@ -24,10 +24,14 @@ public class ProductFilterRequest
     /// <param name="include">Features to include in the filter.</param>
     /// <param name="exclude">Features to exclude from the filter.</param>
     /// <param name="sortDirection">Sort direction</param>
+    /// <param name="priceMax">Price range to</param>
+    /// <param name="priceMin">Price range from</param>
     public ProductFilterRequest(ObjectId? categoryId, int page, int pageSize,
         Dictionary<string, string>? include = null,
         Dictionary<string, string>? exclude = null,
-        SortDirection sortDirection = SortDirection.None)
+        SortDirection sortDirection = SortDirection.None,
+        decimal? priceMin = null,
+        decimal? priceMax = null)
     {
         CategoryId = categoryId;
         Include = include ?? new();
@@ -35,6 +39,8 @@ public class ProductFilterRequest
         PageSize = pageSize;
         Exclude = exclude ?? new();
         Sort = sortDirection;
+        PriceMin = priceMin;
+        PriceMax = priceMax;
     }
 
     /// <summary>
@@ -61,6 +67,10 @@ public class ProductFilterRequest
     ///     Number of items per page.
     /// </summary>
     public int PageSize { get; set; } = 20;
+    
+    public decimal? PriceMin { get; set; }
+    
+    public decimal? PriceMax { get; set; }
     
     /// <summary>
     /// Sort direction
