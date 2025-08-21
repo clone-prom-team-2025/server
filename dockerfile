@@ -1,7 +1,18 @@
+# -------------------------
+# Build stage
+# -------------------------
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+COPY . .
+RUN dotnet restore App.Api/App.Api.csproj
+RUN dotnet publish App.Api/App.Api.csproj -c Release -o /app/publish /p:UseAppHost=false
+
+# -------------------------
 # Runtime stage
+# -------------------------
 FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04 AS runtime
 
-# Встановлюємо пакети
+# Базові пакети + бібліотеки для ffmpeg
 RUN apt-get update && \
     apt-get install -y \
         ca-certificates \
@@ -11,7 +22,7 @@ RUN apt-get update && \
         wget \
         tar \
         xz-utils \
-        apt-transport-https \
+        curl \
         gnupg \
     && rm -rf /var/lib/apt/lists/*
 
@@ -20,18 +31,14 @@ RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.t
     tar -xf /tmp/ffmpeg.tar.xz -C /usr/local --strip-components=1 && \
     rm /tmp/ffmpeg.tar.xz
 
-# Підключаємо Microsoft репозиторій та ставимо .NET 9 runtime
-RUN wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb && \
-    dpkg -i packages-microsoft-prod.deb && \
-    rm packages-microsoft-prod.deb && \
+# Встановлюємо ASP.NET Core Runtime 9.0
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -sSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/keyrings/microsoft.gpg && \
+    chmod go+r /etc/apt/keyrings/microsoft.gpg && \
+    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/ubuntu/22.04/prod jammy main" | tee /etc/apt/sources.list.d/microsoft.list && \
     apt-get update && \
     apt-get install -y aspnetcore-runtime-9.0 && \
     rm -rf /var/lib/apt/lists/*
-
-
-# Додаємо dotnet в PATH
-ENV DOTNET_ROOT=/usr/share/dotnet
-ENV PATH=$PATH:/usr/share/dotnet
 
 WORKDIR /app
 COPY --from=build /app/publish .
@@ -39,3 +46,4 @@ COPY --from=build /app/publish .
 EXPOSE 80
 ENV ASPNETCORE_URLS=http://+:80
 ENTRYPOINT ["dotnet", "App.Api.dll"]
+
