@@ -15,13 +15,23 @@ RUN dotnet publish App.Api/App.Api.csproj -c Release -o /app/publish /p:UseAppHo
 # -------------------------
 FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04 AS runtime
 
+# Ставимо необхідні пакети
 RUN apt-get update && \
-    apt-get install -y software-properties-common wget gnupg2 && \
-    add-apt-repository ppa:savoury1/ffmpeg5 && \
-    apt-get update && \
-    apt-get install -y ffmpeg ca-certificates libsm6 libxext6 libxrender-dev && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y \
+        ca-certificates \
+        libsm6 \
+        libxext6 \
+        libxrender-dev \
+        wget \
+        tar \
+        && rm -rf /var/lib/apt/lists/*
 
+# Завантажуємо статичний ffmpeg з підтримкою NVENC
+RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -O /tmp/ffmpeg.tar.xz && \
+    tar -xf /tmp/ffmpeg.tar.xz -C /usr/local --strip-components=1 && \
+    rm /tmp/ffmpeg.tar.xz
+
+# Ставимо .NET runtime
 RUN apt-get update && \
     apt-get install -y dotnet-runtime-9.0 && \
     rm -rf /var/lib/apt/lists/*
