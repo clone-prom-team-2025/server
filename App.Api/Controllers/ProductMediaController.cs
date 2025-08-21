@@ -44,7 +44,7 @@ public class ProductMediaController : ControllerBase
         return await _productMediaService.GetByProductIdAsync(productId);
     }
 
-    [HttpPost("many")]
+    [HttpPut("many")]
     public async Task<ActionResult<List<ProductMediaDto>?>> SyncProductMediaAsync([FromForm] IFormFile[] files, [FromQuery] string productId)
     {
         if (files == null || files.Length == 0)
