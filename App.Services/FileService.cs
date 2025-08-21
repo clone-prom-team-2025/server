@@ -18,22 +18,22 @@ namespace App.Services;
 public class FileService : IFileService
 {
     private readonly FileStorageOptions _options;
-    private readonly CloudflareR2Options _r2Options;
+    private readonly MinIOOptions _minIOoptions;
     private readonly IAmazonS3 _s3Client;
     private readonly int fileUniqueidLength = 10;
 
     private readonly TransferUtility _transferUtility;
 
-    public FileService(IOptions<FileStorageOptions> options, IOptions<CloudflareR2Options> r2Options)
+    public FileService(IOptions<FileStorageOptions> options, IOptions<MinIOOptions> minioOptions)
     {
         _options = options.Value;
-        _r2Options = r2Options.Value;
+        _minIOoptions = minioOptions.Value;
 
-        var credentials = new BasicAWSCredentials(_r2Options.AccessKey, _r2Options.SecretKey);
+        var credentials = new BasicAWSCredentials(_minIOoptions.AccessKey, _minIOoptions.SecretKey);
 
         var s3Config = new AmazonS3Config
         {
-            ServiceURL = _r2Options.Endpoint,
+            ServiceURL = _minIOoptions.Endpoint,
             ForcePathStyle = true,
             AuthenticationRegion = "auto",
         };
@@ -102,16 +102,16 @@ public class FileService : IFileService
 
     private async Task<string> UploadAsync(string keyPrefix, Stream fileStream, string fileName)
     {
-        var r2Key = $"{keyPrefix.TrimEnd('/')}/{fileName}";
+        var key = $"{keyPrefix.TrimEnd('/')}/{fileName}";
         var request = new Amazon.S3.Model.PutObjectRequest
         {
-            BucketName = _r2Options.BucketName,
-            Key = r2Key,
+            BucketName = _minIOoptions.BucketName,
+            Key = key,
             InputStream = fileStream,
             ContentType = GetMimeType(fileName),
         };
         await _s3Client.PutObjectAsync(request);
-        return $"{_r2Options.PublicBaseUrl.TrimEnd('/')}/{r2Key}";
+        return $"{_minIOoptions.PublicBaseUrl.TrimEnd('/')}/{key}";
     }
 
     private string GetMimeType(string fileName)
@@ -145,16 +145,18 @@ public class FileService : IFileService
         {
             await using (var fs = File.Create(tempInput))
                 await imageStream.CopyToAsync(fs);
-
+            
             var sourceConversion = FFmpeg.Conversions.New()
-                .AddParameter($"-hwaccel cuda -i \"{tempInput}\"", ParameterPosition.PreInput)
-                .AddParameter("-c:v libwebp -preset picture -compression_level 4 -quality 100 -threads 0")
+                .AddParameter($"-i \"{tempInput}\"", ParameterPosition.PreInput)
+                .AddParameter("-vf \"scale=w=1280:h=720:force_original_aspect_ratio=decrease\"")
+                .AddParameter("-c:v libwebp -preset picture -compression_level 6 -quality 90 -threads 0")
                 .SetOutput(tempSource);
 
+
             var compressedConversion = FFmpeg.Conversions.New()
-                .AddParameter($"-hwaccel cuda -i \"{tempInput}\"", ParameterPosition.PreInput)
-                .AddParameter("-vf scale_npp='min(1280,iw)':'min(720,ih)'")
-                .AddParameter("-c:v libwebp -preset picture -compression_level 6 -quality 70 -threads 0")
+                .AddParameter($"-i \"{tempInput}\"", ParameterPosition.PreInput)
+                .AddParameter("-vf \"scale=w=1280:h=720:force_original_aspect_ratio=decrease\"")
+                .AddParameter("-c:v libwebp -preset picture -compression_level 6 -quality 60 -threads 0")
                 .SetOutput(tempCompressed);
 
             var sourceTask = sourceConversion.Start();
@@ -183,41 +185,44 @@ public class FileService : IFileService
     {
         var id = NanoIdGenerator.Generate(fileUniqueidLength);
         var baseFileName = Path.GetFileNameWithoutExtension(videoStream.Length > 0 ? fileName : "video");
-        var outputFileName = GenerateFileName(id, baseFileName, "", ".webm");
+        var outputWebmFileName = GenerateFileName(id, baseFileName, "", ".webm");
 
         var tempDir = Path.Combine("wwwroot", "temp");
         Directory.CreateDirectory(tempDir);
 
         var inputPath = Path.Combine(tempDir, Guid.NewGuid() + Path.GetExtension(fileName));
-        var outputPath = Path.Combine(tempDir, Guid.NewGuid() + ".webm");
+        var outputWebmPath = Path.Combine(tempDir, Guid.NewGuid() + ".webm");
 
-        using (var fileStream = File.Create(inputPath))
-        {
+        // Зберігаємо вхідний стрім у файл
+        await using (var fileStream = File.Create(inputPath))
             await videoStream.CopyToAsync(fileStream);
-        }
 
-        var conversion = FFmpeg.Conversions.New()
-            .AddParameter($"-hwaccel cuda -i \"{inputPath}\"", ParameterPosition.PreInput)
+        // Конвертація у WebM
+        var conversionWebm = FFmpeg.Conversions.New()
+            .AddParameter($"-i \"{inputPath}\"", ParameterPosition.PreInput)
             .AddParameter("-vf scale='min(1280,iw)':'min(720,ih)'")
-            .AddParameter("-c:v h264_nvenc")
-            .SetOutput(outputPath);
+            .AddParameter("-c:v libvpx -b:v 2M")
+            .AddParameter("-c:a libvorbis -b:a 128k")
+            .SetOutput(outputWebmPath);
 
-        await conversion.Start();
+        await conversionWebm.Start();
 
+        // Видаляємо вхідний файл
         File.Delete(inputPath);
 
-        await using var outputStream = File.OpenRead(outputPath);
-        var url = await UploadAsync(key, outputStream, outputFileName);
+        // Завантажуємо WebM на S3/MinIO
+        await using var webmStream = File.OpenRead(outputWebmPath);
+        var url = await UploadAsync(key, webmStream, outputWebmFileName);
 
-        File.Delete(outputPath);
+        // Очищаємо тимчасовий WebM файл
+        File.Delete(outputWebmPath);
 
-        return (url, outputFileName);
+        return (url, outputWebmFileName);
     }
 
     public async Task DeleteFileAsync(string key, string fileName)
     {
         string Key = $"{key}/{fileName}";
-        //Console.WriteLine(r2Key);
-        var result = await _s3Client.DeleteObjectAsync(_r2Options.BucketName, Key);
+        var result = await _s3Client.DeleteObjectAsync(_minIOoptions.BucketName, Key);
     }
 }
