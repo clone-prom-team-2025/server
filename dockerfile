@@ -1,21 +1,7 @@
-# -------------------------
-# Build stage
-# -------------------------
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-
-WORKDIR /src
-
-COPY . .
-
-RUN dotnet restore App.Api/App.Api.csproj
-RUN dotnet publish App.Api/App.Api.csproj -c Release -o /app/publish /p:UseAppHost=false
-
-# -------------------------
 # Runtime stage
-# -------------------------
 FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04 AS runtime
 
-# Встановлюємо пакети для ffmpeg та завантаження
+# Встановлюємо пакети
 RUN apt-get update && \
     apt-get install -y \
         ca-certificates \
@@ -42,12 +28,13 @@ RUN wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-p
     apt-get install -y dotnet-runtime-9.0 && \
     rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+# Додаємо dotnet в PATH
+ENV DOTNET_ROOT=/usr/share/dotnet
+ENV PATH=$PATH:/usr/share/dotnet
 
+WORKDIR /app
 COPY --from=build /app/publish .
 
 EXPOSE 80
-
 ENV ASPNETCORE_URLS=http://+:80
-
 ENTRYPOINT ["dotnet", "App.Api.dll"]
