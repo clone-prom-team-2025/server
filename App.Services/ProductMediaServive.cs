@@ -43,25 +43,8 @@ public class ProductMediaService(IProductMediaRepository repository, IFileServic
     public async Task<List<ProductMediaDto>?> GetAll()
     {
         var media = await _repository.GetAll();
-        List<ProductMediaDto> dtos = [];
         if (media == null || media.Count == 0) return [];
-        foreach (var m in media)
-        {
-            var dto = new ProductMediaDto
-            {
-                Id = m.Id.ToString(),
-                ProductId = m.ProductId.ToString(),
-                UrlFileName = m.UrlFileName,
-                Url = m.Url,
-                Type = m.Type,
-                Order = m.Order,
-                SecondaryUrl = m.SecondaryUrl,
-                SecondUrlFileName = m.SecondUrlFileName
-            };
-            dtos.Add(dto);
-        }
-
-        return dtos;
+        return _mapper.Map<List<ProductMediaDto>>(media);
     }
 
     /// <summary>
@@ -81,24 +64,15 @@ public class ProductMediaService(IProductMediaRepository repository, IFileServic
 
         var type = MediaInspector.GetMediaType(stream, fileName);
 
-        string url;
-        string? secondaryUrl = null;
-        string urlFileName = "";
-        string? secondUrlFileName = null;
+        BaseFile file = new();
 
         if (type == MediaType.Image)
         {
-            var (fullHdPath, hdPath, _urlFileName, _secondUrlFileName) = await _fileService.SaveImageFullHdAndHdAsync(stream, fileName, _productMediaKeys.Image);
-            url = fullHdPath;
-            secondaryUrl = hdPath;
-            urlFileName = _urlFileName;
-            secondUrlFileName = _secondUrlFileName;
+            (file.SourceUrl, file.CompressedUrl, file.SourceFileName, file.CompressedFileName) = await _fileService.SaveImageAsync(stream, fileName, _productMediaKeys.Image);
         }
         else if (type == MediaType.Video)
         {
-            var (_url, _fileName) = await _fileService.SaveVideoAsync(stream, fileName, _productMediaKeys.Video);
-            url = _url;
-            urlFileName = _fileName;
+            (file.SourceUrl, file.SourceFileName) = await _fileService.SaveVideoAsync(stream, fileName, _productMediaKeys.Video);
         }
         else
         {
@@ -115,30 +89,15 @@ public class ProductMediaService(IProductMediaRepository repository, IFileServic
 
         var media = new ProductMedia(
             ObjectId.Parse(productId),
-            urlFileName,
-            url,
             type,
             order,
-            secondaryUrl,
-            secondUrlFileName
+            file
         );
 
         await _repository.SaveAsync(media);
 
-        var dto = new ProductMediaDto
-        {
-            Id = media.Id.ToString(),
-            ProductId = media.ProductId.ToString(),
-            UrlFileName = media.UrlFileName,
-            Url = media.Url,
-            Type = media.Type,
-            Order = media.Order,
-            SecondaryUrl = media.SecondaryUrl,
-            SecondUrlFileName = media.SecondUrlFileName
-        };
-
         stream.Close();
-        return dto;
+        return _mapper.Map<ProductMediaDto>(media);
     }
 
     /// <summary>
@@ -157,16 +116,12 @@ public class ProductMediaService(IProductMediaRepository repository, IFileServic
                 await _repository.RemoveAsync(media.Id.ToString());
                 if (media.Type == MediaType.Image)
                 {
-                    //Console.WriteLine("Delete image: ");
-                    //Console.WriteLine(media.UrlFileName);
-                    await _fileService.DeleteFileAsync(_productMediaKeys.Image, media.UrlFileName);
-                    if (media.SecondaryUrl != null && media.SecondUrlFileName != null) await _fileService.DeleteFileAsync(_productMediaKeys.Image, media.SecondUrlFileName);
+                    await _fileService.DeleteFileAsync(_productMediaKeys.Image, media.Files.SourceFileName);
+                    if (media.Files.CompressedUrl != null && media.Files.CompressedFileName != null) await _fileService.DeleteFileAsync(_productMediaKeys.Image, media.Files.CompressedFileName);
                 }
                 else if (media.Type == MediaType.Video)
                 {
-                    //Console.WriteLine("Delete video: ");
-                    //Console.WriteLine(media.UrlFileName);
-                    await _fileService.DeleteFileAsync(_productMediaKeys.Video, media.UrlFileName);
+                    await _fileService.DeleteFileAsync(_productMediaKeys.Video, media.Files.SourceFileName);
                 }
             }
         }
@@ -194,8 +149,8 @@ public class ProductMediaService(IProductMediaRepository repository, IFileServic
         var media = await _repository.GetByIdAsync(id);
         if (media == null) return false;
 
-        await _fileService.DeleteFileAsync(_productMediaKeys.Image , media.Url);
-        if (media.SecondaryUrl != null) await _fileService.DeleteFileAsync(_productMediaKeys.Image, media.SecondaryUrl);
+        await _fileService.DeleteFileAsync(_productMediaKeys.Image , media.Files.SourceFileName);
+        if (media.Files.CompressedUrl != null && media.Files.CompressedFileName != null) await _fileService.DeleteFileAsync(_productMediaKeys.Image, media.Files.CompressedFileName);
         return await _repository.RemoveAsync(id);
     }
 
@@ -215,12 +170,12 @@ public class ProductMediaService(IProductMediaRepository repository, IFileServic
         {
             if (m.Type == MediaType.Image)
             {
-                await _fileService.DeleteFileAsync(_productMediaKeys.Image, m.UrlFileName);
-                if (m.SecondaryUrl != null && m.SecondUrlFileName != null) await _fileService.DeleteFileAsync(_productMediaKeys.Image, m.SecondUrlFileName);
+                await _fileService.DeleteFileAsync(_productMediaKeys.Image, m.Files.SourceFileName);
+                if (m.Files.CompressedUrl != null && m.Files.CompressedFileName != null) await _fileService.DeleteFileAsync(_productMediaKeys.Image, m.Files.CompressedFileName);
             }
             else if (m.Type == MediaType.Video)
             {
-                await _fileService.DeleteFileAsync(_productMediaKeys.Video, m.UrlFileName);
+                await _fileService.DeleteFileAsync(_productMediaKeys.Video, m.Files.SourceFileName);
             }
         }
         

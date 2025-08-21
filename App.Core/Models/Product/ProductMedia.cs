@@ -1,4 +1,5 @@
 using App.Core.Enums;
+using App.Core.Models.FileStorage;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -13,19 +14,16 @@ public class ProductMedia
     ///     Initializes a new instance of ProductMedia.
     /// </summary>
     /// <param name="productId">The product ID the media is associated with.</param>
-    /// <param name="url">The media URL.</param>
     /// <param name="type">The type of the media.</param>
     /// <param name="order">Ordering index for display.</param>
-    public ProductMedia(ObjectId productId, string urlFileName, string url, MediaType type, int order, string? secondaryUrl = null, string? secondUrlFileName = null)
+    /// <param name="files">The media URLs.</param>
+    public ProductMedia(ObjectId productId, MediaType type, int order, BaseFile files)
     {
         Id = ObjectId.GenerateNewId();
         ProductId = productId;
-        UrlFileName = urlFileName;
-        SecondUrlFileName = secondUrlFileName;
-        Url = url;
         Type = type;
         Order = order;
-        SecondaryUrl = secondaryUrl;
+        Files = files;
     }
 
     /// <summary>
@@ -39,22 +37,7 @@ public class ProductMedia
     /// </summary>
     public ObjectId ProductId { get; set; }
 
-    /// <summary>
-    ///     Name of the media file.
-    /// </summary>
-    public string UrlFileName { get; set; }
-
-    public string? SecondUrlFileName { get; set; }
-
-    /// <summary>
-    ///     URL to the media file.
-    /// </summary>
-    public string Url { get; set; }
-
-    /// <summary>
-    ///     URL to the media file(hd photo, etc).
-    /// </summary>
-    public string? SecondaryUrl { get; set; }
+    public BaseFile Files { get; set; }
 
     /// <summary>
     ///     Media type (e.g., image, video).

@@ -1,5 +1,6 @@
 using App.Core.Enums;
 using App.Core.Interfaces;
+using App.Core.Models.FileStorage;
 using App.Core.Models.User;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -72,18 +73,6 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
             Builders<User>.Filter.Ne(u => u.Email, null),
             Builders<User>.Filter.Eq(u => u.Email, email)
         );
-        return await _users.Find(filter).FirstOrDefaultAsync();
-    }
-
-    /// <summary>
-    /// Retrieves a user by their avatar URL.
-    /// </summary>
-    /// <param name="avatarUrl">The avatar URL to search for.</param>
-    /// <returns>The matching user or null.</returns>
-    public async Task<User?> GetUserByAvatarUrlAsync(UserAvatar avatarUrl)
-    {
-        var filter = Builders<User>.Filter.Eq(u => u.AvatarUrl, avatarUrl);
-
         return await _users.Find(filter).FirstOrDefaultAsync();
     }
 

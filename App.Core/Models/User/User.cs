@@ -2,6 +2,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System.ComponentModel.DataAnnotations;
 using App.Core.Enums;
+using App.Core.Models.FileStorage;
 using App.Core.Utils;
 
 namespace App.Core.Models.User;
@@ -17,7 +18,7 @@ public class User
     
     public bool EmailConfirmed { get; set; }
     
-    public UserAvatar AvatarUrl { get; set; }
+    public BaseFile Avatar { get; set; }
 
     public string? PasswordHash { get; set; }
     
@@ -30,22 +31,22 @@ public class User
 
     public UserBlockInfo? BlockInfo { get; set; }
     
-    public User(string username, UserAvatar avatarUrl, List<string> roles)
+    public User(string username, BaseFile avatar, List<string> roles)
     {
         Id = ObjectId.GenerateNewId();
         this.Username = username;
-        this.AvatarUrl = avatarUrl;
+        this.Avatar = avatar;
         this.Roles = new List<string>(roles);
         CreatedAt = DateTime.UtcNow;
     }
     
-    public User(string username, string password, string email, UserAvatar avatarUrl, List<string> roles)
+    public User(string username, string password, string email, BaseFile avatar, List<string> roles)
     {
         Id = ObjectId.GenerateNewId();
         this.Username = username;
         this.PasswordHash = PasswordHasher.HashPassword(password);
         this.Email = email;
-        this.AvatarUrl = avatarUrl;
+        this.Avatar = avatar;
         this.Roles = new List<string>(roles);
         CreatedAt = DateTime.UtcNow;
     }

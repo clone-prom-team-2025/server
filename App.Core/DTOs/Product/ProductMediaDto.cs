@@ -1,19 +1,17 @@
 using App.Core.Enums;
+using App.Core.Models.FileStorage;
 
 namespace App.Core.DTOs.Product;
 
 public class ProductMediaDto
 {
-    public ProductMediaDto(string id, string productId, string urlFileName, string url, MediaType type, int order, string? secondaryUrl = null, string? secondUrlFileName = null)
+    public ProductMediaDto(string id, string productId, MediaType type, int order, BaseFile files)
     {
         Id = id;
         ProductId = productId;
-        UrlFileName = urlFileName;
-        SecondUrlFileName = secondUrlFileName;
-        Url = url;
         Type = type;
         Order = order;
-        SecondaryUrl = secondaryUrl;
+        Files = files;
     }
 
     public ProductMediaDto()
@@ -25,13 +23,7 @@ public class ProductMediaDto
 
     public string ProductId { get; set; }
 
-    public string UrlFileName { get; set; }
-
-    public string? SecondUrlFileName { get; set; }
-
-    public string Url { get; set; }
-
-    public string? SecondaryUrl { get; set; }
+    public BaseFile Files { get; set; }
 
     public MediaType Type { get; set; }
 

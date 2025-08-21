@@ -1,4 +1,5 @@
 using App.Core.Enums;
+using App.Core.Models.FileStorage;
 using App.Core.Models.User;
 
 namespace App.Core.Interfaces;
@@ -10,7 +11,6 @@ public interface IUserRepository
     Task<User?> GetUserByIdAsync(string userId);
     Task<User?> GetUserByUsernameAsync(string username);
     Task<User?> GetUserByEmailAsync(string email);
-    Task<User?> GetUserByAvatarUrlAsync(UserAvatar avatarUrl);
     Task<User?> GetUserByPhoneNumberAsync(string phoneNumber);
     Task<List<User>?> GetUsersByRoleAsync(string role);
     Task<List<User>?> GetUsersByRoleAsync(string role, int pageNumber, int pageSize);

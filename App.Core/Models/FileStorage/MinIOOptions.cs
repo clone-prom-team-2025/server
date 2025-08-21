@@ -1,6 +1,6 @@
 namespace App.Core.Models.FileStorage;
 
-public class CloudflareR2Options
+public class MinIOOptions
 {
     public string AccessKey { get; set; } = null!;
     public string SecretKey { get; set; } = null!;

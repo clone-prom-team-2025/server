@@ -11,6 +11,7 @@ using AutoMapper;
 using Microsoft.Extensions.Caching.Memory;
 using MongoDB.Bson;
 using App.Core.Constants;
+using App.Core.Models.FileStorage;
 
 namespace App.Services;
 
@@ -67,9 +68,10 @@ public class AuthService(
 
         await using (Stream image = AvatarGenerator.ByteToStream(AvatarGenerator.CreateAvatar(model.FullName)))
         {
-            var (url, fileName) = await _fileService.SaveImageFullHdAsync(image, username + "-avatar", "user-avatars");
+            BaseFile file = new();
+            (file.SourceUrl, file.CompressedFileName, file.SourceFileName, file.CompressedFileName) = await _fileService.SaveImageAsync(image, username + "-avatar", "user-avatars");
             var user = new User(username, model.Password, model.Email,
-                new UserAvatar(url, fileName), new List<string> { RoleNames.User });
+                file, [RoleNames.User]);
 
             await _userRepository.CreateUserAsync(user);
         }
