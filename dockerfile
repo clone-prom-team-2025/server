@@ -29,7 +29,8 @@ RUN apt-get update && \
 # Статичний ffmpeg з NVENC
 RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -O /tmp/ffmpeg.tar.xz && \
     tar -xf /tmp/ffmpeg.tar.xz -C /usr/local --strip-components=1 && \
-    rm /tmp/ffmpeg.tar.xz
+    rm /tmp/ffmpeg.tar.xz && \
+    ln -s /usr/local/ffmpeg /usr/bin/ffmpeg || true
 
 # Встановлюємо ASP.NET Core Runtime 9.0
 RUN mkdir -p /etc/apt/keyrings && \
