@@ -24,6 +24,7 @@ RUN apt-get update && \
         libxrender-dev \
         wget \
         tar \
+        xz-utils \
         && rm -rf /var/lib/apt/lists/*
 
 # Завантажуємо статичний ffmpeg з підтримкою NVENC
