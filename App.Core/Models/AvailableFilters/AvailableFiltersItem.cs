@@ -3,17 +3,17 @@ namespace App.Core.Models.AvailableFilters;
 /// <summary>
 /// Represents a single filter item used in the product filtering system.
 /// </summary>
-/// <param name="value">The value of the filter (e.g., "Red", "XL", "Plastic").</param>
-/// <param name="type">The type of filter (e.g., "color", "size", "material").</param>
-public class AvailableFiltersItem(string value, string type)
+/// <param name="title">The title of the filter (e.g., "Manufacturer", "Ingredients").</param>
+/// <param name="values">The values of filter (e.g., "OnePlus", "Google", "Samsung").</param>
+public class AvailableFiltersItem(string title, List<string> values)
 {
     /// <summary>
-    /// Gets or sets the value of the filter.
+    /// Gets or sets the title of the filter.
     /// </summary>
-    public string Value { get; set; } = value;
+    public string Title { get; set; } = title;
 
     /// <summary>
-    /// Gets or sets the type of the filter.
+    /// Gets or sets the values of the filter.
     /// </summary>
-    public string Type { get; set; } = type;
+    public List<string> Values { get; set; } = values;
 }
