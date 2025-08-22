@@ -52,9 +52,19 @@ public class AvailableFiltersRepository(MongoDbContext mongoDbContext) : IAvaila
     {
         var filter = Builders<AvailableFilters>.Filter.Eq(af => af.CategoryId, ObjectId.Parse(categoryId));
         var availableFilters = await _availableFilters.Find(filter).FirstOrDefaultAsync();
-        availableFilters.Filters.RemoveAll(f => values.Contains(f.Value));
-        var success = await _availableFilters.ReplaceOneAsync(filter, availableFilters);
-        return success.IsAcknowledged && success.ModifiedCount > 0;
+
+        if (availableFilters == null)
+            return false;
+
+        foreach (var filterItem in availableFilters.Filters)
+        {
+            filterItem.Values.RemoveAll(v => values.Contains(v));
+        }
+
+        availableFilters.Filters.RemoveAll(f => f.Values == null || f.Values.Count == 0);
+
+        var result = await _availableFilters.ReplaceOneAsync(filter, availableFilters);
+        return result.IsAcknowledged && result.ModifiedCount > 0;
     }
     
     public async Task<bool> UpdateFilterCollectionAsync(string id, List<AvailableFiltersItem> filters)

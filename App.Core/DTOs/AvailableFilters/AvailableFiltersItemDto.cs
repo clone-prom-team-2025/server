@@ -1,9 +1,9 @@
 namespace App.Core.DTOs.AvailableFilters;
 
-public class AvailableFiltersItemDto(string value, string type)
+public class AvailableFiltersItemDto(string title, List<string> values)
 {
 
-    public string Value { get; set; } = value;
+    public string Title { get; set; } = title;
     
-    public string Type { get; set; } = type;
+    public List<string> Values { get; set; } = values;
 }

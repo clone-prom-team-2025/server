@@ -11,6 +11,11 @@ public class AvailableFiltersCreateDto
         Filters = filters;
     }
 
+    public AvailableFiltersCreateDto()
+    {
+        
+    }
+
     public string CategoryId { get; set; }
 
     public List<AvailableFiltersItemDto> Filters { get; set; }
