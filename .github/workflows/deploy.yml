@@ -35,4 +35,4 @@ jobs:
             docker stop app-api-container || true
             docker rm app-api-container || true
             docker pull pashhun/app-api-image:latest
-            docker run -d -p 8080:80 --gpus all --restart=always --name app-api-container pashhun/app-api-image:latest
+            docker run -v /home/pashhun/app-api/logs:/app/logs -d -p 8080:80 --gpus all --restart=always --name app-api-container pashhun/app-api-image:latest
