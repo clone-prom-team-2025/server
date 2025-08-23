@@ -27,32 +27,84 @@ public class UserService : IUserService
         _logger = logger;
     }
     
-    public async Task<List<UserDto>?> GetAllUsersAsync()
+    public async Task<IEnumerable<UserDto>?> GetAllUsersAsync()
     {
-        var users = await _userRepository.GetAllUsersAsync();
-        return users?.Select(u => _mapper.Map<UserDto>(u)).ToList();
+        using (_logger.BeginScope("GetAllUsersAsync"))
+        {
+            _logger.LogInformation("Fetching all users without pagination");
+            var users = await _userRepository.GetAllUsersAsync();
+            if (users == null || !users.Any())
+            {
+                _logger.LogInformation("No users found");
+                return null;
+            }
+            _logger.LogInformation("Fetched {Count} users", users.Count);
+            return users.Select(u => _mapper.Map<UserDto>(u)).ToList();
+        }
     }
 
-    public async Task<List<UserDto>?> GetAllUsersAsync(int pageNumber, int pageSize)
+    public async Task<IEnumerable<UserDto>?> GetAllUsersAsync(int pageNumber, int pageSize)
     {
-        var users = await _userRepository.GetAllUsersAsync(pageNumber, pageSize);
-        return users?.Select(u => _mapper.Map<UserDto>(u)).ToList();
+        using (_logger.BeginScope("GetAllUsersAsync(PageNumber={pageNumber}, PageSize={pageSize})", pageNumber, pageSize))
+        {
+            _logger.LogInformation("Fetching users with pagination");
+            var users = await _userRepository.GetAllUsersAsync(pageNumber, pageSize);
+            if (users == null || !users.Any())
+            {
+                _logger.LogInformation("No users found on page {PageNumber}", pageNumber);
+                return null;
+            }
+            _logger.LogInformation("Fetched {Count} users on page {PageNumber}", users.Count, pageNumber);
+            return users.Select(u => _mapper.Map<UserDto>(u)).ToList();
+        }
     }
 
-    public async Task<UserDto> GetUserByIdAsync(string userId)
+    public async Task<UserDto?> GetUserByIdAsync(string userId)
     {
-        var user = await _userRepository.GetUserByIdAsync(userId);
-        return _mapper.Map<UserDto>(user);
+        using (_logger.BeginScope("GetUserByIdAsync(UserId={userId})", userId))
+        {
+            _logger.LogInformation("Fetching user by ID");
+            var user = await _userRepository.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                _logger.LogWarning("User with ID {UserId} not found", userId);
+                return null;
+            }
+            _logger.LogInformation("Fetched user with ID {UserId}", userId);
+            return _mapper.Map<UserDto?>(user);
+        }
     }
 
     public async Task<UserDto?> GetUserByUsernameAsync(string username)
     {
-        return _mapper.Map<UserDto>(await _userRepository.GetUserByUsernameAsync(username));
+        using (_logger.BeginScope("GetUserByUsernameAsync(Username={username})", username))
+        {
+            _logger.LogInformation("Fetching user by username");
+            var user = await _userRepository.GetUserByUsernameAsync(username);
+            if (user == null)
+            {
+                _logger.LogWarning("User with username {Username} not found", username);
+                return null;
+            }
+            _logger.LogInformation("Fetched user with username {Username}", username);
+            return _mapper.Map<UserDto?>(user);
+        }
     }
 
     public async Task<UserDto?> GetUserByEmailAsync(string email)
     {
-        return _mapper.Map<UserDto?>(await _userRepository.GetUserByEmailAsync(email));
+        using (_logger.BeginScope("GetUserByEmailAsync(Email={email})", email))
+        {
+            _logger.LogInformation("Fetching user by email");
+            var user = await _userRepository.GetUserByEmailAsync(email);
+            if (user == null)
+            {
+                _logger.LogWarning("User with email {Email} not found", email);
+                return null;
+            }
+            _logger.LogInformation("Fetched user with email {Email}", email);
+            return _mapper.Map<UserDto?>(user);
+        }
     }
 
     public async Task<User> GetUserByAvatarUrlAsync(string avatarUrl)
@@ -65,12 +117,12 @@ public class UserService : IUserService
         throw new NotImplementedException();
     }
 
-    public async Task<List<User>?> GetUsersByRoleAsync(string role)
+    public async Task<IEnumerable<User>?> GetUsersByRoleAsync(string role)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<List<User>?> GetUsersByRoleAsync(string role, int pageNumber, int pageSize)
+    public async Task<IEnumerable<User>?> GetUsersByRoleAsync(string role, int pageNumber, int pageSize)
     {
         throw new NotImplementedException();
     }
@@ -90,7 +142,7 @@ public class UserService : IUserService
         throw new NotImplementedException();
     }
 
-    public async Task<List<string>> GetUserRolesAsync(string userId)
+    public async Task<IEnumerable<string>> GetUserRolesAsync(string userId)
     {
         throw new NotImplementedException();
     }

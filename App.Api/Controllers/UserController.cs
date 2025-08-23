@@ -99,6 +99,7 @@ public class UserController : ControllerBase
     {
         using (_logger.BeginScope("GetAllByMyUserId action"))
         {
+            _logger.LogInformation("GetAllByMyUserId called");
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null)
             {
@@ -111,6 +112,56 @@ public class UserController : ControllerBase
             var allByMyUserId = bans as UserBanDto[] ?? bans.ToArray();
             _logger.LogInformation("Found {Count} bans for current UserId={UserId}", allByMyUserId.Count(), userIdClaim.Value);
             return allByMyUserId;
+        }
+    }
+
+    [HttpGet("user/{userId}")]
+    public async Task<UserDto?> GetUserById(string userId)
+    {
+        using (_logger.BeginScope("GetUserById action"))
+        {
+            _logger.LogInformation("GetUserById called with UserId={UserId}", userId);
+            _logger.LogInformation("Fetching user for current UserId={UserId}", userId);
+            var user = await _userService.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                _logger.LogWarning("User not found for UserId={UserId}", userId);
+                return null;
+            }
+            _logger.LogInformation("Found user for current UserId={UserId}", userId);
+            return user;
+        }
+    }
+
+    [HttpGet("users")]
+    public async Task<IEnumerable<UserDto>> GetAllUsers()
+    {
+        using (_logger.BeginScope("GetAllUsers action"))
+        {
+            _logger.LogInformation("GetAllUsers called");
+            var users = await _userService.GetAllUsersAsync();
+            var  allUsers = users as UserDto[] ?? users.ToArray();
+            _logger.LogInformation("Found {Count} users", allUsers.Length);
+            return allUsers;
+        }
+    }
+
+    [HttpGet("user/my")]
+    public async Task<UserDto?> GetUserById()
+    {
+        using (_logger.BeginScope("GetUserById action"))
+        {
+            _logger.LogInformation("GetUserById called");
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                _logger.LogWarning("UserId claim is missing");
+                return null;
+            }
+            _logger.LogInformation("Fetching user for current UserId={UserId}", userId);
+            var user = await _userService.GetUserByIdAsync(userId.Value);
+            _logger.LogInformation("Found user for current UserId={UserId}", userId);
+            return user;
         }
     }
 }
