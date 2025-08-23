@@ -28,8 +28,8 @@ public interface IUserService
     Task<bool> SetUserEmailConfirmedAsync(string userId, string email);
     Task<UserAdditionalInfo?> GetUserAdditionalInfoByUserIdAsync(string userId);
     
-    // block info
-    Task SetUserBlockInfoByUserIdAsync(string userId, UserBlockInfo userBlockInfo);
-    Task<bool> UpdateUserBlockInfoByUserIdAsync(string userId, UserBlockInfo userBlockInfo);
-    Task<UserBlockInfo?> GetUserBlockInfoByUserIdAsync(string userId);
+    
+    Task<bool> BanUser(UserBanCreateDto userBlockInfo, string adminId);
+    Task<bool> UnbanUserByBanId(string banId, string adminId);
+    Task<IEnumerable<UserBanDto>> GetUserBansByUserId(string userId);
 }

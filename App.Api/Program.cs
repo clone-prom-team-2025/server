@@ -10,11 +10,18 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using App.Api.Handlers;
+using App.Core.Utils;
 using FluentValidation.AspNetCore;
 using FluentValidation;
 using App.Core.Validations;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.OpenApi.Models;
+using Serilog;
+using Serilog.Events;
+using Serilog.Formatting.Display;
+using Serilog.Sinks.SystemConsole.Themes;
+using LogEventLevel = Serilog.Events.LogEventLevel;
+using RollingInterval = Serilog.RollingInterval;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -41,6 +48,8 @@ builder.Services.AddSingleton<IProductReviewRepository, ProductReviewRepository>
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
 builder.Services.AddSingleton<IProductMediaRepository, ProductMediaRepository>();
 builder.Services.AddSingleton<IAvailableFiltersRepository, AvailableFiltersRepository>();
+builder.Services.AddSingleton<IUserBanRepository, UserBanRepository>();
+builder.Services.AddSingleton<IUserSessionRepository, UserSessionRepository>();
 
 // --- Services ---
 builder.Services.AddSingleton<ICategoryService, CategoryService>();
@@ -49,7 +58,6 @@ builder.Services.AddSingleton<IUserService, UserService>();
 builder.Services.AddSingleton<IProductMediaService, ProductMediaService>();
 builder.Services.AddSingleton<IFileService, FileService>();
 builder.Services.AddSingleton<IProductReviewService, ProductReviewService>();
-builder.Services.AddSingleton<IUserSessionRepository, UserSessionRepository>();
 builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddSingleton<IAvailableFiltersService, AvailableFiltersService>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
@@ -75,7 +83,7 @@ builder.Services.AddSwaggerGen(options =>
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
-        Name = "Authorization",
+        Name = "Authorization", 
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
@@ -105,6 +113,32 @@ builder.Services.AddAuthentication("ReferenceToken")
     .AddScheme<AuthenticationSchemeOptions, ReferenceTokenAuthHandler>("ReferenceToken", null);
 
 builder.Services.AddAuthorization();
+
+var env = builder.Environment;
+
+var loggerConfig = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .WriteTo.Console(
+        restrictedToMinimumLevel: env.IsDevelopment() ? LogEventLevel.Verbose : LogEventLevel.Information,
+        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}",
+        theme: Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme.Code
+    )
+    .WriteTo.File(
+        "logs/app.log",
+        rollingInterval: RollingInterval.Day,
+        restrictedToMinimumLevel: LogEventLevel.Verbose, // завжди Verbose у файлі
+        rollOnFileSizeLimit: true,
+        fileSizeLimitBytes: 10_000_000,
+        outputTemplate: "[{Timestamp:HH:mm:ss.fff} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}"
+    );
+
+loggerConfig = loggerConfig
+    .MinimumLevel.Verbose()
+    .MinimumLevel.Override("Microsoft", env.IsDevelopment() ? LogEventLevel.Information : LogEventLevel.Warning);
+
+Log.Logger = loggerConfig.CreateLogger();
+
+builder.Host.UseSerilog();
 
 // --- Create app ---
 var app = builder.Build();

@@ -14,5 +14,4 @@ public class UserDto
     public List<string> Roles { get; set; }
     public DateTime CreatedAt { get; set; }
     public UserAdditionalInfo? AdditionalInfo { get; set; }
-    public UserBlockInfo? BlockInfo { get; set; }
 } 

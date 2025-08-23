@@ -1,10 +1,19 @@
 using System.ComponentModel.DataAnnotations;
+using App.Core.Enums;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-public class UserBlockInfo
+namespace App.Core.Models.User;
+
+public class UserBan
 {
-    [Required]
-    [MaxLength(255)]
+    [BsonId]
+    public ObjectId Id { get; set; }
+
+    public ObjectId UserId { get; set; }
+
+    public ObjectId AdminId { get; set; }
+    
     public string Reason { get; set; } = null!;
 
     [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
@@ -12,4 +21,6 @@ public class UserBlockInfo
 
     [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
     public DateTime? BannedUntil { get; set; }
+
+    public BanType Types { get; set; } = BanType.None;
 }
