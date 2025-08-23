@@ -28,4 +28,12 @@ public class TestZoneController : ControllerBase
     {
         return Ok("Authorized");
     }
+    
+    [HttpGet("TestBan")]
+    [Authorize]
+    public IActionResult TestBan()
+    {
+        var blockedClaim = User.Claims.FirstOrDefault(c => c.Type == "Blocked")?.Value;
+        return Ok(blockedClaim);
+    }
 }

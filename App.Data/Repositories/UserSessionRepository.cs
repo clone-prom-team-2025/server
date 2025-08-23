@@ -26,13 +26,24 @@ public class UserSessionRepository(MongoDbContext mongoDbContext, IOptions<Sessi
             Id = ObjectId.GenerateNewId(), 
             UserId = userId,
             IsRevoked = false,
-            Roles = [..user.Roles]
+            Roles = [..user.Roles],
+            Banned = BanType.None,
+            BannedUntil = null
         };
         await _collection.InsertOneAsync(session);
         return session;
     }
 
-    public async Task<UserSession> GetSessionAsync(ObjectId sessionId)
+    public async Task<bool> ReplaceSessionsAsync(ObjectId userId, List<UserSession> sessions)
+    {
+        var filter = Builders<UserSession>.Filter.Eq(u => u.UserId, userId);
+        await _collection.DeleteManyAsync(filter);
+        if (sessions.Count > 0)
+            await _collection.InsertManyAsync(sessions);
+        return true;
+    }
+
+    public async Task<UserSession?> GetSessionAsync(ObjectId sessionId)
     {
         var filter = Builders<UserSession>.Filter.Eq(s => s.Id, sessionId);
         return await _collection.Find(filter).FirstOrDefaultAsync();

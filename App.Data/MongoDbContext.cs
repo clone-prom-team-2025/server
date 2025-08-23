@@ -70,6 +70,8 @@ public class MongoDbContext
 
     public IMongoCollection<UserSession> UserSessions => _database.GetCollection<UserSession>("UserSessions");
     
+    public IMongoCollection<UserBan> UserBans => _database.GetCollection<UserBan>("UserBans");
+    
     /// <summary>
     ///     Ensures that the necessary indexes for the <see cref="Category"/> collection are created.
     ///     Specifically, creates a unique ascending index on the Name field if it does not already exist.

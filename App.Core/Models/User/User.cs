@@ -28,8 +28,6 @@ public class User
     public DateTime CreatedAt { get; set; }
 
     public UserAdditionalInfo? AdditionalInfo { get; set; }
-
-    public UserBlockInfo? BlockInfo { get; set; }
     
     public User(string username, BaseFile avatar, List<string> roles)
     {

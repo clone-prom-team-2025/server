@@ -140,7 +140,6 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     {
         var filter = Builders<User>.Filter.Eq(u => u.Id, user.Id);
         var result = await _users.ReplaceOneAsync(filter, user);
-
         return result.IsAcknowledged;
     }
 
@@ -222,37 +221,5 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
         if (additionalInfo == null) return null;
 
         return additionalInfo;
-    }
-
-    /// <summary>
-    /// Updates the blocking information of a user by ID.
-    /// </summary>
-    /// <param name="userId">The user's ObjectId as string.</param>
-    /// <param name="userBlockInfo">The new block info to assign.</param>
-    /// <returns>True if update was acknowledged, otherwise false.</returns>
-    public async Task<bool> UpdateUserBlockInfoByUserIdAsync(string userId, UserBlockInfo userBlockInfo)
-    {
-        if (userBlockInfo == null) return false;
-
-        var filter = Builders<User>.Filter.Eq(u => u.Id, ObjectId.Parse(userId));
-        var update = Builders<User>.Update.Set(u => u.BlockInfo, userBlockInfo);
-
-        var result = await _users.UpdateOneAsync(filter, update);
-        return result.IsAcknowledged;
-    }
-
-    /// <summary>
-    /// Retrieves the block info of a user by ID.
-    /// </summary>
-    /// <param name="userId">The user's ObjectId as string.</param>
-    /// <returns>The block info or null if not set.</returns>
-    public async Task<UserBlockInfo?> GetUserBlockInfoByUserIdAsync(string userId)
-    {
-        var filter = Builders<User>.Filter.Eq(u => u.Id, ObjectId.Parse(userId));
-        var projection = Builders<User>.Projection.Expression(u => u.BlockInfo);
-
-        return await _users.Find(filter)
-        .Project(projection)
-        .FirstOrDefaultAsync();
-    }
+    } 
 }

@@ -23,8 +23,4 @@ public interface IUserRepository
     Task<bool> UpdateUserAdditionalInfoByUserIdAsync(string userId, UserAdditionalInfo userAdditionalInfo);
     Task<bool> DeleteUserAdditionalInfoByUserIdAsync(string userId);
     Task<UserAdditionalInfo?> GetUserAdditionalInfoByUserIdAsync(string userId);
-    
-    // block info
-    Task<bool> UpdateUserBlockInfoByUserIdAsync(string userId, UserBlockInfo userBlockInfo);
-    Task<UserBlockInfo?> GetUserBlockInfoByUserIdAsync(string userId);
 }
