@@ -7,15 +7,16 @@ using MongoDB.Driver;
 namespace App.Data.Repositories;
 
 /// <summary>
-/// Repository for managing product reviews and related comments in MongoDB.
-/// Provides CRUD operations for reviews, comments, and reactions.
+///     Repository for managing product reviews and related comments in MongoDB.
+///     Provides CRUD operations for reviews, comments, and reactions.
 /// </summary>
-public class ProductReviewRepository(ProductRepository productRepository, MongoDbContext mongoDbContext) : IProductReviewRepository
+public class ProductReviewRepository(ProductRepository productRepository, MongoDbContext mongoDbContext)
+    : IProductReviewRepository
 {
     private readonly IMongoCollection<ProductReview> _reviews = mongoDbContext.ProductReviews;
 
     /// <summary>
-    /// Retrieves all product reviews associated with all products of a specific seller.
+    ///     Retrieves all product reviews associated with all products of a specific seller.
     /// </summary>
     /// <param name="sellerId">The ID of the seller whose products' reviews to fetch.</param>
     /// <returns>List of product reviews or null if none found.</returns>
@@ -29,16 +30,14 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
         {
             var filter = Builders<ProductReview>.Filter.Eq(r => r.ProductId, product.Id);
             var temp = await _reviews.Find(r => r.ProductId.Equals(product.Id)).ToListAsync();
-            foreach (var review in temp)
-            {
-                reviews.Add(review);
-            }
+            foreach (var review in temp) reviews.Add(review);
         }
+
         return reviews;
     }
 
     /// <summary>
-    /// Retrieves a product review by its unique review ID.
+    ///     Retrieves a product review by its unique review ID.
     /// </summary>
     /// <param name="reviewId">The review ID (MongoDB ObjectId as string).</param>
     /// <returns>The product review or null if not found.</returns>
@@ -49,7 +48,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     }
 
     /// <summary>
-    /// Retrieves a product review by the associated product ID.
+    ///     Retrieves a product review by the associated product ID.
     /// </summary>
     /// <param name="productId">The product ID to find the review for.</param>
     /// <returns>The product review or null if not found.</returns>
@@ -60,7 +59,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     }
 
     /// <summary>
-    /// Inserts a new product review document into the database.
+    ///     Inserts a new product review document into the database.
     /// </summary>
     /// <param name="review">The product review to create.</param>
     public async Task CreateReviewAsync(ProductReview review)
@@ -69,7 +68,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     }
 
     /// <summary>
-    /// Updates an existing product review document.
+    ///     Updates an existing product review document.
     /// </summary>
     /// <param name="review">The updated product review.</param>
     /// <returns>True if update was acknowledged and modified a document; otherwise false.</returns>
@@ -81,7 +80,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     }
 
     /// <summary>
-    /// Deletes a product review by its review ID.
+    ///     Deletes a product review by its review ID.
     /// </summary>
     /// <param name="reviewId">The review ID to delete.</param>
     /// <returns>True if deletion was acknowledged and deleted a document; otherwise false.</returns>
@@ -93,7 +92,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     }
 
     /// <summary>
-    /// Retrieves all comments for a given product review by review ID.
+    ///     Retrieves all comments for a given product review by review ID.
     /// </summary>
     /// <param name="reviewId">The review ID whose comments to retrieve.</param>
     /// <returns>List of review comments or null if review not found.</returns>
@@ -107,7 +106,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     }
 
     /// <summary>
-    /// Adds a new comment to an existing product review.
+    ///     Adds a new comment to an existing product review.
     /// </summary>
     /// <param name="reviewId">The review ID to add the comment to.</param>
     /// <param name="comment">The comment to add.</param>
@@ -122,7 +121,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     }
 
     /// <summary>
-    /// Updates an existing comment within a product review.
+    ///     Updates an existing comment within a product review.
     /// </summary>
     /// <param name="reviewId">The review ID containing the comment.</param>
     /// <param name="comment">The updated comment object (must have existing comment ID).</param>
@@ -142,7 +141,7 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     }
 
     /// <summary>
-    /// Deletes a comment from a product review.
+    ///     Deletes a comment from a product review.
     /// </summary>
     /// <param name="reviewId">The review ID containing the comment.</param>
     /// <param name="commentId">The comment ID to delete.</param>
@@ -162,18 +161,19 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     }
 
     /// <summary>
-    /// Adds a reaction (like/dislike) to a specific comment in a product review.
+    ///     Adds a reaction (like/dislike) to a specific comment in a product review.
     /// </summary>
     /// <param name="reviewId">The review ID containing the comment.</param>
     /// <param name="commentId">The comment ID to add the reaction to.</param>
     /// <param name="reaction">The reaction to add.</param>
     /// <returns>True if update was successful; otherwise false.</returns>
-    public async Task<bool> AddReactionToCommentAsync(ObjectId reviewId, string commentId, ProductReviewCommentReaction reaction)
+    public async Task<bool> AddReactionToCommentAsync(ObjectId reviewId, string commentId,
+        ProductReviewCommentReaction reaction)
     {
         var productReview = await GetReviewByIdAsync(reviewId);
         if (productReview == null)
             return false;
-            
+
         var comment = productReview.Comments.FirstOrDefault(c => c.Id == commentId);
         if (comment == null)
             return false;

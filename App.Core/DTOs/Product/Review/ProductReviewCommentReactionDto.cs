@@ -1,6 +1,3 @@
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-
 namespace App.Core.DTOs.Product.Review;
 
 public class ProductReviewCommentReactionDto

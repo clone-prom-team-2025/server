@@ -7,22 +7,25 @@ namespace App.Core.Models.Store;
 
 public class Store
 {
-    [BsonId]
-    public ObjectId Id { get; set; }
-
-    [Required] [MaxLength(50)] 
-    public string Name { get; set; } = null!;
-
-    [Url] 
-    public string AvatarUrl { get; set; } = String.Empty;
-    
-    public List<StoreRole> Roles { get; set; } = new List<StoreRole>();
-
-    public Store(string name, string avatarUrl, List<StoreRole> roles)
+    public Store(string name, string avatarUrl, List<StoreRole> roles, StorePlans plan = StorePlans.None)
     {
         Id = ObjectId.GenerateNewId();
         Name = name;
         AvatarUrl = avatarUrl;
         Roles = new List<StoreRole>(roles);
+        Plan = plan;
+        CreatedAt = DateTime.UtcNow;
     }
+
+    [BsonId] public ObjectId Id { get; set; }
+
+    [Required] public string Name { get; set; }
+
+    public string AvatarUrl { get; set; }
+
+    public List<StoreRole> Roles { get; set; }
+
+    public StorePlans Plan { get; set; }
+
+    public DateTime CreatedAt { get; set; }
 }

@@ -9,11 +9,11 @@ public class UserBanDto
     public string UserId { get; set; }
 
     public string AdminId { get; set; }
-    
+
     public string Reason { get; set; } = null!;
-    
+
     public DateTime BannedAt { get; set; } = DateTime.UtcNow;
-    
+
     public DateTime? BannedUntil { get; set; }
 
     public BanType Types { get; set; } = BanType.None;

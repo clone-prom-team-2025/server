@@ -4,14 +4,14 @@ using MongoDB.Bson.Serialization.Attributes;
 namespace App.Core.Models.Product.Review;
 
 /// <summary>
-/// Represents a collection of user reviews for a specific product variation,
-/// including an average rating and individual review comments.
+///     Represents a collection of user reviews for a specific product variation,
+///     including an average rating and individual review comments.
 /// </summary>
 public class ProductReview
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="ProductReview"/> class
-    /// for a specific product and model variation.
+    ///     Initializes a new instance of the <see cref="ProductReview" /> class
+    ///     for a specific product and model variation.
     /// </summary>
     /// <param name="productId">The ID of the related product.</param>
     /// <param name="modelId">The model id of the variation.</param>
@@ -24,34 +24,34 @@ public class ProductReview
     }
 
     /// <summary>
-    /// The unique identifier of this review document (MongoDB ObjectId).
+    ///     The unique identifier of this review document (MongoDB ObjectId).
     /// </summary>
     [BsonId]
     public ObjectId Id { get; set; }
 
     /// <summary>
-    /// The identifier of the associated product.
+    ///     The identifier of the associated product.
     /// </summary>
     [BsonRepresentation(BsonType.ObjectId)]
     public ObjectId ProductId { get; set; }
 
     /// <summary>
-    /// The name of the product variation model being reviewed.
+    ///     The name of the product variation model being reviewed.
     /// </summary>
     public string ModelId { get; set; }
 
     /// <summary>
-    /// The average rating calculated from all submitted comments.
+    ///     The average rating calculated from all submitted comments.
     /// </summary>
     public double AverageRating { get; set; }
 
     /// <summary>
-    /// The list of individual user review comments.
+    ///     The list of individual user review comments.
     /// </summary>
     public List<ProductReviewComment> Comments { get; set; } = new();
 
     /// <summary>
-    /// Adds a new comment to the review and updates the average rating.
+    ///     Adds a new comment to the review and updates the average rating.
     /// </summary>
     /// <param name="comment">The review comment to add.</param>
     public void AddComment(ProductReviewComment comment)
@@ -61,7 +61,7 @@ public class ProductReview
     }
 
     /// <summary>
-    /// Recalculates the average rating based on the current list of comments.
+    ///     Recalculates the average rating based on the current list of comments.
     /// </summary>
     public void CalculateAverageRating()
     {

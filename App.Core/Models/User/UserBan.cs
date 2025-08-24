@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using App.Core.Enums;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
@@ -7,13 +6,12 @@ namespace App.Core.Models.User;
 
 public class UserBan
 {
-    [BsonId]
-    public ObjectId Id { get; set; }
+    [BsonId] public ObjectId Id { get; set; }
 
     public ObjectId UserId { get; set; }
 
     public ObjectId AdminId { get; set; }
-    
+
     public string Reason { get; set; } = null!;
 
     [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]

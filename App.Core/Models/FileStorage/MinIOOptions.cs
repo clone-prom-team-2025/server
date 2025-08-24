@@ -9,5 +9,4 @@ public class MinIOOptions
     public string Region { get; set; } = "auto";
     public string Endpoint { get; set; } = null!;
     public string PublicBaseUrl { get; set; } = null!;
-    
 }

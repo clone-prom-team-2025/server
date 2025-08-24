@@ -34,7 +34,8 @@ public class ProductReviewController : ControllerBase
     }
 
     [HttpPost("{reviewId}/comment/{commentId}/reaction")]
-    public async Task<IActionResult> AddReaction(string reviewId, string commentId, [FromBody] ProductReviewCommentReactionDto reaction)
+    public async Task<IActionResult> AddReaction(string reviewId, string commentId,
+        [FromBody] ProductReviewCommentReactionDto reaction)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 

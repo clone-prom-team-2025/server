@@ -7,9 +7,9 @@ namespace App.Services;
 
 public class AvailableFiltersService(IAvailableFiltersRepository repository, IMapper mapper) : IAvailableFiltersService
 {
-    private readonly IAvailableFiltersRepository _repository = repository;
     private readonly IMapper _mapper = mapper;
-    
+    private readonly IAvailableFiltersRepository _repository = repository;
+
     public async Task CreateFilterCollectionAsync(AvailableFiltersCreateDto filters)
     {
         await _repository.CreateFilterCollectionAsync(_mapper.Map<AvailableFilters>(filters));

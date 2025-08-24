@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -14,7 +13,8 @@ public class Product
     ///     Empty constructor.
     /// </summary>
     public Product()
-    { }
+    {
+    }
 
     public Product(Product product)
     {
@@ -76,18 +76,18 @@ public class Product
     public List<ObjectId> CategoryPath { get; set; } = [];
 
     /// <summary>
-    /// Gets or sets a list of additional product features specific to this product.
-    /// Any unknown fields will also be deserialized into this list.
+    ///     Gets or sets a list of additional product features specific to this product.
+    ///     Any unknown fields will also be deserialized into this list.
     /// </summary>
     public List<ProductFeature> Features { get; set; } = [];
-    
+
     /// <summary>
-    /// Price of product
+    ///     Price of product
     /// </summary>
     public decimal Price { get; set; }
-    
+
     /// <summary>
-    /// Discount of product
+    ///     Discount of product
     /// </summary>
     public decimal? DiscountPrice { get; set; }
 
@@ -95,8 +95,8 @@ public class Product
     ///     Identifier of the associated seller.
     /// </summary>
     public ObjectId SellerId { get; set; } = ObjectId.Empty;
-    
+
     public string QuantityStatus { get; set; }
-    
+
     public int Quantity { get; set; }
 }

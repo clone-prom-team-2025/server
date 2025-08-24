@@ -11,7 +11,6 @@ namespace App.Core.Models;
 /// </summary>
 public class Category
 {
-
     public Category(ObjectId id, IDictionary<string, string> name, ObjectId? parentId)
     {
         Id = id;

@@ -1,6 +1,3 @@
-using App.Core.Models.AvailableFilters;
-using MongoDB.Bson;
-
 namespace App.Core.DTOs.AvailableFilters;
 
 public class AvailableFiltersCreateDto
@@ -13,7 +10,6 @@ public class AvailableFiltersCreateDto
 
     public AvailableFiltersCreateDto()
     {
-        
     }
 
     public string CategoryId { get; set; }

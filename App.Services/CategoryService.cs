@@ -3,17 +3,16 @@ using App.Core.Interfaces;
 using App.Core.Models;
 using App.Data.Repositories;
 using AutoMapper;
-using Microsoft.VisualBasic;
 using MongoDB.Bson;
 
 namespace App.Services;
 
 /// <summary>
-/// Service class responsible for handling business logic related to categories.
-/// Delegates data access operations to the underlying <see cref="CategoryRepository"/>.
+///     Service class responsible for handling business logic related to categories.
+///     Delegates data access operations to the underlying <see cref="CategoryRepository" />.
 /// </summary>
 /// <remarks>
-/// Initializes a new instance of the <see cref="CategoryService"/> class.
+///     Initializes a new instance of the <see cref="CategoryService" /> class.
 /// </remarks>
 /// <param name="categoryRepository">The repository instance used for data access.</param>
 /// <param name="mapper">The mapper instance used for mapping objects</param>
@@ -23,7 +22,7 @@ public class CategoryService(ICategoryRepository categoryRepository, IMapper map
     private readonly IMapper _mapper = mapper;
 
     /// <summary>
-    /// Retrieves all categories asynchronously.
+    ///     Retrieves all categories asynchronously.
     /// </summary>
     /// <returns>A list of all categories or null if none found.</returns>
     public async Task<List<CategoryDto>?> GetAllAsync()
@@ -32,7 +31,7 @@ public class CategoryService(ICategoryRepository categoryRepository, IMapper map
     }
 
     /// <summary>
-    /// Retrieves a category by its unique identifier asynchronously.
+    ///     Retrieves a category by its unique identifier asynchronously.
     /// </summary>
     /// <param name="id">The unique identifier of the category.</param>
     /// <returns>The category if found; otherwise, null.</returns>
@@ -42,7 +41,7 @@ public class CategoryService(ICategoryRepository categoryRepository, IMapper map
     }
 
     /// <summary>
-    /// Retrieves a category by its localized name asynchronously.
+    ///     Retrieves a category by its localized name asynchronously.
     /// </summary>
     /// <param name="name">The localized category name to search for.</param>
     /// <param name="languageCode">The language code for localization (e.g., "en").</param>
@@ -53,7 +52,7 @@ public class CategoryService(ICategoryRepository categoryRepository, IMapper map
     }
 
     /// <summary>
-    /// Retrieves all direct child categories for a specified parent category asynchronously.
+    ///     Retrieves all direct child categories for a specified parent category asynchronously.
     /// </summary>
     /// <param name="parentId">The parent category's unique identifier.</param>
     /// <returns>A list of child categories or null if none found.</returns>
@@ -63,7 +62,7 @@ public class CategoryService(ICategoryRepository categoryRepository, IMapper map
     }
 
     /// <summary>
-    /// Creates a new category asynchronously.
+    ///     Creates a new category asynchronously.
     /// </summary>
     /// <param name="categoryCreateDto">The category object to be created.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
@@ -76,7 +75,7 @@ public class CategoryService(ICategoryRepository categoryRepository, IMapper map
     }
 
     /// <summary>
-    /// Updates an existing category asynchronously.
+    ///     Updates an existing category asynchronously.
     /// </summary>
     /// <param name="categoryUpdateDto">The category object containing updated data.</param>
     /// <returns>True if the update was successful; otherwise, false.</returns>
@@ -90,7 +89,7 @@ public class CategoryService(ICategoryRepository categoryRepository, IMapper map
     }
 
     /// <summary>
-    /// Deletes a category by its unique identifier asynchronously.
+    ///     Deletes a category by its unique identifier asynchronously.
     /// </summary>
     /// <param name="id">The unique identifier of the category to delete.</param>
     /// <returns>True if the deletion was successful; otherwise, false.</returns>
@@ -100,7 +99,7 @@ public class CategoryService(ICategoryRepository categoryRepository, IMapper map
     }
 
     /// <summary>
-    /// Performs a localized search for categories by name asynchronously.
+    ///     Performs a localized search for categories by name asynchronously.
     /// </summary>
     /// <param name="name">The search string to look for.</param>
     /// <param name="languageCode">The language code for localization (e.g., "en").</param>
@@ -111,29 +110,29 @@ public class CategoryService(ICategoryRepository categoryRepository, IMapper map
     }
 
     /// <summary>
-    /// Builds and retrieves the full tree of a category.
+    ///     Builds and retrieves the full tree of a category.
     /// </summary>
-    /// <returns>A <see cref="CategoryNode"/> representing the ancestry tree or null if not found.</returns>
+    /// <returns>A <see cref="CategoryNode" /> representing the ancestry tree or null if not found.</returns>
     public async Task<List<CategoryNode>?> GetFullTreeAsync()
     {
         return await _categoryRepository.GetFullTreeAsync();
     }
 
     /// <summary>
-    /// Builds and retrieves the full subtree starting from the specified category asynchronously.
+    ///     Builds and retrieves the full subtree starting from the specified category asynchronously.
     /// </summary>
     /// <param name="parentId">The root category's unique identifier.</param>
-    /// <returns>A <see cref="CategoryNode"/> representing the subtree or null if not found.</returns>
+    /// <returns>A <see cref="CategoryNode" /> representing the subtree or null if not found.</returns>
     public async Task<CategoryNode?> GetCategoryTreeAsync(string parentId)
     {
         return await _categoryRepository.GetCategoryTreeAsync(parentId);
     }
 
     /// <summary>
-    /// Retrieves all immediate child nodes of the specified category asynchronously.
+    ///     Retrieves all immediate child nodes of the specified category asynchronously.
     /// </summary>
     /// <param name="parentId">The parent category's unique identifier.</param>
-    /// <returns>A list of <see cref="CategoryNode"/> representing the children.</returns>
+    /// <returns>A list of <see cref="CategoryNode" /> representing the children.</returns>
     public async Task<List<CategoryNode>?> GetChildrenAsync(string parentId)
     {
         return await _categoryRepository.GetChildrenAsync(parentId);

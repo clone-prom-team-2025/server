@@ -1,10 +1,9 @@
-using MongoDB.Bson;
-
 namespace App.Core.DTOs.Product.Review;
 
 public class ProductReviewCommentDto
 {
-    public ProductReviewCommentDto(string id, double rating, string userId, string comment, DateTime createdAt, List<ProductReviewCommentReactionDto> reactions)
+    public ProductReviewCommentDto(string id, double rating, string userId, string comment, DateTime createdAt,
+        List<ProductReviewCommentReactionDto> reactions)
     {
         Id = id;
         Rating = rating;

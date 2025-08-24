@@ -10,7 +10,7 @@ public class AvatarGenerator
             throw new ArgumentException("Name cannot be null or empty");
 
         const int size = 512;
-        char firstLetter = char.ToUpper(name.Trim()[0]);
+        var firstLetter = char.ToUpper(name.Trim()[0]);
 
         using var surface = SKSurface.Create(new SKImageInfo(size, size));
         var canvas = surface.Canvas;
@@ -43,16 +43,16 @@ public class AvatarGenerator
         var rnd = new Random();
         while (true)
         {
-            byte r = (byte)rnd.Next(256);
-            byte g = (byte)rnd.Next(256);
-            byte b = (byte)rnd.Next(256);
+            var r = (byte)rnd.Next(256);
+            var g = (byte)rnd.Next(256);
+            var b = (byte)rnd.Next(256);
 
             var luminance = 0.299 * r + 0.587 * g + 0.114 * b;
             if (luminance < 128)
                 return new SKColor(r, g, b);
         }
     }
-    
+
     public static Stream ByteToStream(byte[] data)
     {
         return new MemoryStream(data);

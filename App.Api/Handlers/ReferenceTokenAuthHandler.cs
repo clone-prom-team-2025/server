@@ -1,21 +1,20 @@
-using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
+using System.Text.Json;
 using App.Core.Enums;
 using App.Core.Interfaces;
-using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
-using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 
 namespace App.Api.Handlers;
 
 public class ReferenceTokenAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
+    private readonly ILogger<ReferenceTokenAuthHandler> _logger;
     private readonly IUserSessionRepository _sessionRepository;
     private readonly IUserBanRepository _userBanRepository;
-    private readonly ILogger<ReferenceTokenAuthHandler> _logger;
 
     public ReferenceTokenAuthHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
@@ -64,7 +63,8 @@ public class ReferenceTokenAuthHandler : AuthenticationHandler<AuthenticationSch
 
             if (session.IsRevoked || session.ExpiresAt <= DateTime.UtcNow)
             {
-                _logger.LogWarning("Session is revoked or expired. SessionId={SessionId}, ExpiresAt={ExpiresAt}, IsRevoked={IsRevoked}",
+                _logger.LogWarning(
+                    "Session is revoked or expired. SessionId={SessionId}, ExpiresAt={ExpiresAt}, IsRevoked={IsRevoked}",
                     sessionId, session.ExpiresAt, session.IsRevoked);
                 return AuthenticateResult.Fail("Session is invalid or expired.");
             }
@@ -78,7 +78,8 @@ public class ReferenceTokenAuthHandler : AuthenticationHandler<AuthenticationSch
 
                 if (activeBans.Any(b => b.Types.HasFlag(BanType.Login)))
                 {
-                    _logger.LogInformation("User {UserId} is banned. ActiveBansCount={Count}", session.UserId, activeBans.Count);
+                    _logger.LogInformation("User {UserId} is banned. ActiveBansCount={Count}", session.UserId,
+                        activeBans.Count);
 
                     var banInfos = activeBans.Select(b => new
                     {
@@ -101,26 +102,24 @@ public class ReferenceTokenAuthHandler : AuthenticationHandler<AuthenticationSch
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, session.UserId.ToString()),
-                new Claim(ClaimTypes.Sid, session.Id.ToString()),
-                new Claim("DeviceInfo", session.DeviceInfo ?? ""),
+                new(ClaimTypes.NameIdentifier, session.UserId.ToString()),
+                new(ClaimTypes.Sid, session.Id.ToString()),
+                new("DeviceInfo", session.DeviceInfo ?? "")
             };
 
-            foreach (var role in session.Roles)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role));
-            }
+            foreach (var role in session.Roles) claims.Add(new Claim(ClaimTypes.Role, role));
 
-            _logger.LogDebug("Creating ClaimsIdentity for UserId={UserId} with Roles={Roles}", session.UserId, string.Join(",", session.Roles));
+            _logger.LogDebug("Creating ClaimsIdentity for UserId={UserId} with Roles={Roles}", session.UserId,
+                string.Join(",", session.Roles));
 
             var identity = new ClaimsIdentity(claims, Scheme.Name);
             var principal = new ClaimsPrincipal(identity);
-            
+
             _logger.LogTrace("User claims for UserId={UserId}: {Claims}",
                 session.UserId,
                 string.Join(", ", principal.Claims.Select(c => $"{c.Type}={c.Value}"))
             );
-            
+
             var ticket = new AuthenticationTicket(principal, Scheme.Name);
 
             _logger.LogInformation("Authentication successful for UserId={UserId}", session.UserId);

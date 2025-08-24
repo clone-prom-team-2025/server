@@ -1,5 +1,5 @@
-using FluentValidation;
 using App.Core.DTOs.Product;
+using FluentValidation;
 
 namespace App.Core.Validations;
 

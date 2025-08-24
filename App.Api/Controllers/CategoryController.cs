@@ -1,8 +1,8 @@
 ﻿using App.Core.DTOs.Categoty;
 using App.Core.Interfaces;
-using Microsoft.AspNetCore.Mvc;
 using App.Core.Models;
 using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 
 namespace App.Api.Controllers;
 
@@ -20,7 +20,7 @@ public class CategoryController : ControllerBase
     }
 
     /// <summary>
-    /// Gets all categories.
+    ///     Gets all categories.
     /// </summary>
     /// <returns>List of categories or empty list.</returns>
     [HttpGet]
@@ -34,7 +34,7 @@ public class CategoryController : ControllerBase
     }
 
     /// <summary>
-    /// Gets a category by ID.
+    ///     Gets a category by ID.
     /// </summary>
     /// <param name="id">Category ID.</param>
     /// <returns>The category or NotFound if missing.</returns>
@@ -49,7 +49,7 @@ public class CategoryController : ControllerBase
     }
 
     /// <summary>
-    /// Gets direct children categories by parent ID.
+    ///     Gets direct children categories by parent ID.
     /// </summary>
     /// <param name="parentId">Parent category ID.</param>
     /// <returns>List of child categories or empty list.</returns>
@@ -64,19 +64,19 @@ public class CategoryController : ControllerBase
     }
 
     /// <summary>
-    /// Creates a new category.
+    ///     Creates a new category.
     /// </summary>
     /// <param name="categoryDto">Category data.</param>
     /// <returns>Created category.</returns>
     [HttpPost]
     public async Task<ActionResult> Create([FromBody] CategoryCreateDto categoryDto)
-    {        
+    {
         var category = await _categoryService.CreateAsync(categoryDto);
         return CreatedAtAction(nameof(GetById), new { id = category.Id }, category);
     }
 
     /// <summary>
-    /// Updates an existing category.
+    ///     Updates an existing category.
     /// </summary>
     /// <param name="id">Category ID.</param>
     /// <param name="categoryDto">Updated category DTO</param>
@@ -90,7 +90,7 @@ public class CategoryController : ControllerBase
     }
 
     /// <summary>
-    /// Deletes a category by ID.
+    ///     Deletes a category by ID.
     /// </summary>
     /// <param name="id">Category ID.</param>
     /// <returns>NoContent if success; NotFound if category not found.</returns>
@@ -105,13 +105,14 @@ public class CategoryController : ControllerBase
     }
 
     /// <summary>
-    /// Searches categories by name with localized highlighting.
+    ///     Searches categories by name with localized highlighting.
     /// </summary>
     /// <param name="name">Search string.</param>
     /// <param name="languageCode">Language code (default: "en").</param>
     /// <returns>List of matching categories.</returns>
     [HttpGet("search")]
-    public async Task<ActionResult<List<Category>?>> Search([FromQuery] string name, [FromQuery] string languageCode = "en")
+    public async Task<ActionResult<List<Category>?>> Search([FromQuery] string name,
+        [FromQuery] string languageCode = "en")
     {
         var results = await _categoryService.SearchAsync(name, languageCode);
         if (results == null || results.Count == 0)
@@ -121,7 +122,7 @@ public class CategoryController : ControllerBase
     }
 
     /// <summary>
-    /// Gets full ancestry tree of a category.
+    ///     Gets full ancestry tree of a category.
     /// </summary>
     /// <param name="id">Category ID.</param>
     /// <returns>CategoryNode representing the ancestry tree or NotFound.</returns>
@@ -136,7 +137,7 @@ public class CategoryController : ControllerBase
     }
 
     /// <summary>
-    /// Gets full subtree starting from a category.
+    ///     Gets full subtree starting from a category.
     /// </summary>
     /// <param name="parentId">Parent category ID.</param>
     /// <returns>CategoryNode subtree or NotFound.</returns>
@@ -151,7 +152,7 @@ public class CategoryController : ControllerBase
     }
 
     /// <summary>
-    /// Gets immediate children nodes of a category.
+    ///     Gets immediate children nodes of a category.
     /// </summary>
     /// <param name="parentId">Parent category ID.</param>
     /// <returns>List of child CategoryNodes.</returns>

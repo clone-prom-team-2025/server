@@ -1,11 +1,12 @@
 using App.Core.Interfaces;
 using App.Core.Models.Email;
-using MailKit.Security;
-using MimeKit;
-using Microsoft.Extensions.Configuration;
-using MailKit.Net.Imap;
 using MailKit;
+using MailKit.Net.Imap;
 using MailKit.Net.Smtp;
+using MailKit.Search;
+using MailKit.Security;
+using Microsoft.Extensions.Configuration;
+using MimeKit;
 
 namespace App.Services;
 
@@ -53,9 +54,9 @@ public class EmailService : IEmailService
         await client.AuthenticateAsync(acc.Username, acc.Password);
         await client.Inbox.OpenAsync(FolderAccess.ReadOnly);
 
-        var uids = await client.Inbox.SearchAsync(MailKit.Search.SearchQuery.All);
+        var uids = await client.Inbox.SearchAsync(SearchQuery.All);
         var messages = await client.Inbox.FetchAsync(uids, MessageSummaryItems.Full | MessageSummaryItems.UniqueId);
-        
+
         var result = new List<MimeMessage>();
         foreach (var uid in uids)
         {
@@ -70,6 +71,6 @@ public class EmailService : IEmailService
     private string GetAccountKeyFromEmail(string email)
     {
         return _accounts.FirstOrDefault(kvp => kvp.Value.Email == email).Key
-            ?? throw new InvalidOperationException($"Email '{email}' not configured");
+               ?? throw new InvalidOperationException($"Email '{email}' not configured");
     }
 }

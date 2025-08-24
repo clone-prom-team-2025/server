@@ -1,5 +1,4 @@
 using App.Core.DTOs.Product.Review;
-using App.Core.Models.Product.Review;
 
 namespace App.Core.Interfaces;
 

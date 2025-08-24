@@ -4,24 +4,23 @@ using App.Core.DTOs.User;
 using App.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
 
 namespace App.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/[controller]/[action]")]
 public class UserController : ControllerBase
 {
-    private readonly IUserService _userService;
     private readonly ILogger<UserController> _logger;
+    private readonly IUserService _userService;
 
     public UserController(IUserService userService, ILogger<UserController> logger)
     {
         _userService = userService;
         _logger = logger;
     }
-    
-    [HttpPost("ban")]
+
+    [HttpPost]
     [Authorize(Roles = RoleNames.Admin)]
     public async Task<ActionResult> BanUser([FromForm] UserBanCreateDto userBlockInfo)
     {
@@ -45,14 +44,14 @@ public class UserController : ControllerBase
                 return BadRequest("Failed to ban user");
             }
 
-            _logger.LogInformation("UserId={UserId} was successfully banned by AdminId={AdminId}", 
+            _logger.LogInformation("UserId={UserId} was successfully banned by AdminId={AdminId}",
                 userBlockInfo.UserId, adminIdClaim.Value);
 
             return Ok();
         }
     }
-    
-    [HttpPost("unban/{banId}")]
+
+    [HttpPost]
     [Authorize(Roles = RoleNames.Admin)]
     public async Task<ActionResult> UnbanUser(string banId)
     {
@@ -76,13 +75,15 @@ public class UserController : ControllerBase
                 return BadRequest("Failed to unban user");
             }
 
-            _logger.LogInformation("BanId={BanId} successfully unbanned by AdminId={AdminId}", banId, adminIdClaim.Value);
+            _logger.LogInformation("BanId={BanId} successfully unbanned by AdminId={AdminId}", banId,
+                adminIdClaim.Value);
             return Ok();
         }
     }
 
-    [HttpGet("ban/{userId}")]
-    public async Task<IEnumerable<UserBanDto>> GetAllByUserId(string userId)
+    [HttpGet]
+    [Authorize]
+    public async Task<ActionResult<IEnumerable<UserBanDto>>> GetAllByUserId(string userId)
     {
         using (_logger.BeginScope("GetAllByUserId action"))
         {
@@ -94,8 +95,9 @@ public class UserController : ControllerBase
         }
     }
 
-    [HttpGet("ban/my")]
-    public async Task<IEnumerable<UserBanDto>> GetAllByMyUserId()
+    [Authorize]
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<UserBanDto>>> GetAllByMyUserId()
     {
         using (_logger.BeginScope("GetAllByMyUserId action"))
         {
@@ -104,19 +106,20 @@ public class UserController : ControllerBase
             if (userIdClaim == null)
             {
                 _logger.LogWarning("UserId claim is missing for current user");
-                return new List<UserBanDto>();
+                return BadRequest();
             }
 
             _logger.LogInformation("Fetching bans for current UserId={UserId}", userIdClaim.Value);
             var bans = await _userService.GetUserBansByUserId(userIdClaim.Value);
             var allByMyUserId = bans as UserBanDto[] ?? bans.ToArray();
-            _logger.LogInformation("Found {Count} bans for current UserId={UserId}", allByMyUserId.Count(), userIdClaim.Value);
+            _logger.LogInformation("Found {Count} bans for current UserId={UserId}", allByMyUserId.Count(),
+                userIdClaim.Value);
             return allByMyUserId;
         }
     }
 
-    [HttpGet("user/{userId}")]
-    public async Task<UserDto?> GetUserById(string userId)
+    [HttpGet]
+    public async Task<ActionResult<UserDto?>> GetUserById(string userId)
     {
         using (_logger.BeginScope("GetUserById action"))
         {
@@ -126,28 +129,31 @@ public class UserController : ControllerBase
             if (user == null)
             {
                 _logger.LogWarning("User not found for UserId={UserId}", userId);
-                return null;
+                return NotFound("User not found.");
             }
+
             _logger.LogInformation("Found user for current UserId={UserId}", userId);
             return user;
         }
     }
 
-    [HttpGet("users")]
-    public async Task<IEnumerable<UserDto>> GetAllUsers()
+    [HttpGet]
+    [Authorize(Roles = RoleNames.Admin)]
+    public async Task<ActionResult<IEnumerable<UserDto>>> GetAllUsers()
     {
         using (_logger.BeginScope("GetAllUsers action"))
         {
             _logger.LogInformation("GetAllUsers called");
             var users = await _userService.GetAllUsersAsync();
-            var  allUsers = users as UserDto[] ?? users.ToArray();
+            var allUsers = users as UserDto[] ?? users.ToArray();
             _logger.LogInformation("Found {Count} users", allUsers.Length);
             return allUsers;
         }
     }
 
-    [HttpGet("user/my")]
-    public async Task<UserDto?> GetUserById()
+    [Authorize]
+    [HttpGet]
+    public async Task<ActionResult<UserDto?>> GetUserByMyId()
     {
         using (_logger.BeginScope("GetUserById action"))
         {
@@ -156,8 +162,9 @@ public class UserController : ControllerBase
             if (userId == null)
             {
                 _logger.LogWarning("UserId claim is missing");
-                return null;
+                return BadRequest();
             }
+
             _logger.LogInformation("Fetching user for current UserId={UserId}", userId);
             var user = await _userService.GetUserByIdAsync(userId.Value);
             _logger.LogInformation("Found user for current UserId={UserId}", userId);

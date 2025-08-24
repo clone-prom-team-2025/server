@@ -1,5 +1,3 @@
-using MongoDB.Bson;
-
 namespace App.Core.Models;
 
 /// <summary>

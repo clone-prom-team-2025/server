@@ -1,4 +1,3 @@
-using App.Core.Enums;
 using App.Core.Models.FileStorage;
 using App.Core.Models.User;
 
@@ -13,4 +12,4 @@ public class UserCreateDto
     public List<string> Roles { get; set; }
     public DateTime CreatedAt { get; set; }
     public UserAdditionalInfo? AdditionalInfo { get; set; }
-} 
+}

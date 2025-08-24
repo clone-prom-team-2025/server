@@ -1,6 +1,4 @@
-﻿using MongoDB.Bson;
-
-namespace App.Core.Models.Product;
+﻿namespace App.Core.Models.Product;
 
 /// <summary>
 ///     Represents a specific product feature value.

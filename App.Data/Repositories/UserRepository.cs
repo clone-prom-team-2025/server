@@ -1,6 +1,4 @@
-using App.Core.Enums;
 using App.Core.Interfaces;
-using App.Core.Models.FileStorage;
 using App.Core.Models.User;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -8,14 +6,14 @@ using MongoDB.Driver;
 namespace App.Data.Repositories;
 
 /// <summary>
-/// Repository class for performing CRUD operations and queries on the Users collection in MongoDB.
+///     Repository class for performing CRUD operations and queries on the Users collection in MongoDB.
 /// </summary>
 public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
 {
     private readonly IMongoCollection<User> _users = mongoDbContext.Users;
 
     /// <summary>
-    /// Retrieves all users from the database.
+    ///     Retrieves all users from the database.
     /// </summary>
     /// <returns>A list of all users or null if none are found.</returns>
     public async Task<List<User>?> GetAllUsersAsync()
@@ -24,7 +22,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     }
 
     /// <summary>
-    /// Retrieves users with pagination support.
+    ///     Retrieves users with pagination support.
     /// </summary>
     /// <param name="pageNumber">The page number to retrieve (1-based).</param>
     /// <param name="pageSize">The number of users per page.</param>
@@ -39,7 +37,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     }
 
     /// <summary>
-    /// Retrieves a user by their unique MongoDB ObjectId.
+    ///     Retrieves a user by their unique MongoDB ObjectId.
     /// </summary>
     /// <param name="userId">The user's ObjectId as string.</param>
     /// <returns>The user matching the ID or null if not found.</returns>
@@ -51,7 +49,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     }
 
     /// <summary>
-    /// Retrieves a user by their username.
+    ///     Retrieves a user by their username.
     /// </summary>
     /// <param name="username">The username to search for.</param>
     /// <returns>The matching user or null.</returns>
@@ -63,7 +61,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     }
 
     /// <summary>
-    /// Retrieves a user by their email address.
+    ///     Retrieves a user by their email address.
     /// </summary>
     /// <param name="email">The email address to search for.</param>
     /// <returns>The matching user or null.</returns>
@@ -77,7 +75,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     }
 
     /// <summary>
-    /// Retrieves a user by their phone number stored in additional info.
+    ///     Retrieves a user by their phone number stored in additional info.
     /// </summary>
     /// <param name="phoneNumber">The phone number to search for.</param>
     /// <returns>The matching user or null.</returns>
@@ -93,7 +91,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     }
 
     /// <summary>
-    /// Retrieves all users with the specified role.
+    ///     Retrieves all users with the specified role.
     /// </summary>
     /// <param name="role">The role name (e.g., "Admin", "User").</param>
     /// <returns>A list of users with that role or null if the role is invalid.</returns>
@@ -105,7 +103,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     }
 
     /// <summary>
-    /// Retrieves users by role with pagination support.
+    ///     Retrieves users by role with pagination support.
     /// </summary>
     /// <param name="role">The role name.</param>
     /// <param name="pageNumber">Page number (1-based).</param>
@@ -123,7 +121,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     }
 
     /// <summary>
-    /// Inserts a new user into the database.
+    ///     Inserts a new user into the database.
     /// </summary>
     /// <param name="user">The user object to create.</param>
     public async Task CreateUserAsync(User user)
@@ -132,7 +130,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     }
 
     /// <summary>
-    /// Replaces an existing user by ID.
+    ///     Replaces an existing user by ID.
     /// </summary>
     /// <param name="user">The updated user object.</param>
     /// <returns>True if update was acknowledged, otherwise false.</returns>
@@ -144,7 +142,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     }
 
     /// <summary>
-    /// Deletes a user by their ID.
+    ///     Deletes a user by their ID.
     /// </summary>
     /// <param name="userId">The user's ObjectId as string.</param>
     /// <returns>True if deletion was acknowledged, otherwise false.</returns>
@@ -157,7 +155,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     }
 
     /// <summary>
-    /// Retrieves the list of roles assigned to a user.
+    ///     Retrieves the list of roles assigned to a user.
     /// </summary>
     /// <param name="userId">The user's ObjectId as string.</param>
     /// <returns>List of user roles or empty list if not found.</returns>
@@ -173,7 +171,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     }
 
     /// <summary>
-    /// Updates the additional info object of a user by their ID.
+    ///     Updates the additional info object of a user by their ID.
     /// </summary>
     /// <param name="userId">The user's ObjectId as string.</param>
     /// <param name="userAdditionalInfo">The new additional info to assign.</param>
@@ -191,7 +189,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     }
 
     /// <summary>
-    /// Deletes the user completely by ID.
+    ///     Deletes the user completely by ID.
     /// </summary>
     /// <param name="userId">The user's ObjectId as string.</param>
     /// <returns>True if deleted successfully, otherwise false.</returns>
@@ -204,7 +202,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     }
 
     /// <summary>
-    /// Retrieves the additional info object of a user by ID.
+    ///     Retrieves the additional info object of a user by ID.
     /// </summary>
     /// <param name="userId">The user's ObjectId as string.</param>
     /// <returns>The user's additional info or null.</returns>
@@ -214,12 +212,12 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
         var projection = Builders<User>.Projection.Expression(u => u.AdditionalInfo);
 
         var additionalInfo = await _users
-        .Find(filter)
-        .Project(projection)
-        .FirstOrDefaultAsync();
+            .Find(filter)
+            .Project(projection)
+            .FirstOrDefaultAsync();
 
         if (additionalInfo == null) return null;
 
         return additionalInfo;
-    } 
+    }
 }

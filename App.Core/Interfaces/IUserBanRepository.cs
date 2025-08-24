@@ -9,7 +9,7 @@ public interface IUserBanRepository
     Task<List<UserBan>?> GetByUserIdAsync(ObjectId userId);
     Task<UserBan?> GetByIdAsync(string banId);
     Task<bool> CreateAsync(UserBan userBan);
-    
+
     Task<bool> UpdateAsync(UserBan userBan);
     Task<bool> DeleteByUserIdAsync(ObjectId userId);
     Task<bool> DeleteByIdAsync(ObjectId id);

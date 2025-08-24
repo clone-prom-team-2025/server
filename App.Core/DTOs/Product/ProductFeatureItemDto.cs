@@ -4,7 +4,6 @@ public class ProductFeatureItemDto
 {
     public ProductFeatureItemDto()
     {
-
     }
 
     public ProductFeatureItemDto(string value, string type, bool nullable = false)
@@ -13,9 +12,10 @@ public class ProductFeatureItemDto
         Type = type;
         Nullable = nullable;
     }
+
     public string Value { get; set; }
 
     public string Type { get; set; }
-    
+
     public bool Nullable { get; set; }
 }

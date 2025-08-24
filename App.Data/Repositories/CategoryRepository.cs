@@ -106,7 +106,7 @@ public class CategoryRepository(MongoDbContext mongoDbContext, IMapper mapper) :
             new BsonRegularExpression(name, "i")
         );
 
-        var categories = await this._categories.Find(filter).ToListAsync();
+        var categories = await _categories.Find(filter).ToListAsync();
 
         if (categories is null || categories.Count == 0)
             return new List<CategoryDto>();
@@ -231,7 +231,7 @@ public class CategoryRepository(MongoDbContext mongoDbContext, IMapper mapper) :
     }
 
     /// <summary>
-    /// Retrieves the full category tree, including all root categories and their nested descendants.
+    ///     Retrieves the full category tree, including all root categories and their nested descendants.
     /// </summary>
     /// <returns>List of root nodes with all nested child categories.</returns>
     public async Task<List<CategoryNode>> GetFullTreeAsync()
@@ -254,7 +254,7 @@ public class CategoryRepository(MongoDbContext mongoDbContext, IMapper mapper) :
 
         return result;
     }
-    
+
     public async Task<List<ObjectId>> GetCategoryPathAsync(string categoryId)
     {
         if (!ObjectId.TryParse(categoryId, out var currentId))
@@ -273,13 +273,9 @@ public class CategoryRepository(MongoDbContext mongoDbContext, IMapper mapper) :
             path.Add(category.Id);
 
             if (category.ParentId.HasValue)
-            {
                 currentId = category.ParentId.Value;
-            }
             else
-            {
                 break;
-            }
         }
 
         return path;
