@@ -16,7 +16,6 @@ public class ProductMediaDto
 
     public ProductMediaDto()
     {
-        
     }
 
     public string Id { get; set; }

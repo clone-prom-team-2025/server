@@ -1,67 +1,19 @@
 ﻿using System.Text.RegularExpressions;
 using App.Core.Interfaces;
 using App.Core.Models.Product;
-using App.Core.Models.Product.Review;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using App.Core.Enums;
-using SortDirection = App.Core.Enums.SortDirection;
 
 namespace App.Data.Repositories;
 
 /// <summary>
-/// MongoDB-based repository for managing product data,
-/// including filtering, searching, and CRUD operations.
+///     MongoDB-based repository for managing product data,
+///     including filtering, searching, and CRUD operations.
 /// </summary>
 public class ProductRepository(MongoDbContext mongoDbContext) : IProductRepository
 {
     private readonly IMongoCollection<Product> _products = mongoDbContext.Products;
 
-    private List<FilterDefinition<Product>> FormFilter(ProductFilterRequest filter)
-    {
-        var builder = Builders<Product>.Filter;
-        var filters = new List<FilterDefinition<Product>>();
-
-        if (filter.CategoryId.HasValue)
-        {
-            filters.Add(builder.AnyEq(p => p.CategoryPath, filter.CategoryId.Value));
-        }
-        
-        if (filter.PriceMin.HasValue && filter.PriceMin > 0)
-        {
-            filters.Add(builder.Gte(p => p.Price, filter.PriceMin.Value));
-        }
-
-        if (filter.PriceMax.HasValue && filter.PriceMax > 0)
-        {
-            filters.Add(builder.Lte(p => p.Price, filter.PriceMax.Value));
-        }
-
-        foreach (var kv in filter.Include)
-        {
-            var includeFilter = builder.ElemMatch(p => p.Features,
-                feature => feature.Features.ContainsKey(kv.Key) &&
-                           feature.Features[kv.Key].Value == kv.Value
-            );
-
-            filters.Add(includeFilter);
-        }
-
-        foreach (var kv in filter.Exclude)
-        {
-            var excludeFilter = builder.Not(
-                builder.ElemMatch(p => p.Features,
-                    feature => feature.Features.ContainsKey(kv.Key) &&
-                               feature.Features[kv.Key].Value == kv.Value
-                )
-            );
-
-            filters.Add(excludeFilter);
-        }
-
-        return filters;
-    }
-    
     public async Task<IEnumerable<Product>?> GetAllAsync(ProductFilterRequest filter)
     {
         var builder = Builders<Product>.Filter;
@@ -73,7 +25,7 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 
         var skip = (page - 1) * pageSize;
         var limit = pageSize;
-        
+
         return await _products.Find(finalFilter)
             .Skip(skip)
             .Limit(limit)
@@ -99,8 +51,8 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 
         var skip = (page - 1) * pageSize;
         var limit = pageSize;
-        
-        return await _products.Find(finalFilter) 
+
+        return await _products.Find(finalFilter)
             .Skip(skip)
             .Limit(limit)
             .ToListAsync();
@@ -126,13 +78,13 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
             .Limit(limit)
             .ToListAsync();
     }
-    
+
     public async Task<Product> CreateAsync(Product product)
     {
         await _products.InsertOneAsync(product);
         return product;
     }
-    
+
     public async Task<bool> UpdateAsync(Product product)
     {
         var result = await _products.ReplaceOneAsync(p => p.Id.Equals(product.Id), product);
@@ -170,12 +122,13 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
             {
                 var original = product.Name;
 
-                int originalStartIndex = FindOriginalIndexWithoutSpaces(original, index);
+                var originalStartIndex = FindOriginalIndexWithoutSpaces(original, index);
 
-                int originalEndIndex = FindOriginalEndIndex(original, originalStartIndex, normalizedName.Length);
+                var originalEndIndex = FindOriginalEndIndex(original, originalStartIndex, normalizedName.Length);
 
                 var highlighted = original[..originalStartIndex] +
-                                  "[" + original.Substring(originalStartIndex, originalEndIndex - originalStartIndex) + "]" +
+                                  "[" + original.Substring(originalStartIndex, originalEndIndex - originalStartIndex) +
+                                  "]" +
                                   original[originalEndIndex..];
 
                 results.Add(new ProductSearchResult
@@ -192,33 +145,69 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
             .ToList();
     }
 
+    private List<FilterDefinition<Product>> FormFilter(ProductFilterRequest filter)
+    {
+        var builder = Builders<Product>.Filter;
+        var filters = new List<FilterDefinition<Product>>();
+
+        if (filter.CategoryId.HasValue) filters.Add(builder.AnyEq(p => p.CategoryPath, filter.CategoryId.Value));
+
+        if (filter.PriceMin.HasValue && filter.PriceMin > 0)
+            filters.Add(builder.Gte(p => p.Price, filter.PriceMin.Value));
+
+        if (filter.PriceMax.HasValue && filter.PriceMax > 0)
+            filters.Add(builder.Lte(p => p.Price, filter.PriceMax.Value));
+
+        foreach (var kv in filter.Include)
+        {
+            var includeFilter = builder.ElemMatch(p => p.Features,
+                feature => feature.Features.ContainsKey(kv.Key) &&
+                           feature.Features[kv.Key].Value == kv.Value
+            );
+
+            filters.Add(includeFilter);
+        }
+
+        foreach (var kv in filter.Exclude)
+        {
+            var excludeFilter = builder.Not(
+                builder.ElemMatch(p => p.Features,
+                    feature => feature.Features.ContainsKey(kv.Key) &&
+                               feature.Features[kv.Key].Value == kv.Value
+                )
+            );
+
+            filters.Add(excludeFilter);
+        }
+
+        return filters;
+    }
+
     private static int FindOriginalIndexWithoutSpaces(string text, int indexInClean)
     {
-        int cleanCount = 0;
-        for (int i = 0; i < text.Length; i++)
-        {
+        var cleanCount = 0;
+        for (var i = 0; i < text.Length; i++)
             if (!char.IsWhiteSpace(text[i]))
             {
                 if (cleanCount == indexInClean)
                     return i;
                 cleanCount++;
             }
-        }
+
         return text.Length;
     }
 
     private static int FindOriginalEndIndex(string text, int startIndex, int lengthWithoutSpaces)
     {
-        int cleanCount = 0;
-        for (int i = startIndex; i < text.Length; i++)
-        {
+        var cleanCount = 0;
+        for (var i = startIndex; i < text.Length; i++)
             if (!char.IsWhiteSpace(text[i]))
             {
                 cleanCount++;
                 if (cleanCount == lengthWithoutSpaces)
                     return i + 1;
             }
-        }
+
         return text.Length;
     }
 }

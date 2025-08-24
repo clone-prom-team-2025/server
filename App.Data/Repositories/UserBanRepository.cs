@@ -1,16 +1,16 @@
 using App.Core.Interfaces;
 using App.Core.Models.User;
+using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using Microsoft.Extensions.Logging;
 
 namespace App.Data.Repositories;
 
 public class UserBanRepository : IUserBanRepository
 {
+    private readonly ILogger<UserBanRepository> _logger;
     private readonly IMongoCollection<UserBan> _userBans;
     private readonly IMongoCollection<User> _users;
-    private readonly ILogger<UserBanRepository> _logger;
 
     public UserBanRepository(MongoDbContext mongoDbContext, ILogger<UserBanRepository> logger)
     {
@@ -18,7 +18,7 @@ public class UserBanRepository : IUserBanRepository
         _users = mongoDbContext.Users;
         _logger = logger;
     }
-    
+
     public async Task<List<UserBan>?> GetAllAsync()
     {
         _logger.LogInformation("GetAllAsync called");
@@ -76,7 +76,8 @@ public class UserBanRepository : IUserBanRepository
 
         var userBanFilter = Builders<UserBan>.Filter.Eq(u => u.Id, userBan.Id);
         var result = await _userBans.ReplaceOneAsync(userBanFilter, userBan);
-        _logger.LogInformation("UpdateAsync result for UserBanId={UserBanId}: {IsAcknowledged}", userBan.Id, result.IsAcknowledged);
+        _logger.LogInformation("UpdateAsync result for UserBanId={UserBanId}: {IsAcknowledged}", userBan.Id,
+            result.IsAcknowledged);
 
         return result.IsAcknowledged;
     }
@@ -84,18 +85,10 @@ public class UserBanRepository : IUserBanRepository
     public async Task<bool> DeleteByUserIdAsync(ObjectId userId)
     {
         _logger.LogInformation("DeleteByUserIdAsync called for UserId={UserId}", userId);
-
-        var filter = Builders<User>.Filter.Eq(u => u.Id, userId);
-        var user = await _users.Find(filter).FirstOrDefaultAsync();
-        if (user == null)
-        {
-            _logger.LogWarning("DeleteByUserIdAsync failed: user not found for UserId={UserId}", userId);
-            return false;
-        }
-
         var userBanFilter = Builders<UserBan>.Filter.Eq(u => u.UserId, userId);
         var result = await _userBans.DeleteOneAsync(userBanFilter);
-        _logger.LogInformation("DeleteByUserIdAsync result for UserId={UserId}: {IsAcknowledged}", userId, result.IsAcknowledged);
+        _logger.LogInformation("DeleteByUserIdAsync result for UserId={UserId}: {IsAcknowledged}", userId,
+            result.IsAcknowledged);
 
         return result.IsAcknowledged;
     }
@@ -107,7 +100,8 @@ public class UserBanRepository : IUserBanRepository
         var filter = Builders<UserBan>.Filter.Eq(u => u.Id, id);
         var result = await _userBans.DeleteOneAsync(filter);
 
-        _logger.LogInformation("DeleteByIdAsync result for UserBanId={UserBanId}: {IsAcknowledged}", id, result.IsAcknowledged);
+        _logger.LogInformation("DeleteByIdAsync result for UserBanId={UserBanId}: {IsAcknowledged}", id,
+            result.IsAcknowledged);
         return result.IsAcknowledged;
     }
 }

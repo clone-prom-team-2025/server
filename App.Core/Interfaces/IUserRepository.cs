@@ -1,5 +1,3 @@
-using App.Core.Enums;
-using App.Core.Models.FileStorage;
 using App.Core.Models.User;
 
 namespace App.Core.Interfaces;
@@ -18,7 +16,7 @@ public interface IUserRepository
     Task<bool> UpdateUserAsync(User user);
     Task<bool> DeleteUserAsync(string userId);
     Task<List<string>> GetUserRolesAsync(string userId);
-    
+
     // additionalInfo
     Task<bool> UpdateUserAdditionalInfoByUserIdAsync(string userId, UserAdditionalInfo userAdditionalInfo);
     Task<bool> DeleteUserAdditionalInfoByUserIdAsync(string userId);

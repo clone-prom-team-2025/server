@@ -1,10 +1,7 @@
+using App.Core.DTOs;
 using App.Core.DTOs.Product;
-using App.Core.Enums;
-using App.Core.Models.Product;
-using App.Core.Models;
 using App.Services;
 using Microsoft.AspNetCore.Mvc;
-using App.Core.DTOs;
 
 namespace App.Api.Controllers;
 
@@ -45,18 +42,19 @@ public class ProductMediaController : ControllerBase
     }
 
     [HttpPut("many")]
-    public async Task<ActionResult<List<ProductMediaDto>?>> SyncProductMediaAsync([FromForm] IFormFile[] files, [FromQuery] string productId)
+    public async Task<ActionResult<List<ProductMediaDto>?>> SyncProductMediaAsync([FromForm] IFormFile[] files,
+        [FromQuery] string productId)
     {
         if (files == null || files.Length == 0)
             return BadRequest("No files uploaded.");
 
-        string tempDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "temp");
+        var tempDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "temp");
         if (!Directory.Exists(tempDir))
             Directory.CreateDirectory(tempDir);
 
         List<FileArrayItemDto> filesDto = [];
 
-        for (int i = 0; i < files.Length; i++)
+        for (var i = 0; i < files.Length; i++)
         {
             var file = files[i];
             if (file.Length > 0)
@@ -79,10 +77,8 @@ public class ProductMediaController : ControllerBase
         var result = await _productMediaService.SyncMediaFromTempFilesAsync(filesDto, productId);
 
         foreach (var file in filesDto)
-        {
             if (!string.IsNullOrWhiteSpace(file.Url) && System.IO.File.Exists(file.Url))
                 System.IO.File.Delete(file.Url);
-        }
 
         return Ok(result);
     }

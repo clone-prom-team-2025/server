@@ -2,25 +2,24 @@ using App.Core.DTOs.Product;
 using App.Core.Interfaces;
 using App.Core.Models.Product;
 using AutoMapper;
-using DnsClient.Protocol;
 using MongoDB.Bson;
-using MyApp.Core.Utils;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace App.Services;
 
 /// <summary>
-/// Service for managing products, their variations, and media.
+///     Service for managing products, their variations, and media.
 /// </summary>
-public class ProductService(IProductRepository productRepository, IMapper mapper, ICategoryRepository categoryRepository) : IProductService
+public class ProductService(
+    IProductRepository productRepository,
+    IMapper mapper,
+    ICategoryRepository categoryRepository) : IProductService
 {
-    private readonly IProductRepository _productRepository = productRepository;
-    private readonly IMapper _mapper = mapper;
     private readonly ICategoryRepository _categoryRepository = categoryRepository;
+    private readonly IMapper _mapper = mapper;
+    private readonly IProductRepository _productRepository = productRepository;
 
     /// <summary>
-    /// Retrieves all products matching the specified filter.
+    ///     Retrieves all products matching the specified filter.
     /// </summary>
     /// <param name="filter">Filtering options.</param>
     /// <returns>A list of matching products or null.</returns>
@@ -31,22 +30,20 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
     }
 
     /// <summary>
-    /// Retrieves a product by its ID.
+    ///     Retrieves a product by its ID.
     /// </summary>
     /// <param name="id">The ID of the product.</param>
     /// <returns>The matching product or null.</returns>
     public async Task<ProductDto?> GetByIdAsync(string id)
     {
         if (!ObjectId.TryParse(id, out var objectId))
-        {
             throw new ArgumentException("Invalid product id format.", nameof(id));
-        }
         var product = await _productRepository.GetByIdAsync(objectId);
         return _mapper.Map<ProductDto>(product);
     }
 
     /// <summary>
-    /// Retrieves products by name and optional filter.
+    ///     Retrieves products by name and optional filter.
     /// </summary>
     /// <param name="name">Product name (partial or full).</param>
     /// <param name="filter">Additional filtering options.</param>
@@ -58,7 +55,7 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
     }
 
     /// <summary>
-    /// Retrieves products by seller ID.
+    ///     Retrieves products by seller ID.
     /// </summary>
     /// <param name="sellerId">The seller identifier.</param>
     /// <param name="filter">Filtering options.</param>
@@ -66,15 +63,13 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
     public async Task<IEnumerable<ProductDto>?> GetBySellerIdAsync(string sellerId, ProductFilterRequestDto filter)
     {
         if (!ObjectId.TryParse(sellerId, out var objectId))
-        {
             throw new ArgumentException("Invalid product id format.", nameof(sellerId));
-        }
         var products = await _productRepository.GetBySellerIdAsync(objectId, _mapper.Map<ProductFilterRequest>(filter));
         return _mapper.Map<List<ProductDto>?>(products);
     }
 
     /// <summary>
-    /// Creates a new product.
+    ///     Creates a new product.
     /// </summary>
     /// <param name="productDto">Data to create the product.</param>
     /// <returns>The created product DTO.</returns>
@@ -89,7 +84,7 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
     }
 
     /// <summary>
-    /// Updates an existing product.
+    ///     Updates an existing product.
     /// </summary>
     /// <param name="productDto">Product data to update.</param>
     /// <returns>The updated product or null if update failed.</returns>
@@ -99,29 +94,25 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
         var success = await _productRepository.UpdateAsync(product);
         if (!success) return null;
         if (!ObjectId.TryParse(productDto.Id, out var objectId))
-        {
             throw new ArgumentException("Invalid product id format.", nameof(productDto.Id));
-        }
         var updatedProduct = await _productRepository.GetByIdAsync(objectId);
         return _mapper.Map<ProductDto>(updatedProduct);
     }
 
     /// <summary>
-    /// Deletes a product by ID.
+    ///     Deletes a product by ID.
     /// </summary>
     /// <param name="id">The ID of the product to delete.</param>
     /// <returns>True if deleted successfully; otherwise, false.</returns>
     public async Task<bool> DeleteAsync(string id)
     {
         if (!ObjectId.TryParse(id, out var objectId))
-        {
             throw new ArgumentException("Invalid product id format.", nameof(id));
-        }
         return await _productRepository.DeleteAsync(objectId);
     }
 
     /// <summary>
-    /// Searches for products by name and language code.
+    ///     Searches for products by name and language code.
     /// </summary>
     /// <param name="name">Search query.</param>
     /// <param name="languageCode">Language of the product name. Default is "en".</param>
@@ -130,4 +121,4 @@ public class ProductService(IProductRepository productRepository, IMapper mapper
     {
         return _mapper.Map<IEnumerable<ProductSearchResultDto>?>(await _productRepository.SearchByNameAsync(name));
     }
-} 
+}

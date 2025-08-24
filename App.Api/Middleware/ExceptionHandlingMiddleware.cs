@@ -1,14 +1,12 @@
 using System.Text.Json;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 
 namespace App.Api.Middleware;
 
 public class ExceptionHandlingMiddleware
 {
-    private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionHandlingMiddleware> _logger;
+    private readonly RequestDelegate _next;
 
     public ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
     {
@@ -34,7 +32,7 @@ public class ExceptionHandlingMiddleware
         }
         catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
         {
-            string duplicateField = GetDuplicateFieldFromMessage(ex.Message) ?? "UnknownField";
+            var duplicateField = GetDuplicateFieldFromMessage(ex.Message) ?? "UnknownField";
             await HandleValidationErrorAsync(context, duplicateField, $"{duplicateField} must be unique.");
         }
         catch (Exception ex)
@@ -56,7 +54,7 @@ public class ExceptionHandlingMiddleware
             await context.Response.WriteAsync(JsonSerializer.Serialize(problemDetails));
         }
     }
-    
+
     private string? GetObjectIdParamName(HttpContext context)
     {
         var routeValues = context.Request.RouteValues;
@@ -69,15 +67,12 @@ public class ExceptionHandlingMiddleware
             if (key == "controller" || key == "action")
                 continue;
 
-            if (!string.IsNullOrWhiteSpace(value) && value.Length < 24)
-            {
-                return key;
-            }
+            if (!string.IsNullOrWhiteSpace(value) && value.Length < 24) return key;
         }
 
         return null;
     }
-    
+
     private async Task HandleValidationErrorAsync(HttpContext context, string field, string message)
     {
         context.Response.StatusCode = StatusCodes.Status400BadRequest;
@@ -97,7 +92,7 @@ public class ExceptionHandlingMiddleware
 
         await context.Response.WriteAsync(JsonSerializer.Serialize(problemDetails));
     }
-    
+
     private string? GetDuplicateFieldFromMessage(string message)
     {
         var prefix = "index: ";

@@ -1,9 +1,9 @@
-using App.Core.Enums;
-
 namespace App.Core.DTOs.Product;
 
 public class ProductMediaCreateDto
 {
+    public string? Id;
+
     public ProductMediaCreateDto(string productId, string url, int order, string? id = null)
     {
         ProductId = productId;
@@ -14,10 +14,7 @@ public class ProductMediaCreateDto
 
     public ProductMediaCreateDto()
     {
-        
     }
-
-    public string? Id;
 
     public string ProductId { get; set; }
 

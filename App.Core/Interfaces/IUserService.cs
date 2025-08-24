@@ -1,7 +1,5 @@
-using App.Core.Enums;
-using App.Core.Models.User;
-using App.Core.DTOs;
 using App.Core.DTOs.User;
+using App.Core.Models.User;
 
 namespace App.Core.Interfaces;
 
@@ -20,15 +18,15 @@ public interface IUserService
     Task<bool> UpdateUserAsync(User user);
     Task<bool> DeleteUserAsync(string userId);
     Task<IEnumerable<string>> GetUserRolesAsync(string userId);
-    
+
     // additionalInfo
     Task<bool> UpdateUserAdditionalInfoByUserIdAsync(string userId, UserAdditionalInfo userAdditionalInfo);
     Task<bool> DeleteUserAdditionalInfoByUserIdAsync(string userId);
     Task<bool> SetUserPhoneNumberConfirmedAsync(string userId, string phoneNumber);
     Task<bool> SetUserEmailConfirmedAsync(string userId, string email);
     Task<UserAdditionalInfo?> GetUserAdditionalInfoByUserIdAsync(string userId);
-    
-    
+
+
     Task<bool> BanUser(UserBanCreateDto userBlockInfo, string adminId);
     Task<bool> UnbanUserByBanId(string banId, string adminId);
     Task<IEnumerable<UserBanDto>> GetUserBansByUserId(string userId);

@@ -1,9 +1,7 @@
 using App.Core.DTOs.Product;
 using App.Core.Interfaces;
 using App.Core.Models.Product;
-using App.Services;
 using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
 
 namespace App.Api.Controllers;
 
@@ -36,7 +34,8 @@ public class ProductController : ControllerBase
     }
 
     [HttpPost("get-by-name/{name}")]
-    public async Task<ActionResult<List<ProductDto>?>> GetByNameAsync([FromQuery]string name, ProductFilterRequestDto filter)
+    public async Task<ActionResult<List<ProductDto>?>> GetByNameAsync([FromQuery] string name,
+        ProductFilterRequestDto filter)
     {
         var products = await _productService.GetByNameAsync(name, filter);
         if (products == null || products.Count() == 0)
@@ -45,7 +44,8 @@ public class ProductController : ControllerBase
     }
 
     [HttpPost("get-by-seller-id/{sellerId}")]
-    public async Task<ActionResult<List<ProductDto>?>> GetBySellerIdAsync([FromQuery]string sellerId, ProductFilterRequestDto filter)
+    public async Task<ActionResult<List<ProductDto>?>> GetBySellerIdAsync([FromQuery] string sellerId,
+        ProductFilterRequestDto filter)
     {
         var products = await _productService.GetBySellerIdAsync(sellerId, filter);
         if (products == null || products.Count() == 0)

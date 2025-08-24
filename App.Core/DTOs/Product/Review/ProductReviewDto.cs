@@ -1,11 +1,9 @@
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-
 namespace App.Core.DTOs.Product.Review;
 
 public class ProductReviewDto
 {
-    public ProductReviewDto(string id, string productId, string modelId, double averageRating, List<ProductReviewCommentDto> comments)
+    public ProductReviewDto(string id, string productId, string modelId, double averageRating,
+        List<ProductReviewCommentDto> comments)
     {
         Id = id;
         ProductId = productId;
@@ -16,7 +14,6 @@ public class ProductReviewDto
 
     public ProductReviewDto()
     {
-        
     }
 
     public string Id { get; set; }

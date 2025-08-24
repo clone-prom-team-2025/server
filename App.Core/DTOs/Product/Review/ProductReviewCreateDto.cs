@@ -8,6 +8,7 @@ public class ProductReviewCreateDto
         AverageRating = averageRating;
         ModelId = modelId;
     }
+
     public string ProductId { get; set; }
 
     public string ModelId { get; set; }

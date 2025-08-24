@@ -1,6 +1,3 @@
-using App.Core.Models.AvailableFilters;
-using MongoDB.Bson;
-
 namespace App.Core.DTOs.AvailableFilters;
 
 public class AvailableFiltersDto

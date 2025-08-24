@@ -1,5 +1,4 @@
 using App.Core.DTOs.Auth;
-using App.Core.Models.Auth;
 
 namespace App.Core.Interfaces;
 

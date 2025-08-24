@@ -8,22 +8,23 @@ using MongoDB.Driver;
 
 namespace App.Data.Repositories;
 
-public class UserSessionRepository(MongoDbContext mongoDbContext, IOptions<SessionsOptions> options) : IUserSessionRepository
+public class UserSessionRepository(MongoDbContext mongoDbContext, IOptions<SessionsOptions> options)
+    : IUserSessionRepository
 {
     private readonly IMongoCollection<UserSession> _collection = mongoDbContext.UserSessions;
     private readonly SessionsOptions _options = options.Value;
-    
+
     public async Task<UserSession?> CreateSessionAsync(ObjectId userId, string deviceInfo)
     {
         var userFilter = Builders<User>.Filter.Eq(u => u.Id, userId);
         var user = await mongoDbContext.Users.Find(userFilter).FirstOrDefaultAsync();
         if (user == null) return null;
-        var session = new UserSession()
+        var session = new UserSession
         {
-            CreatedAt = DateTime.UtcNow, 
-            DeviceInfo = deviceInfo, 
+            CreatedAt = DateTime.UtcNow,
+            DeviceInfo = deviceInfo,
             ExpiresAt = DateTime.UtcNow.AddHours(_options.ExpiresIn),
-            Id = ObjectId.GenerateNewId(), 
+            Id = ObjectId.GenerateNewId(),
             UserId = userId,
             IsRevoked = false,
             Roles = [..user.Roles],
@@ -48,7 +49,7 @@ public class UserSessionRepository(MongoDbContext mongoDbContext, IOptions<Sessi
         var filter = Builders<UserSession>.Filter.Eq(s => s.Id, sessionId);
         return await _collection.Find(filter).FirstOrDefaultAsync();
     }
-    
+
     public async Task<List<UserSession>?> GetSessionsAsync(ObjectId userId)
     {
         var filter = Builders<UserSession>.Filter.Eq(s => s.UserId, userId);

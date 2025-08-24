@@ -1,6 +1,5 @@
-using FluentValidation;
-using App.Core.DTOs;
 using App.Core.DTOs.User;
+using FluentValidation;
 
 namespace App.Core.Validations;
 

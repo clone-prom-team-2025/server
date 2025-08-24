@@ -9,7 +9,7 @@ namespace App.Api.Controllers;
 public class AvailableFiltersController : ControllerBase
 {
     private readonly IAvailableFiltersService _availableFiltersService;
-    
+
     public AvailableFiltersController(IAvailableFiltersService availableFiltersService)
     {
         _availableFiltersService = availableFiltersService;
@@ -51,7 +51,8 @@ public class AvailableFiltersController : ControllerBase
     }
 
     [HttpPost("{categoryId}/add-filters")]
-    public async Task<IActionResult> AddFilterToCollection(string categoryId, [FromBody] List<AvailableFiltersDto> filtersDto)
+    public async Task<IActionResult> AddFilterToCollection(string categoryId,
+        [FromBody] List<AvailableFiltersDto> filtersDto)
     {
         await _availableFiltersService.AddFilterToCollectionAsync(categoryId, filtersDto);
         return Ok();
@@ -65,7 +66,8 @@ public class AvailableFiltersController : ControllerBase
     }
 
     [HttpPut("{id}/update-filters")]
-    public async Task<IActionResult> UpdateFilterCollectionById(string id, [FromBody] List<AvailableFiltersItemDto> filters)
+    public async Task<IActionResult> UpdateFilterCollectionById(string id,
+        [FromBody] List<AvailableFiltersItemDto> filters)
     {
         var result = await _availableFiltersService.UpdateFilterCollectionAsync(id, filters);
         return result ? Ok() : NotFound();

@@ -1,6 +1,5 @@
 using App.Core.Interfaces;
 using App.Core.Models.AvailableFilters;
-using AutoMapper;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
@@ -9,7 +8,7 @@ namespace App.Data.Repositories;
 public class AvailableFiltersRepository(MongoDbContext mongoDbContext) : IAvailableFiltersRepository
 {
     private readonly IMongoCollection<AvailableFilters> _availableFilters = mongoDbContext.AvailableFilters;
-    
+
     public async Task CreateFilterCollectionAsync(AvailableFilters filters)
     {
         await _availableFilters.InsertOneAsync(filters);
@@ -56,17 +55,14 @@ public class AvailableFiltersRepository(MongoDbContext mongoDbContext) : IAvaila
         if (availableFilters == null)
             return false;
 
-        foreach (var filterItem in availableFilters.Filters)
-        {
-            filterItem.Values.RemoveAll(v => values.Contains(v));
-        }
+        foreach (var filterItem in availableFilters.Filters) filterItem.Values.RemoveAll(v => values.Contains(v));
 
         availableFilters.Filters.RemoveAll(f => f.Values == null || f.Values.Count == 0);
 
         var result = await _availableFilters.ReplaceOneAsync(filter, availableFilters);
         return result.IsAcknowledged && result.ModifiedCount > 0;
     }
-    
+
     public async Task<bool> UpdateFilterCollectionAsync(string id, List<AvailableFiltersItem> filters)
     {
         var filter = Builders<AvailableFilters>.Filter.Eq(af => af.Id, ObjectId.Parse(id));
@@ -75,7 +71,7 @@ public class AvailableFiltersRepository(MongoDbContext mongoDbContext) : IAvaila
         var result = await _availableFilters.UpdateOneAsync(filter, update);
         return result.IsAcknowledged && result.ModifiedCount > 0;
     }
-    
+
     public async Task<bool> UpdateFilterCollectionAsync(AvailableFilters updatedFilters)
     {
         var filter = Builders<AvailableFilters>.Filter.Eq(af => af.Id, updatedFilters.Id);

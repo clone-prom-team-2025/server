@@ -13,7 +13,9 @@ public class ProductFilterRequest
     /// <summary>
     ///     Default constructor.
     /// </summary>
-    public ProductFilterRequest() {}
+    public ProductFilterRequest()
+    {
+    }
 
     /// <summary>
     ///     Creates a new filtering request with the given parameters.
@@ -34,10 +36,10 @@ public class ProductFilterRequest
         decimal? priceMax = null)
     {
         CategoryId = categoryId;
-        Include = include ?? new();
+        Include = include ?? new Dictionary<string, string>();
         Page = page;
         PageSize = pageSize;
-        Exclude = exclude ?? new();
+        Exclude = exclude ?? new Dictionary<string, string>();
         Sort = sortDirection;
         PriceMin = priceMin;
         PriceMax = priceMax;
@@ -67,13 +69,13 @@ public class ProductFilterRequest
     ///     Number of items per page.
     /// </summary>
     public int PageSize { get; set; } = 20;
-    
+
     public decimal? PriceMin { get; set; }
-    
+
     public decimal? PriceMax { get; set; }
-    
+
     /// <summary>
-    /// Sort direction
+    ///     Sort direction
     /// </summary>
     public SortDirection Sort { get; set; } = SortDirection.None;
 }

@@ -1,24 +1,18 @@
+using App.Api.Handlers;
 using App.Api.Middleware;
 using App.Core.Interfaces;
 using App.Core.Models.Auth;
 using App.Core.Models.FileStorage;
+using App.Core.Validations;
 using App.Data;
 using App.Data.Repositories;
 using App.Services;
-using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using App.Api.Handlers;
-using App.Core.Utils;
-using FluentValidation.AspNetCore;
 using FluentValidation;
-using App.Core.Validations;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.OpenApi.Models;
 using Serilog;
-using Serilog.Events;
-using Serilog.Formatting.Display;
 using Serilog.Sinks.SystemConsole.Themes;
 using LogEventLevel = Serilog.Events.LogEventLevel;
 using RollingInterval = Serilog.RollingInterval;
@@ -50,6 +44,7 @@ builder.Services.AddSingleton<IProductMediaRepository, ProductMediaRepository>()
 builder.Services.AddSingleton<IAvailableFiltersRepository, AvailableFiltersRepository>();
 builder.Services.AddSingleton<IUserBanRepository, UserBanRepository>();
 builder.Services.AddSingleton<IUserSessionRepository, UserSessionRepository>();
+builder.Services.AddSingleton<IStoreCreateRequestRepository, StoreCreateRequestRepository>();
 
 // --- Services ---
 builder.Services.AddSingleton<ICategoryService, CategoryService>();
@@ -61,6 +56,8 @@ builder.Services.AddSingleton<IProductReviewService, ProductReviewService>();
 builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddSingleton<IAvailableFiltersService, AvailableFiltersService>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
+builder.Services.AddSingleton<IStoreService, StoreService>();
+
 builder.Services.AddMemoryCache();
 
 // --- Validation ---
@@ -74,7 +71,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "App API",
         Version = "v1"
@@ -83,21 +80,21 @@ builder.Services.AddSwaggerGen(options =>
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
-        Name = "Authorization", 
+        Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.Http,
         Scheme = "bearer",
         BearerFormat = "JWT"
     });
 
-    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            new OpenApiSecurityScheme
             {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                Reference = new OpenApiReference
                 {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Type = ReferenceType.SecurityScheme,
                     Id = "Bearer"
                 }
             },
@@ -119,9 +116,9 @@ var env = builder.Environment;
 var loggerConfig = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .WriteTo.Console(
-        restrictedToMinimumLevel: env.IsDevelopment() ? LogEventLevel.Verbose : LogEventLevel.Information,
-        outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}",
-        theme: Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme.Code
+        env.IsDevelopment() ? LogEventLevel.Verbose : LogEventLevel.Information,
+        "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}",
+        theme: AnsiConsoleTheme.Code
     )
     .WriteTo.File(
         "logs/app.log",
@@ -163,7 +160,8 @@ using (var scope = app.Services.CreateScope())
     await dbContext.CreateStoreReviewIndexesAsync();
     await dbContext.CreateAvailableFiltersIndexesAsync();
     await dbContext.CreateUserIndexesAsync();
-    
+    await dbContext.CreateStoreCreateRequestsIndexesAsync();
+
     var dbSeeder = scope.ServiceProvider.GetRequiredService<MongoDbSeeder>();
     await dbSeeder.SeedUserAsync();
 }

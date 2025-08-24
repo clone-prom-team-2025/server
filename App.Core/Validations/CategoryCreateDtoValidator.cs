@@ -9,8 +9,10 @@ public class CategoryCreateDtoValidator : AbstractValidator<CategoryCreateDto>
     {
         RuleFor(x => x.Name)
             .NotNull()
-            .Must(name => name.All(pair => !string.IsNullOrWhiteSpace(pair.Value))).WithMessage("All name translations must be non-empty.")
-            .Must(name => name.All(pair => !string.IsNullOrWhiteSpace(pair.Key))).WithMessage("All language keys must be non-empty.");
+            .Must(name => name.All(pair => !string.IsNullOrWhiteSpace(pair.Value)))
+            .WithMessage("All name translations must be non-empty.")
+            .Must(name => name.All(pair => !string.IsNullOrWhiteSpace(pair.Key)))
+            .WithMessage("All language keys must be non-empty.");
 
         RuleFor(x => x.ParentId)
             .Matches("^[a-fA-F0-9]{24}$").WithMessage("Id must be a 24-character hex string")

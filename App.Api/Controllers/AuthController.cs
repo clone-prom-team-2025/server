@@ -1,5 +1,5 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using App.Core.Constants;
 using App.Core.DTOs.Auth;
 using App.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -24,7 +24,7 @@ public class AuthController : ControllerBase
         var result = await _authService.LoginAsync(loginDto);
         if (result == null)
             return Unauthorized("Invalid username, email, or password");
-    
+
         return Ok(result);
     }
 
@@ -44,9 +44,9 @@ public class AuthController : ControllerBase
         var sessionId = User.FindFirstValue(ClaimTypes.Sid);
         if (string.IsNullOrEmpty(sessionId))
             return Unauthorized("Session ID not found in token");
-        
+
         var result = await _authService.LogoutAsync(sessionId);
-        
+
         return result ? Ok() : Unauthorized("Invalid username, email, or password");
     }
 
@@ -57,7 +57,7 @@ public class AuthController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
             return Unauthorized("Session ID not found in token");
-        
+
         await _authService.SendEmailVerificationCodeAsync(userId);
         return Ok("Email verification code sent");
     }
@@ -69,8 +69,22 @@ public class AuthController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
             return Unauthorized("Session ID not found in token");
-        
+
         var result = await _authService.VerifyCode(userId, code);
         return result ? Ok() : Unauthorized("Invalid code");
+    }
+
+    [Authorize]
+    [HttpGet("check-login")]
+    public ActionResult CheckLogin()
+    {
+        return Ok();
+    }
+
+    [Authorize(Roles = RoleNames.Admin)]
+    [HttpGet("check-admin")]
+    public ActionResult CheckAdmin()
+    {
+        return Ok();
     }
 }

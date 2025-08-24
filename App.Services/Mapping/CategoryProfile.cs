@@ -6,13 +6,14 @@ using MongoDB.Bson;
 namespace App.Core.Mapping;
 
 /// <summary>
-/// AutoMapper profile for mapping between category-related DTOs and domain models.
-/// </summary>  
+///     AutoMapper profile for mapping between category-related DTOs and domain models.
+/// </summary>
 public class CategoryProfile : Profile
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="CategoryProfile"/> class
-    /// and defines mappings between <see cref="Category"/>, <see cref="CategoryDto"/>, and <see cref="CategoryCreateDto"/>.
+    ///     Initializes a new instance of the <see cref="CategoryProfile" /> class
+    ///     and defines mappings between <see cref="Category" />, <see cref="CategoryDto" />, and
+    ///     <see cref="CategoryCreateDto" />.
     /// </summary>
     public CategoryProfile()
     {
@@ -29,7 +30,8 @@ public class CategoryProfile : Profile
         CreateMap<CategoryDto, Category>()
             .ForMember(
                 dest => dest.ParentId,
-                opt => opt.MapFrom(src => !string.IsNullOrEmpty(src.ParentId) ? new ObjectId(src.ParentId) : (ObjectId?)null)
+                opt => opt.MapFrom(src =>
+                    !string.IsNullOrEmpty(src.ParentId) ? new ObjectId(src.ParentId) : (ObjectId?)null)
             )
             .ForMember(
                 dest => dest.Id,
@@ -40,7 +42,7 @@ public class CategoryProfile : Profile
             .ConstructUsing(dto =>
                 new Category(
                     dto.Name,
-                    !string.IsNullOrEmpty(dto.ParentId) ? new ObjectId(dto.ParentId) : (ObjectId?)null
+                    !string.IsNullOrEmpty(dto.ParentId) ? new ObjectId(dto.ParentId) : null
                 )
             );
     }

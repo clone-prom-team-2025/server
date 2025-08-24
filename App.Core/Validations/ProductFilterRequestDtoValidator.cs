@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace App.Core.Validations;
 
-public class ProductFilterRequestDtoValidator :  AbstractValidator<ProductFilterRequestDto>
+public class ProductFilterRequestDtoValidator : AbstractValidator<ProductFilterRequestDto>
 {
     public ProductFilterRequestDtoValidator()
     {
@@ -12,7 +12,7 @@ public class ProductFilterRequestDtoValidator :  AbstractValidator<ProductFilter
 
         RuleFor(x => x.Page)
             .GreaterThanOrEqualTo(0);
-        
+
         RuleFor(x => x.PageSize)
             .GreaterThanOrEqualTo(0);
     }

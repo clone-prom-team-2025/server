@@ -1,6 +1,5 @@
 using App.Core.DTOs;
 using App.Core.DTOs.Product;
-using App.Core.Enums;
 
 namespace App.Services;
 

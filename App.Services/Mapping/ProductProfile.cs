@@ -10,33 +10,37 @@ using MongoDB.Bson;
 namespace App.Services.Mapping;
 
 /// <summary>
-/// AutoMapper profile for mapping between Product-related domain models and DTOs.
-/// Handles transformations for <see cref="Product"/>, <see cref="ProductDto"/>, 
-/// <see cref="ProductCreateDto"/>, <see cref="ProductMedia"/>, <see cref="ProductMediaDto"/>,
-/// <see cref="ProductFeature"/>, and related types.
+///     AutoMapper profile for mapping between Product-related domain models and DTOs.
+///     Handles transformations for <see cref="Product" />, <see cref="ProductDto" />,
+///     <see cref="ProductCreateDto" />, <see cref="ProductMedia" />, <see cref="ProductMediaDto" />,
+///     <see cref="ProductFeature" />, and related types.
 /// </summary>
 public class ProductProfile : Profile
 {
     private const string RootPrefix = "wwwroot/";
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ProductProfile"/> class.
-    /// Configures mapping rules for product entities and their corresponding DTOs.
+    ///     Initializes a new instance of the <see cref="ProductProfile" /> class.
+    ///     Configures mapping rules for product entities and their corresponding DTOs.
     /// </summary>
     public ProductProfile()
     {
         CreateMap<ProductFeatureItem, ProductFeatureDto>().ReverseMap();
-        
+
 
         CreateMap<Product, ProductDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
             .ForMember(dest => dest.SellerId, opt => opt.MapFrom(src => src.SellerId.ToString()))
-            .ForMember(dest => dest.CategoryPath, opt => opt.MapFrom(src => src.CategoryPath.Select(oid => oid.ToString()).ToList()));
+            .ForMember(dest => dest.CategoryPath,
+                opt => opt.MapFrom(src => src.CategoryPath.Select(oid => oid.ToString()).ToList()));
 
         CreateMap<ProductDto, Product>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(dto => string.IsNullOrWhiteSpace(dto.Id) ? ObjectId.GenerateNewId() : ObjectId.Parse(dto.Id)))
+            .ForMember(dest => dest.Id,
+                opt => opt.MapFrom(dto =>
+                    string.IsNullOrWhiteSpace(dto.Id) ? ObjectId.GenerateNewId() : ObjectId.Parse(dto.Id)))
             .ForMember(dest => dest.SellerId, opt => opt.MapFrom(dto => ObjectId.Parse(dto.SellerId)))
-            .ForMember(dest => dest.CategoryPath, opt => opt.MapFrom(dto => dto.CategoryPath.Select(ObjectId.Parse).ToList()))
+            .ForMember(dest => dest.CategoryPath,
+                opt => opt.MapFrom(dto => dto.CategoryPath.Select(ObjectId.Parse).ToList()))
             .ForMember(dest => dest.Name, opt => opt.MapFrom(dto => dto.Name))
             .ForMember(dest => dest.Features, opt => opt.MapFrom(dto => dto.Features));
 
@@ -121,14 +125,14 @@ public class ProductProfile : Profile
 
         CreateMap<ProductFilterRequest, ProductFilterRequestDto>()
             .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => src.CategoryId.ToString()));
-        
+
         CreateMap<ProductFilterRequestDto, ProductFilterRequest>()
             .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => ObjectId.Parse(src.CategoryId)));
 
         CreateMap<AvailableFilters, AvailableFiltersDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
             .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => src.CategoryId.ToString()));
-        
+
         CreateMap<AvailableFiltersDto, AvailableFilters>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => ObjectId.Parse(src.Id)))
             .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => ObjectId.Parse(src.CategoryId)));
@@ -136,12 +140,12 @@ public class ProductProfile : Profile
         CreateMap<AvailableFiltersCreateDto, AvailableFilters>()
             .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => ObjectId.Parse(src.CategoryId)))
             .ForMember(dest => dest.Id, opt => opt.Ignore());
-        
+
         CreateMap<AvailableFiltersItem, AvailableFiltersItemDto>().ReverseMap();
 
         CreateMap<ProductSearchResult, ProductSearchResultDto>()
             .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductId.ToString()));
-        
+
         CreateMap<ProductSearchResultDto, ProductSearchResult>()
             .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => ObjectId.Parse(src.ProductId)));
     }

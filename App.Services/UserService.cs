@@ -1,24 +1,22 @@
-using App.Core.Enums;
+using App.Core.DTOs.User;
 using App.Core.Interfaces;
 using App.Core.Models.User;
-using App.Core.DTOs;
-using App.Core.DTOs.User;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
-using MongoDB.Driver;
 
 namespace App.Services;
 
 public class UserService : IUserService
 {
+    private readonly ILogger<UserService> _logger;
+    private readonly IMapper _mapper;
+    private readonly IUserBanRepository _userBanRepository;
     private readonly IUserRepository _userRepository;
     private readonly IUserSessionRepository _userSessionRepository;
-    private readonly IUserBanRepository _userBanRepository;
-    private readonly IMapper _mapper;
-    private readonly ILogger<UserService> _logger;
 
-    public UserService(IUserRepository userRepository, IUserSessionRepository userSessionRepository, IUserBanRepository userBanRepository, IMapper mapper, ILogger<UserService> logger)
+    public UserService(IUserRepository userRepository, IUserSessionRepository userSessionRepository,
+        IUserBanRepository userBanRepository, IMapper mapper, ILogger<UserService> logger)
     {
         _userRepository = userRepository;
         _mapper = mapper;
@@ -26,7 +24,7 @@ public class UserService : IUserService
         _userBanRepository = userBanRepository;
         _logger = logger;
     }
-    
+
     public async Task<IEnumerable<UserDto>?> GetAllUsersAsync()
     {
         using (_logger.BeginScope("GetAllUsersAsync"))
@@ -38,6 +36,7 @@ public class UserService : IUserService
                 _logger.LogInformation("No users found");
                 return null;
             }
+
             _logger.LogInformation("Fetched {Count} users", users.Count);
             return users.Select(u => _mapper.Map<UserDto>(u)).ToList();
         }
@@ -45,7 +44,8 @@ public class UserService : IUserService
 
     public async Task<IEnumerable<UserDto>?> GetAllUsersAsync(int pageNumber, int pageSize)
     {
-        using (_logger.BeginScope("GetAllUsersAsync(PageNumber={pageNumber}, PageSize={pageSize})", pageNumber, pageSize))
+        using (_logger.BeginScope("GetAllUsersAsync(PageNumber={pageNumber}, PageSize={pageSize})", pageNumber,
+                   pageSize))
         {
             _logger.LogInformation("Fetching users with pagination");
             var users = await _userRepository.GetAllUsersAsync(pageNumber, pageSize);
@@ -54,6 +54,7 @@ public class UserService : IUserService
                 _logger.LogInformation("No users found on page {PageNumber}", pageNumber);
                 return null;
             }
+
             _logger.LogInformation("Fetched {Count} users on page {PageNumber}", users.Count, pageNumber);
             return users.Select(u => _mapper.Map<UserDto>(u)).ToList();
         }
@@ -70,6 +71,7 @@ public class UserService : IUserService
                 _logger.LogWarning("User with ID {UserId} not found", userId);
                 return null;
             }
+
             _logger.LogInformation("Fetched user with ID {UserId}", userId);
             return _mapper.Map<UserDto?>(user);
         }
@@ -86,6 +88,7 @@ public class UserService : IUserService
                 _logger.LogWarning("User with username {Username} not found", username);
                 return null;
             }
+
             _logger.LogInformation("Fetched user with username {Username}", username);
             return _mapper.Map<UserDto?>(user);
         }
@@ -102,6 +105,7 @@ public class UserService : IUserService
                 _logger.LogWarning("User with email {Email} not found", email);
                 return null;
             }
+
             _logger.LogInformation("Fetched user with email {Email}", email);
             return _mapper.Map<UserDto?>(user);
         }
@@ -133,11 +137,6 @@ public class UserService : IUserService
     }
 
     public async Task<bool> UpdateUserAsync(User user)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<bool> DeleteUserAsync(User user)
     {
         throw new NotImplementedException();
     }
@@ -211,7 +210,7 @@ public class UserService : IUserService
                 Types = userBlockInfo.Types,
                 UserId = parsedUserId
             };
-            
+
             _logger.LogDebug("Ban object to insert: {@Ban}", _mapper.Map<UserBanDto>(ban));
 
             var result = await _userBanRepository.CreateAsync(ban);
@@ -272,5 +271,10 @@ public class UserService : IUserService
 
             return dtos;
         }
+    }
+
+    public async Task<bool> DeleteUserAsync(User user)
+    {
+        throw new NotImplementedException();
     }
 }
