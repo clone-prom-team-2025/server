@@ -31,8 +31,8 @@ public class UserController : ControllerBase
             var adminIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (adminIdClaim == null)
             {
-                _logger.LogError("AdminId claim is missing");
-                return BadRequest("AdminId claim is missing");
+                _logger.LogError("UserId claim is missing");
+                return BadRequest();
             }
 
             _logger.LogInformation("AdminId: {AdminId}", adminIdClaim.Value);
@@ -41,7 +41,7 @@ public class UserController : ControllerBase
             if (!result)
             {
                 _logger.LogWarning("BanUser failed for UserId={UserId}", userBlockInfo.UserId);
-                return BadRequest("Failed to ban user");
+                return BadRequest();
             }
 
             _logger.LogInformation("UserId={UserId} was successfully banned by AdminId={AdminId}",
@@ -62,8 +62,8 @@ public class UserController : ControllerBase
             var adminIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (adminIdClaim == null)
             {
-                _logger.LogError("AdminId claim is missing");
-                return BadRequest("AdminId claim is missing");
+                _logger.LogError("UserId claim is missing");
+                return BadRequest();
             }
 
             _logger.LogInformation("AdminId: {AdminId}", adminIdClaim.Value);
@@ -72,7 +72,7 @@ public class UserController : ControllerBase
             if (!result)
             {
                 _logger.LogWarning("UnbanUser failed for BanId={BanId}", banId);
-                return BadRequest("Failed to unban user");
+                return BadRequest();
             }
 
             _logger.LogInformation("BanId={BanId} successfully unbanned by AdminId={AdminId}", banId,
@@ -114,6 +114,11 @@ public class UserController : ControllerBase
             var allByMyUserId = bans as UserBanDto[] ?? bans.ToArray();
             _logger.LogInformation("Found {Count} bans for current UserId={UserId}", allByMyUserId.Count(),
                 userIdClaim.Value);
+            if (allByMyUserId.Length == 0)
+            {
+                _logger.LogInformation("No bans found for current UserId={UserId}", userIdClaim.Value);
+                return NotFound();
+            }
             return allByMyUserId;
         }
     }
