@@ -111,16 +111,6 @@ public class UserService : IUserService
         }
     }
 
-    public async Task<User> GetUserByAvatarUrlAsync(string avatarUrl)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<User> GetUserByPhoneNumberAsync(string phoneNumber)
-    {
-        throw new NotImplementedException();
-    }
-
     public async Task<IEnumerable<User>?> GetUsersByRoleAsync(string role)
     {
         throw new NotImplementedException();

@@ -1,6 +1,7 @@
 using App.Core.Models;
 using App.Core.Models.Auth;
 using App.Core.Models.AvailableFilters;
+using App.Core.Models.Cart;
 using App.Core.Models.Product;
 using App.Core.Models.Product.Review;
 using App.Core.Models.Store;
@@ -74,6 +75,8 @@ public class MongoDbContext
 
     public IMongoCollection<StoreCreateRequest> StoreCreateRequests =>
         _database.GetCollection<StoreCreateRequest>("StoreCreateRequests");
+
+    public IMongoCollection<Cart> Carts => _database.GetCollection<Cart>("Carts");
 
     /// <summary>
     ///     Ensures that the necessary indexes for the <see cref="Category" /> collection are created.

@@ -58,6 +58,7 @@ builder.Services.AddSingleton<IAvailableFiltersRepository, AvailableFiltersRepos
 builder.Services.AddSingleton<IUserBanRepository, UserBanRepository>();
 builder.Services.AddSingleton<IUserSessionRepository, UserSessionRepository>();
 builder.Services.AddSingleton<IStoreCreateRequestRepository, StoreCreateRequestRepository>();
+builder.Services.AddSingleton<ICartRepository, CartRepository>();
 
 // --- Services ---
 builder.Services.AddSingleton<ICategoryService, CategoryService>();
@@ -70,6 +71,7 @@ builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddSingleton<IAvailableFiltersService, AvailableFiltersService>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IStoreService, StoreService>();
+builder.Services.AddSingleton<ICartService, CartService>();
 
 builder.Services.AddMemoryCache();
 

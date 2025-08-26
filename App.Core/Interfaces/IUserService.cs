@@ -10,8 +10,6 @@ public interface IUserService
     Task<UserDto?> GetUserByIdAsync(string userId);
     Task<UserDto?> GetUserByUsernameAsync(string username);
     Task<UserDto?> GetUserByEmailAsync(string email);
-    Task<User> GetUserByAvatarUrlAsync(string avatarUrl);
-    Task<User> GetUserByPhoneNumberAsync(string phoneNumber);
     Task<IEnumerable<User>?> GetUsersByRoleAsync(string role);
     Task<IEnumerable<User>?> GetUsersByRoleAsync(string role, int pageNumber, int pageSize);
     Task CreateUserAsync(UserCreateDto user);
