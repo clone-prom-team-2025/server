@@ -82,6 +82,16 @@ builder.Services.AddFluentValidationAutoValidation();
 // --- Controllers ---
 builder.Services.AddControllers();
 
+// ip
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+    options.KnownProxies.Add(System.Net.IPAddress.Parse("127.0.0.1"));
+    options.KnownProxies.Add(System.Net.IPAddress.Parse("::1"));
+});
+
 // --- Swagger ---
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -155,11 +165,12 @@ builder.Host.UseSerilog();
 // --- Create app ---
 var app = builder.Build();
 
-// Включаємо підтримку forwarded headers, щоб коректно отримувати інформацію про клієнта, IP, схему (http/https)
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
+// // Включаємо підтримку forwarded headers, щоб коректно отримувати інформацію про клієнта, IP, схему (http/https)
+// app.UseForwardedHeaders(new ForwardedHeadersOptions
+// {
+//     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+// });
+app.UseForwardedHeaders();
 
 app.UseCors();
 
