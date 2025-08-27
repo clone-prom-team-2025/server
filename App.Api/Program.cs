@@ -88,8 +88,9 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.ForwardedHeaders =
         ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
 
-    options.KnownProxies.Add(System.Net.IPAddress.Parse("127.0.0.1"));
-    options.KnownProxies.Add(System.Net.IPAddress.Parse("::1"));
+    options.KnownProxies.Add(System.Net.IPAddress.Parse("172.17.0.1"));
+    // options.KnownProxies.Add(System.Net.IPAddress.Parse("127.0.0.1"));
+    // options.KnownProxies.Add(System.Net.IPAddress.Parse("::1"));
 });
 
 // --- Swagger ---
