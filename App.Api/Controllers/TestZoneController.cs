@@ -11,6 +11,13 @@ namespace App.Api.Controllers;
 [Route("api/test-zone")]
 public class TestZoneController : ControllerBase
 {
+    private readonly ILogger<TestZoneController> _logger;
+    
+    public TestZoneController(ILogger<TestZoneController> logger)
+    {
+        _logger = logger;
+    }
+    
     [Authorize]
     [HttpGet("check-login")]
     public ActionResult CheckLogin()
@@ -43,36 +50,39 @@ public class TestZoneController : ControllerBase
     [HttpGet("device-info")]
     public IActionResult GetClientInfo()
     {
-        // IP клієнта
+        // 1. Отримуємо IP клієнта (X-Forwarded-For або RemoteIpAddress)
         var ip = Request.Headers["X-Forwarded-For"].FirstOrDefault()
                  ?? HttpContext.Connection.RemoteIpAddress?.ToString();
 
-        // User-Agent
+        // 2. Парсимо User-Agent
         var userAgent = Request.Headers["User-Agent"].ToString();
         var uaParser = Parser.GetDefault();
         var clientInfo = uaParser.Parse(userAgent);
 
         var browser = $"{clientInfo.UA.Family} {clientInfo.UA.Major}";
         var os = clientInfo.OS.Family;
-        var device = clientInfo.Device.Family; // iPhone, Samsung, Other
+        var device = clientInfo.Device.Family ?? "Other";
 
-        // Геолокація через GeoIP2
+        // 3. Геолокація через GeoIP2
         var country = "Unknown";
         var city = "Unknown";
 
         try
         {
-            using var reader = new DatabaseReader("GeoLite2-City.mmdb");
             if (!string.IsNullOrEmpty(ip) && IPAddress.TryParse(ip, out var ipAddr))
             {
-                var cityResponse = reader.City(ipAddr);
-                country = cityResponse.Country.Name;
-                city = cityResponse.City.Name;
+                using var reader = new DatabaseReader(Path.Combine(AppContext.BaseDirectory, "database", "GeoLite2-City.mmdb"));
+                var response = reader.City(ipAddr);
+
+                country = response?.Country?.Name ?? "Unknown";
+                city = response?.City?.Name ?? "Unknown";
+                _logger.LogInformation($"Ip: {ip}, Country: {country}, City: {city}");
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Якщо база не доступна або IP локальний (::1 / 127.0.0.1)
+            _logger.LogError("GeoIP error: {Message}", ex.Message);
+            //Console.WriteLine($"GeoIP error: {ex.Message}");
         }
 
         return Ok(new
