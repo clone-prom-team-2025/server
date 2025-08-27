@@ -44,7 +44,8 @@ public class TestZoneController : ControllerBase
     public IActionResult GetClientInfo()
     {
         // IP клієнта
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var ip = Request.Headers["X-Forwarded-For"].FirstOrDefault()
+                 ?? HttpContext.Connection.RemoteIpAddress?.ToString();
 
         // User-Agent
         var userAgent = Request.Headers["User-Agent"].ToString();
