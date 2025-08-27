@@ -24,7 +24,14 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Folder Include="database\" />
         <Folder Include="wwwroot\"/>
         <Folder Include="wwwroot\temp\"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="database\GeoLite2-City.mmdb">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 </Project>
