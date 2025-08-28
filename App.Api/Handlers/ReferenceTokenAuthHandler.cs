@@ -104,7 +104,12 @@ public class ReferenceTokenAuthHandler : AuthenticationHandler<AuthenticationSch
             {
                 new(ClaimTypes.NameIdentifier, session.UserId.ToString()),
                 new(ClaimTypes.Sid, session.Id.ToString()),
-                new("DeviceInfo", session.DeviceInfo ?? "")
+                new("Ip", session.DeviceInfo.Ip),
+                new("Country", session.DeviceInfo.Country),
+                new("City", session.DeviceInfo.City),
+                new("Browser", session.DeviceInfo.Browser),
+                new("Os", session.DeviceInfo.Os),
+                new("Device", session.DeviceInfo.Device),
             };
 
             foreach (var role in session.Roles) claims.Add(new Claim(ClaimTypes.Role, role));
