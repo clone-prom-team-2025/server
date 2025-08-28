@@ -35,7 +35,7 @@ public class AvailableFiltersService(IAvailableFiltersRepository repository, IMa
         return await _repository.RemoveCollectionByIdAsync(id);
     }
 
-    public async Task AddFilterToCollectionAsync(string categoryId, List<AvailableFiltersDto> filtersDto)
+    public async Task AddFilterToCollectionAsync(string categoryId, List<AvailableFiltersItemDto> filtersDto)
     {
         await _repository.AddFilterToCollectionAsync(categoryId, _mapper.Map<List<AvailableFiltersItem>>(filtersDto));
     }

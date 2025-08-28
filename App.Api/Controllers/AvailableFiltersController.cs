@@ -50,9 +50,9 @@ public class AvailableFiltersController : ControllerBase
         return result ? Ok() : NotFound();
     }
 
-    [HttpPost("{categoryId}/add-filters")]
+    [HttpPut("{categoryId}/insert-filters")]
     public async Task<IActionResult> AddFilterToCollection(string categoryId,
-        [FromBody] List<AvailableFiltersDto> filtersDto)
+        [FromBody] List<AvailableFiltersItemDto> filtersDto)
     {
         await _availableFiltersService.AddFilterToCollectionAsync(categoryId, filtersDto);
         return Ok();
