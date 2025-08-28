@@ -22,4 +22,6 @@
         <PackageReference Include="Serilog.Sinks.File" Version="7.0.0"/>
         <PackageReference Include="MaxMind.GeoIP2" Version="5.3.0"/>
         <PackageReference Include="UAParser" Version="3.1.47"/>
+    </ItemGroup>
+
 </Project>
