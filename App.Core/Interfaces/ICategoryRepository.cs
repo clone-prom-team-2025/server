@@ -10,6 +10,7 @@ public interface ICategoryRepository
     Task<CategoryDto?> GetByIdAsync(string id);
     Task<CategoryDto?> GetByNameAsync(string name);
     Task<List<CategoryDto>?> GetByParentIdAsync(string patrentId);
+    Task CreateManyAsync(List<Category> categoryList);
     Task CreateAsync(Category category);
     Task<bool> UpdateAsync(Category category);
     Task<bool> DeleteAsync(string id);

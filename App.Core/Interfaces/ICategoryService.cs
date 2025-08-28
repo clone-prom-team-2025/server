@@ -13,6 +13,7 @@ public interface ICategoryService
     Task<CategoryDto?> UpdateAsync(CategoryDto category);
     Task<bool> DeleteAsync(string id);
     Task<List<CategoryDto>?> SearchAsync(string name);
+    Task<List<CategoryDto>> CreateManyAsync(List<CategoryCreateDto> categoryCreateDtoList);
     Task<List<CategoryNode>?> GetFullTreeAsync();
     Task<CategoryNode?> GetCategoryTreeAsync(string parentId);
     Task<List<CategoryNode>?> GetChildrenAsync(string parentId);

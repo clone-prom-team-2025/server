@@ -73,6 +73,17 @@ public class CategoryService(ICategoryRepository categoryRepository, IMapper map
         await _categoryRepository.CreateAsync(category);
         return _mapper.Map<CategoryDto>(category);
     }
+    
+    public async Task<List<CategoryDto>> CreateManyAsync(List<CategoryCreateDto> categoryCreateDtoList)
+    {
+        var categories = _mapper.Map<List<Category>>(categoryCreateDtoList);
+        foreach (var category in categories)
+        {
+            category.Id = ObjectId.GenerateNewId();
+        }
+        await _categoryRepository.CreateManyAsync(categories);
+        return _mapper.Map<List<CategoryDto>>(categories);
+    }
 
     /// <summary>
     ///     Updates an existing category asynchronously.

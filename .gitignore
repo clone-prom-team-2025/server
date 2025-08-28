@@ -95,6 +95,8 @@ ipch/
 *.vspx
 *.sap
 
+App.Api/appsettings.Development.json
+
 # TFS 2012 Local Workspace
 /
 
