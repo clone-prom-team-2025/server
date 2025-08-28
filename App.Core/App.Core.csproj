@@ -20,8 +20,17 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Reference Include="MaxMind.Db">
+          <HintPath>..\..\..\..\.nuget\packages\maxmind.db\4.2.0\lib\net9.0\MaxMind.Db.dll</HintPath>
+        </Reference>
+        <Reference Include="MaxMind.GeoIP2">
+          <HintPath>..\..\..\..\.nuget\packages\maxmind.geoip2\5.3.0\lib\net9.0\MaxMind.GeoIP2.dll</HintPath>
+        </Reference>
         <Reference Include="Serilog">
             <HintPath>..\..\..\..\.nuget\packages\serilog\4.2.0\lib\net9.0\Serilog.dll</HintPath>
+        </Reference>
+        <Reference Include="UAParser">
+          <HintPath>..\..\..\..\.nuget\packages\uaparser\3.1.47\lib\netcoreapp2.0\UAParser.dll</HintPath>
         </Reference>
     </ItemGroup>
 

@@ -2,12 +2,14 @@ using System.Reflection;
 using App.Core.Constants;
 using App.Core.DTOs.Auth;
 using App.Core.Interfaces;
+using App.Core.Models.Auth;
 using App.Core.Models.Email;
 using App.Core.Models.FileStorage;
 using App.Core.Models.User;
 using App.Core.Utils;
 using AutoMapper;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 
 namespace App.Services;
@@ -21,7 +23,8 @@ public class AuthService(
     IFileService fileService,
     IEmailService emailService,
     IMemoryCache memoryCache,
-    IUserSessionRepository sessionRepository)
+    IUserSessionRepository sessionRepository,
+    IOptions<SessionsOptions> options)
     : IAuthService
 {
     private static readonly Random Random = new();
@@ -31,13 +34,15 @@ public class AuthService(
     private readonly IMapper _mapper = mapper;
     private readonly IUserSessionRepository _sessionRepository = sessionRepository;
     private readonly IUserRepository _userRepository = userRepository;
+    private readonly SessionsOptions _options = options.Value;
+
 
     /// <summary>
     ///     Logs in a user using email or username and returns a session token.
     /// </summary>
     /// <param name="model">Login credentials.</param>
     /// <returns>Session ID as a string if successful; otherwise, null.</returns>
-    public async Task<string?> LoginAsync(LoginDto model)
+    public async Task<string?> LoginAsync(LoginDto model, DeviceInfo deviceInfo)
     {
         var user = await _userRepository.GetUserByEmailAsync(model.Login)
                    ?? await _userRepository.GetUserByUsernameAsync(model.Login);
@@ -45,9 +50,31 @@ public class AuthService(
         if (user == null || !PasswordHasher.VerifyPassword(model.Password, user.PasswordHash!))
             return null;
 
-        var deviceInfo = model.DeviceInfo ?? "Unknown device";
-        var session = await _sessionRepository.CreateSessionAsync(user.Id, deviceInfo);
-        return session.Id.ToString();
+        var sessions = await _sessionRepository.GetSessionsAsync(user.Id) ?? new List<UserSession>();
+
+        var existingSession = sessions.FirstOrDefault(s =>
+            s.DeviceInfo.Browser == deviceInfo.Browser &&
+            s.DeviceInfo.Os == deviceInfo.Os &&
+            s.DeviceInfo.Device == deviceInfo.Device
+        );
+        
+        if (existingSession != null)
+        {
+            if (existingSession.IsRevoked || existingSession.ExpiresAt <= DateTime.UtcNow)
+            {
+                var newSession = await _sessionRepository.CreateSessionAsync(user.Id, deviceInfo);
+                return newSession?.Id.ToString();
+            }
+
+            existingSession.ExpiresAt = DateTime.UtcNow.AddHours(_options.ExpiresIn);
+            await _sessionRepository.ReplaceSessionsAsync(user.Id, sessions);
+            return existingSession.Id.ToString();
+        }
+        else
+        {
+            var newSession = await _sessionRepository.CreateSessionAsync(user.Id, deviceInfo);
+            return newSession?.Id.ToString();
+        }
     }
 
     /// <summary>
@@ -55,7 +82,7 @@ public class AuthService(
     /// </summary>
     /// <param name="model">Registration data.</param>
     /// <returns>Session ID as a string if successful; otherwise, null.</returns>
-    public async Task<string?> RegisterAsync(RegisterDto model)
+    public async Task<string?> RegisterAsync(RegisterDto model, DeviceInfo deviceInfo)
     {
         var existingUser = await _userRepository.GetUserByEmailAsync(model.Email);
         if (existingUser != null) return null;
@@ -74,7 +101,7 @@ public class AuthService(
             await _userRepository.CreateUserAsync(user);
         }
 
-        return await LoginAsync(new LoginDto { Login = model.Email, Password = model.Password });
+        return await LoginAsync(new LoginDto { Login = model.Email, Password = model.Password },  deviceInfo);
     }
 
     /// <summary>
@@ -93,6 +120,85 @@ public class AuthService(
 
         await _sessionRepository.RevokeSessionAsync(objectId);
         return true;
+    }
+
+    public async Task<string?> SendPasswordReset(string login)
+    {
+        var user = await _userRepository.GetUserByEmailAsync(login)
+                   ?? await _userRepository.GetUserByUsernameAsync(login);
+
+        if (user == null)
+            return null;
+        
+        var assembly = Assembly.GetExecutingAssembly();
+        await using var stream = assembly.GetManifestResourceStream("App.Services.EmailTemplates.ResetPassword.html");
+        using var reader = new StreamReader(stream!);
+        var html = await reader.ReadToEndAsync();
+
+        var resetToken = Guid.NewGuid().ToString("N");
+        var code = GenerateCode(6);
+        var readyHtml = html.Replace("__CODE__", code).Replace("__TIME__", "15");
+        
+        var cacheEntryOptions = new MemoryCacheEntryOptions()
+            .SetSlidingExpiration(TimeSpan.FromMinutes(15));
+        var resetData = new ResetPassData
+        {
+            Code = code,
+            UserId = user.Id.ToString()
+        };
+        _cache.Set($"reset-pass:{resetToken}", resetData, cacheEntryOptions);
+        
+        var mail = new EmailMessage
+        {
+            From = "no-reply@sellpoint.pp.ua",
+            To = [user.Email!],
+            Subject = "Reset Password",
+            HtmlBody = readyHtml
+        };
+        
+        await _emailService.SendEmailAsync(mail);
+        return resetToken;
+    }
+
+    public async Task<string?> VerifyPasswordCodeAsync(string resetToken, string inputCode)
+    {
+        var cacheKey = $"reset-pass:{resetToken}";
+
+        if (_cache.TryGetValue(cacheKey, out ResetPassData? stored))
+        {
+            if (string.Equals(stored.Code, inputCode, StringComparison.OrdinalIgnoreCase))
+            {
+                _cache.Remove(cacheKey);
+
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                    .SetSlidingExpiration(TimeSpan.FromMinutes(30));
+                var newAccessCode = Guid.NewGuid().ToString("N");
+                _cache.Set($"reset-pass-access-code:{newAccessCode}", stored.UserId, cacheEntryOptions);
+
+                return newAccessCode;
+            }
+        }
+
+        return null;
+    }
+
+    public async Task<bool> ResetPassword(string password, string accessCode)
+    {
+        
+        var cacheKey = $"reset-pass-access-code:{accessCode}";
+        
+        if (_cache.TryGetValue(cacheKey, out string userId))
+        {
+            var user = await _userRepository.GetUserByIdAsync(userId);
+            if (user == null)
+                return false;
+            
+            _cache.Remove(cacheKey);
+            user.PasswordHash = PasswordHasher.HashPassword(password);
+            await _userRepository.UpdateUserAsync(user);
+            return true;
+        }
+        return false;
     }
 
     /// <summary>
@@ -196,5 +302,11 @@ public class AuthService(
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         return new string(Enumerable.Range(0, length)
             .Select(_ => chars[Random.Next(chars.Length)]).ToArray());
+    }
+
+    private class ResetPassData
+    {
+        public string Code { get; set; } = default!;
+        public string UserId { get; set; } = default!;
     }
 }
