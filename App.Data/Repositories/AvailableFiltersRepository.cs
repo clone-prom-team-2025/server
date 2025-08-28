@@ -39,13 +39,40 @@ public class AvailableFiltersRepository(MongoDbContext mongoDbContext) : IAvaila
         return success.IsAcknowledged && success.DeletedCount > 0;
     }
 
-    public async Task AddFilterToCollectionAsync(string categoryId, List<AvailableFiltersItem> filters)
+    public async Task AddFilterToCollectionAsync(string categoryId, List<AvailableFiltersItem> newFilters)
     {
         var filter = Builders<AvailableFilters>.Filter.Eq(af => af.CategoryId, ObjectId.Parse(categoryId));
         var availableFilter = await _availableFilters.Find(filter).FirstOrDefaultAsync();
-        availableFilter.Filters.AddRange(filters);
+
+        if (availableFilter == null)
+        {
+            availableFilter = new AvailableFilters(ObjectId.Parse(categoryId), newFilters);
+            await _availableFilters.InsertOneAsync(availableFilter);
+            return;
+        }
+
+        foreach (var newFilter in newFilters)
+        {
+            var existing = availableFilter.Filters.FirstOrDefault(f => f.Title == newFilter.Title);
+            if (existing != null)
+            {
+                foreach (var value in newFilter.Values)
+                {
+                    if (!existing.Values.Contains(value))
+                    {
+                        existing.Values.Add(value);
+                    }
+                }
+            }
+            else
+            {
+                availableFilter.Filters.Add(newFilter);
+            }
+        }
+
         await _availableFilters.ReplaceOneAsync(filter, availableFilter);
     }
+
 
     public async Task<bool> RemoveFilterFromCollectionAsync(string categoryId, List<string> values)
     {
