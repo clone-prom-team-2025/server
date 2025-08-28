@@ -23,10 +23,10 @@ public class ProductService(
     /// </summary>
     /// <param name="filter">Filtering options.</param>
     /// <returns>A list of matching products or null.</returns>
-    public async Task<IEnumerable<ProductDto>?> GetAllAsync(ProductFilterRequestDto filter)
+    public async Task<ProductFilterResponseDto?> GetAllAsync(ProductFilterRequestDto filter)
     {
         var products = await _productRepository.GetAllAsync(_mapper.Map<ProductFilterRequest>(filter));
-        return _mapper.Map<List<ProductDto>?>(products);
+        return _mapper.Map<ProductFilterResponseDto?>(products);
     }
 
     /// <summary>
@@ -48,10 +48,10 @@ public class ProductService(
     /// <param name="name">Product name (partial or full).</param>
     /// <param name="filter">Additional filtering options.</param>
     /// <returns>A list of matching products or null.</returns>
-    public async Task<IEnumerable<ProductDto>?> GetByNameAsync(string name, ProductFilterRequestDto filter)
+    public async Task<ProductFilterResponseDto?> GetByNameAsync(string name, ProductFilterRequestDto filter)
     {
         var products = await _productRepository.GetByNameAsync(name, _mapper.Map<ProductFilterRequest>(filter));
-        return _mapper.Map<List<ProductDto>?>(products);
+        return _mapper.Map<ProductFilterResponseDto?>(products);
     }
 
     /// <summary>
@@ -60,12 +60,12 @@ public class ProductService(
     /// <param name="sellerId">The seller identifier.</param>
     /// <param name="filter">Filtering options.</param>
     /// <returns>A list of products by the seller or null.</returns>
-    public async Task<IEnumerable<ProductDto>?> GetBySellerIdAsync(string sellerId, ProductFilterRequestDto filter)
+    public async Task<ProductFilterResponseDto?> GetBySellerIdAsync(string sellerId, ProductFilterRequestDto filter)
     {
         if (!ObjectId.TryParse(sellerId, out var objectId))
             throw new ArgumentException("Invalid product id format.", nameof(sellerId));
         var products = await _productRepository.GetBySellerIdAsync(objectId, _mapper.Map<ProductFilterRequest>(filter));
-        return _mapper.Map<List<ProductDto>?>(products);
+        return _mapper.Map<ProductFilterResponseDto?>(products);
     }
 
     /// <summary>

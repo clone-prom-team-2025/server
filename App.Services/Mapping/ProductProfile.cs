@@ -148,5 +148,7 @@ public class ProductProfile : Profile
 
         CreateMap<ProductSearchResultDto, ProductSearchResult>()
             .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => ObjectId.Parse(src.ProductId)));
+
+        CreateMap<ProductFilterResponse, ProductFilterResponseDto>().ReverseMap();
     }
 }
