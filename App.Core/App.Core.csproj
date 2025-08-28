@@ -17,12 +17,9 @@
         <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.0"/>
         <PackageReference Include="Swashbuckle.AspNetCore.Annotations" Version="9.0.3"/>
         <PackageReference Include="System.Drawing.Common" Version="10.0.0-preview.6.25358.103"/>
-    </ItemGroup>
-
-    <ItemGroup>
-        <Reference Include="Serilog">
-            <HintPath>..\..\..\..\.nuget\packages\serilog\4.2.0\lib\net9.0\Serilog.dll</HintPath>
-        </Reference>
+        <PackageReference Include="Serilog.AspNetCore" Version="9.0.0"/>
+        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.1-dev-00953"/>
+        <PackageReference Include="Serilog.Sinks.File" Version="7.0.0"/>
     </ItemGroup>
 
 </Project>
