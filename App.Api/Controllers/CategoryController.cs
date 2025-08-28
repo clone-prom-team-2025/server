@@ -39,7 +39,7 @@ public class CategoryController : ControllerBase
     /// <param name="id">Category ID.</param>
     /// <returns>The category or NotFound if missing.</returns>
     [HttpGet("{id}")]
-    public async Task<ActionResult<Category?>> GetById(string id)
+    public async Task<ActionResult<CategoryDto?>> GetById(string id)
     {
         var category = await _categoryService.GetByIdAsync(id);
         if (category == null)
@@ -54,7 +54,7 @@ public class CategoryController : ControllerBase
     /// <param name="parentId">Parent category ID.</param>
     /// <returns>List of child categories or empty list.</returns>
     [HttpGet("children/{parentId}")]
-    public async Task<ActionResult<List<Category>?>> GetByParentId(string parentId)
+    public async Task<ActionResult<List<CategoryDto>?>> GetByParentId(string parentId)
     {
         var children = await _categoryService.GetByParentIdAsync(parentId);
         if (children == null || children.Count == 0)
@@ -111,7 +111,7 @@ public class CategoryController : ControllerBase
     /// <param name="languageCode">Language code (default: "en").</param>
     /// <returns>List of matching categories.</returns>
     [HttpGet("search")]
-    public async Task<ActionResult<List<Category>?>> Search(string name)
+    public async Task<ActionResult<List<CategoryDto>?>> Search(string name)
     {
         var results = await _categoryService.SearchAsync(name);
         if (results == null || results.Count == 0)
@@ -160,5 +160,11 @@ public class CategoryController : ControllerBase
     {
         var children = await _categoryService.GetChildrenAsync(parentId);
         return Ok(children);
+    }
+
+    [HttpPost("many")]
+    public async Task<ActionResult<List<CategoryDto>>> CreateMany([FromBody] List<CategoryCreateDto> categoryList)
+    {
+        return await _categoryService.CreateManyAsync(categoryList);
     }
 }
