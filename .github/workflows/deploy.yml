@@ -21,6 +21,7 @@ jobs:
 
       - name: Generate appsettings.json
         run: |
+          cd App.Api
           cp appsettings.template.json appsettings.json
           jq \
             --arg mongo "$MONGO_CONN" \
