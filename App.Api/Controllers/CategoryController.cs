@@ -111,10 +111,9 @@ public class CategoryController : ControllerBase
     /// <param name="languageCode">Language code (default: "en").</param>
     /// <returns>List of matching categories.</returns>
     [HttpGet("search")]
-    public async Task<ActionResult<List<Category>?>> Search([FromQuery] string name,
-        [FromQuery] string languageCode = "en")
+    public async Task<ActionResult<List<Category>?>> Search(string name)
     {
-        var results = await _categoryService.SearchAsync(name, languageCode);
+        var results = await _categoryService.SearchAsync(name);
         if (results == null || results.Count == 0)
             return NoContent();
 

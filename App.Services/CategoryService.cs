@@ -46,9 +46,9 @@ public class CategoryService(ICategoryRepository categoryRepository, IMapper map
     /// <param name="name">The localized category name to search for.</param>
     /// <param name="languageCode">The language code for localization (e.g., "en").</param>
     /// <returns>The matching category if found; otherwise, null.</returns>
-    public async Task<CategoryDto?> GetByNameAsync(string name, string languageCode)
+    public async Task<CategoryDto?> GetByNameAsync(string name)
     {
-        return await _categoryRepository.GetByNameAsync(name, languageCode);
+        return await _categoryRepository.GetByNameAsync(name);
     }
 
     /// <summary>
@@ -104,9 +104,9 @@ public class CategoryService(ICategoryRepository categoryRepository, IMapper map
     /// <param name="name">The search string to look for.</param>
     /// <param name="languageCode">The language code for localization (e.g., "en").</param>
     /// <returns>A list of matching categories with highlights or an empty list.</returns>
-    public async Task<List<CategoryDto>?> SearchAsync(string name, string languageCode)
+    public async Task<List<CategoryDto>?> SearchAsync(string name)
     {
-        return await _categoryRepository.SearchAsync(name, languageCode);
+        return await _categoryRepository.SearchAsync(name);
     }
 
     /// <summary>

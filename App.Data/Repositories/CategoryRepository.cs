@@ -42,9 +42,9 @@ public class CategoryRepository(MongoDbContext mongoDbContext, IMapper mapper) :
     /// </summary>
     /// <param name="name">The name to search for.</param>
     /// <param name="languageCode">The language code (default is "en").</param>
-    public async Task<CategoryDto?> GetByNameAsync(string name, string languageCode = "en")
+    public async Task<CategoryDto?> GetByNameAsync(string name)
     {
-        var filter = Builders<Category>.Filter.Eq($"Name.{languageCode}", name);
+        var filter = Builders<Category>.Filter.Eq(c => c.Name, name);
         var category = await _categories.Find(filter).FirstOrDefaultAsync();
         return _mapper.Map<CategoryDto?>(category);
     }
@@ -99,49 +99,53 @@ public class CategoryRepository(MongoDbContext mongoDbContext, IMapper mapper) :
     /// <param name="name">The name fragment to search.</param>
     /// <param name="languageCode">The language code (default is "en").</param>
     /// <returns>List of categories with names where matches are highlighted using square brackets.</returns>
-    public async Task<List<CategoryDto>?> SearchAsync(string name, string languageCode = "en")
+    public async Task<List<CategoryDto>?> SearchAsync(string name)
     {
+        if (string.IsNullOrWhiteSpace(name))
+            return new List<CategoryDto>();
+
         var filter = Builders<Category>.Filter.Regex(
-            $"Name.{languageCode}",
+            "Name",
             new BsonRegularExpression(name, "i")
         );
 
         var categories = await _categories.Find(filter).ToListAsync();
 
-        if (categories is null || categories.Count == 0)
+        if (categories == null || categories.Count == 0)
             return new List<CategoryDto>();
 
         var results = categories
             .Select(cat =>
             {
-                if (!cat.Name.TryGetValue(languageCode, out var localizedName))
-                    return null;
+                var index = cat.Name?.IndexOf(name, StringComparison.OrdinalIgnoreCase) ?? -1;
 
-                var index = localizedName.IndexOf(name, StringComparison.OrdinalIgnoreCase);
+                string highlighted;
+                int rank;
+
                 if (index < 0)
-                    return new
-                    {
-                        Category = cat,
-                        Rank = int.MaxValue,
-                        Highlighted = localizedName
-                    };
-
-                var highlighted = localizedName.Substring(0, index) +
-                                  "[" + localizedName.Substring(index, name.Length) + "]" +
-                                  localizedName.Substring(index + name.Length);
+                {
+                    highlighted = cat.Name ?? string.Empty;
+                    rank = int.MaxValue;
+                }
+                else
+                {
+                    highlighted = cat.Name.Substring(0, index) +
+                                  "[" + cat.Name.Substring(index, name.Length) + "]" +
+                                  cat.Name.Substring(index + name.Length);
+                    rank = index;
+                }
 
                 return new
                 {
                     Category = cat,
-                    Rank = index,
+                    Rank = rank,
                     Highlighted = highlighted
                 };
             })
-            .Where(x => x != null)
-            .OrderBy(x => x!.Rank)
+            .OrderBy(x => x.Rank)
             .Select(x =>
             {
-                x!.Category.Name[languageCode] = x.Highlighted;
+                x.Category.Name = x.Highlighted;
                 return x.Category;
             })
             .ToList();

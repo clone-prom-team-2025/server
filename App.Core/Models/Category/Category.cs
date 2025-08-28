@@ -11,10 +11,10 @@ namespace App.Core.Models;
 /// </summary>
 public class Category
 {
-    public Category(ObjectId id, IDictionary<string, string> name, ObjectId? parentId)
+    public Category(ObjectId id, string name, ObjectId? parentId)
     {
         Id = id;
-        Name = new Dictionary<string, string>(name);
+        Name = name;
         ParentId = parentId;
     }
 
@@ -23,7 +23,7 @@ public class Category
     /// </summary>
     /// <param name="name">Dictionary of localized names.</param>
     /// <param name="parentId">ID of the parent category (optional).</param>
-    public Category(Dictionary<string, string> name, ObjectId? parentId = null)
+    public Category(string name, ObjectId? parentId = null)
     {
         Id = ObjectId.GenerateNewId();
         Name = name ?? throw new ArgumentNullException(nameof(name));
@@ -41,7 +41,7 @@ public class Category
     ///     Example: { "ua": "Телефони", "en": "Phones" }.
     /// </summary>
     [Required]
-    public Dictionary<string, string> Name { get; set; } = new();
+    public string Name { get; set; }
 
     /// <summary>
     ///     Optional reference to the parent category's ID.
