@@ -15,7 +15,7 @@ public class CategoryNode
     ///     Dictionary containing localized category names.
     ///     Example: { "en": "Phones", "ua": "Телефони" }.
     /// </summary>
-    public Dictionary<string, string> Name { get; set; } = new();
+    public string Name { get; set; }
 
     /// <summary>
     ///     List of child category nodes (subcategories).
