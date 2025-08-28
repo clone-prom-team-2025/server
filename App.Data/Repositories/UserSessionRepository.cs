@@ -14,7 +14,7 @@ public class UserSessionRepository(MongoDbContext mongoDbContext, IOptions<Sessi
     private readonly IMongoCollection<UserSession> _collection = mongoDbContext.UserSessions;
     private readonly SessionsOptions _options = options.Value;
 
-    public async Task<UserSession?> CreateSessionAsync(ObjectId userId, string deviceInfo)
+    public async Task<UserSession?> CreateSessionAsync(ObjectId userId, DeviceInfo deviceInfo)
     {
         var userFilter = Builders<User>.Filter.Eq(u => u.Id, userId);
         var user = await mongoDbContext.Users.Find(userFilter).FirstOrDefaultAsync();
