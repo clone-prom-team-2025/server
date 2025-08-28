@@ -1,9 +1,11 @@
+using App.Core.Enums;
+
 namespace App.Core.DTOs.Product;
 
 public class ProductDto
 {
     public ProductDto(string id, string name, List<string> categoryPath, List<ProductFeatureDto> features,
-        string sellerId, int quantity, string quantityStatus, decimal price, decimal? discountPrice = null)
+        string sellerId, int quantity, QuantityStatus quantityStatus, decimal price, PriceType priceType, PaymentOptions paymentOptions ,decimal? discountPrice = null)
     {
         Id = id;
         Name = name;
@@ -14,6 +16,8 @@ public class ProductDto
         DiscountPrice = discountPrice;
         QuantityStatus = quantityStatus;
         Quantity = quantity;
+        PriceType = priceType;
+        PaymentOptions = paymentOptions;
     }
 
     public ProductDto()
@@ -29,6 +33,10 @@ public class ProductDto
     public List<ProductFeatureDto> Features { get; set; }
 
     public decimal Price { get; set; }
+    
+    public PriceType PriceType { get; set; }
+    
+    public PaymentOptions PaymentOptions { get; set; }
 
     public decimal? DiscountPrice { get; set; }
 
@@ -42,7 +50,7 @@ public class ProductDto
 
     public string SellerId { get; set; }
 
-    public string QuantityStatus { get; set; }
+    public QuantityStatus QuantityStatus { get; set; }
 
     public int Quantity { get; set; }
 }
