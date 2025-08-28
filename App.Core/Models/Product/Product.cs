@@ -1,3 +1,4 @@
+using App.Core.Enums;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -27,6 +28,8 @@ public class Product
         DiscountPrice = product.DiscountPrice;
         Quantity = product.Quantity;
         QuantityStatus = product.QuantityStatus;
+        PriceType = product.PriceType;
+        PaymentOptions = product.PaymentOptions;
     }
 
     /// <summary>
@@ -45,8 +48,10 @@ public class Product
         List<ProductFeature> features,
         ObjectId sellerId,
         int quantity,
-        string quantityStatus,
+        QuantityStatus quantityStatus,
         decimal price,
+        PriceType priceType,
+        PaymentOptions paymentOptions,
         decimal? discountPrice = null)
     {
         Name = name;
@@ -57,6 +62,8 @@ public class Product
         QuantityStatus = quantityStatus;
         Price = price;
         DiscountPrice = discountPrice;
+        PriceType = priceType;
+        PaymentOptions = paymentOptions;
     }
 
     /// <summary>
@@ -85,6 +92,10 @@ public class Product
     ///     Price of product
     /// </summary>
     public decimal Price { get; set; }
+    
+    public PriceType PriceType { get; set; }
+    
+    public PaymentOptions PaymentOptions { get; set; }
 
     /// <summary>
     ///     Discount of product
@@ -96,7 +107,7 @@ public class Product
     /// </summary>
     public ObjectId SellerId { get; set; } = ObjectId.Empty;
 
-    public string QuantityStatus { get; set; }
+    public QuantityStatus QuantityStatus { get; set; }
 
     public int Quantity { get; set; }
 }
