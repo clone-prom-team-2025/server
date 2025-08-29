@@ -38,7 +38,7 @@ public class ProductController : ControllerBase
         ProductFilterRequestDto filter)
     {
         var products = await _productService.GetByNameAsync(name, filter);
-        if (products == null || products.Products.Count() == 0)
+        if (products == null || products.Products.Count == 0)
             return NotFound();
         return Ok(products);
     }
@@ -48,7 +48,7 @@ public class ProductController : ControllerBase
         ProductFilterRequestDto filter)
     {
         var products = await _productService.GetBySellerIdAsync(sellerId, filter);
-        if (products == null || products.Products.Count() == 0)
+        if (products == null || products.Products.Count == 0)
             return NotFound();
         return Ok(products);
     }

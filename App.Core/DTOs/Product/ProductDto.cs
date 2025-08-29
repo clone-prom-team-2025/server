@@ -5,7 +5,7 @@ namespace App.Core.DTOs.Product;
 public class ProductDto
 {
     public ProductDto(string id, string name, List<string> categoryPath, List<ProductFeatureDto> features,
-        string sellerId, int quantity, QuantityStatus quantityStatus, decimal price, PriceType priceType, PaymentOptions paymentOptions ,decimal? discountPrice = null)
+        string sellerId, int quantity, QuantityStatus quantityStatus, decimal price, PriceType priceType, PaymentOptions paymentOptions, ProductDeliveryType deliveryType ,decimal? discountPrice = null)
     {
         Id = id;
         Name = name;
@@ -18,6 +18,7 @@ public class ProductDto
         Quantity = quantity;
         PriceType = priceType;
         PaymentOptions = paymentOptions;
+        DeliveryType = deliveryType;
     }
 
     public ProductDto()
@@ -53,4 +54,6 @@ public class ProductDto
     public QuantityStatus QuantityStatus { get; set; }
 
     public int Quantity { get; set; }
+
+    public ProductDeliveryType DeliveryType { get; set; }
 }

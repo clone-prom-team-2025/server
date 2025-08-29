@@ -3,9 +3,9 @@ namespace App.Core.Enums;
 [Flags]
 public enum BanType
 {
-    None = 0,
-    Comments = 1,
-    Orders = 2,
-    Login = 4,
-    Messaging = 8
+    None = 1 << 0,
+    Comments = 1 << 1,
+    Orders = 1 << 2,
+    Login = 1 << 3,
+    Messaging = 1 << 4
 }

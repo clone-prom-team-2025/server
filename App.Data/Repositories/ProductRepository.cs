@@ -55,7 +55,8 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
             PriceFrom = priceFrom,
             PriceTo = priceTo,
             Pages = pages,
-            Products = products
+            Products = products,
+            Count = products.Count,
         };
     }
 
@@ -108,7 +109,8 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
             PriceFrom = priceFrom,
             PriceTo = priceTo,
             Pages = pages,
-            Products = products
+            Products = products,
+            Count = products.Count
         };
     }
 
@@ -156,7 +158,8 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
             PriceFrom = priceFrom,
             PriceTo = priceTo,
             Pages = pages,
-            Products = products
+            Products = products,
+            Count = products.Count
         };
     }
 
