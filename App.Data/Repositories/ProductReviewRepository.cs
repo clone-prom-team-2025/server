@@ -23,10 +23,10 @@ public class ProductReviewRepository(ProductRepository productRepository, MongoD
     public async Task<List<ProductReview>?> GetReviewsBySellerIdAsync(ObjectId sellerId)
     {
         var products = await productRepository.GetBySellerIdAsync(sellerId, new ProductFilterRequest());
-        if (products == null || !products.Any()) return null;
+        if (products == null || !products.Products.Any()) return null;
 
         List<ProductReview>? reviews = new();
-        foreach (var product in products)
+        foreach (var product in products.Products)
         {
             var filter = Builders<ProductReview>.Filter.Eq(r => r.ProductId, product.Id);
             var temp = await _reviews.Find(r => r.ProductId.Equals(product.Id)).ToListAsync();

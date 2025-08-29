@@ -110,4 +110,6 @@ public class Product
     public QuantityStatus QuantityStatus { get; set; }
 
     public int Quantity { get; set; }
+    
+    public ProductDeliveryType DeliveryType { get; set; }
 }

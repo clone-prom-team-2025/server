@@ -14,7 +14,7 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 {
     private readonly IMongoCollection<Product> _products = mongoDbContext.Products;
 
-    public async Task<IEnumerable<Product>?> GetAllAsync(ProductFilterRequest filter)
+    public async Task<ProductFilterResponse?> GetAllAsync(ProductFilterRequest filter)
     {
         var builder = Builders<Product>.Filter;
         var filters = FormFilter(filter);
@@ -25,11 +25,39 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 
         var skip = (page - 1) * pageSize;
         var limit = pageSize;
-
-        return await _products.Find(finalFilter)
+        
+        var products = await _products
+            .Find(finalFilter)
             .Skip(skip)
             .Limit(limit)
             .ToListAsync();
+        
+        var totalCount = await _products.CountDocumentsAsync(finalFilter);
+
+        var pages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        
+        var priceRange = await _products
+            .Aggregate()
+            .Match(finalFilter)
+            .Group(new BsonDocument
+            {
+                { "_id", BsonNull.Value },
+                { "minPrice", new BsonDocument("$min", "$Price") },
+                { "maxPrice", new BsonDocument("$max", "$Price") }
+            })
+            .FirstOrDefaultAsync();
+
+        var priceFrom = priceRange?["minPrice"].AsDecimal ?? 0;
+        var priceTo = priceRange?["maxPrice"].AsDecimal ?? 0;
+
+        return new ProductFilterResponse
+        {
+            PriceFrom = priceFrom,
+            PriceTo = priceTo,
+            Pages = pages,
+            Products = products,
+            Count = products.Count,
+        };
     }
 
     public async Task<Product?> GetByIdAsync(ObjectId id)
@@ -38,7 +66,7 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         return await _products.Find(filter).FirstOrDefaultAsync();
     }
 
-    public async Task<IEnumerable<Product>?> GetByNameAsync(string name, ProductFilterRequest filter)
+    public async Task<ProductFilterResponse?> GetByNameAsync(string name, ProductFilterRequest filter)
     {
         var builder = Builders<Product>.Filter;
 
@@ -52,13 +80,41 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         var skip = (page - 1) * pageSize;
         var limit = pageSize;
 
-        return await _products.Find(finalFilter)
+        var products = await _products
+            .Find(finalFilter)
             .Skip(skip)
             .Limit(limit)
             .ToListAsync();
+        
+        var totalCount = await _products.CountDocumentsAsync(finalFilter);
+
+        var pages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        
+        var priceRange = await _products
+            .Aggregate()
+            .Match(finalFilter)
+            .Group(new BsonDocument
+            {
+                { "_id", BsonNull.Value },
+                { "minPrice", new BsonDocument("$min", "$Price") },
+                { "maxPrice", new BsonDocument("$max", "$Price") }
+            })
+            .FirstOrDefaultAsync();
+
+        var priceFrom = priceRange?["minPrice"].AsDecimal ?? 0;
+        var priceTo = priceRange?["maxPrice"].AsDecimal ?? 0;
+
+        return new ProductFilterResponse
+        {
+            PriceFrom = priceFrom,
+            PriceTo = priceTo,
+            Pages = pages,
+            Products = products,
+            Count = products.Count
+        };
     }
 
-    public async Task<IEnumerable<Product>?> GetBySellerIdAsync(ObjectId sellerId, ProductFilterRequest filter)
+    public async Task<ProductFilterResponse?> GetBySellerIdAsync(ObjectId sellerId, ProductFilterRequest filter)
     {
         var builder = Builders<Product>.Filter;
 
@@ -73,10 +129,38 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         var skip = (page - 1) * pageSize;
         var limit = pageSize;
 
-        return await _products.Find(finalFilter)
+        var products = await _products
+            .Find(finalFilter)
             .Skip(skip)
             .Limit(limit)
             .ToListAsync();
+        
+        var totalCount = await _products.CountDocumentsAsync(finalFilter);
+
+        var pages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        
+        var priceRange = await _products
+            .Aggregate()
+            .Match(finalFilter)
+            .Group(new BsonDocument
+            {
+                { "_id", BsonNull.Value },
+                { "minPrice", new BsonDocument("$min", "$Price") },
+                { "maxPrice", new BsonDocument("$max", "$Price") }
+            })
+            .FirstOrDefaultAsync();
+
+        var priceFrom = priceRange?["minPrice"].AsDecimal ?? 0;
+        var priceTo = priceRange?["maxPrice"].AsDecimal ?? 0;
+
+        return new ProductFilterResponse
+        {
+            PriceFrom = priceFrom,
+            PriceTo = priceTo,
+            Pages = pages,
+            Products = products,
+            Count = products.Count
+        };
     }
 
     public async Task<Product> CreateAsync(Product product)
