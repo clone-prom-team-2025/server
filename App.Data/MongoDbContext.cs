@@ -168,24 +168,6 @@ public class MongoDbContext
 
             await collection.Indexes.CreateOneAsync(indexModel);
         }
-
-        if (!modelIdIndexExists)
-        {
-            var indexKeys = Builders<ProductReview>.IndexKeys.Ascending(p => p.ModelId);
-            var indexOptions = new CreateIndexOptions { Unique = false };
-            var indexModel = new CreateIndexModel<ProductReview>(indexKeys, indexOptions);
-
-            await collection.Indexes.CreateOneAsync(indexModel);
-        }
-
-        if (!averageRatingIndexExists)
-        {
-            var indexKeys = Builders<ProductReview>.IndexKeys.Ascending(p => p.AverageRating);
-            var indexOptions = new CreateIndexOptions { Unique = false };
-            var indexModel = new CreateIndexModel<ProductReview>(indexKeys, indexOptions);
-
-            await collection.Indexes.CreateOneAsync(indexModel);
-        }
     }
 
     /// <summary>

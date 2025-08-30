@@ -1,18 +1,17 @@
+
 using App.Core.DTOs.Product.Review;
 
 namespace App.Core.Interfaces;
 
 public interface IProductReviewService
 {
-    Task<List<ProductReviewDto>?> GetReviewsBySellerIdAsync(string sellerId);
-    Task<ProductReviewDto?> GetReviewByIdAsync(string reviewId);
-    Task<ProductReviewDto?> GetReviewByProductIdAsync(string productId);
-    Task CreateReviewAsync(ProductReviewCreateDto review);
-    Task<bool> UpdateReviewAsync(ProductReviewDto review);
-    Task<bool> DeleteReviewAsync(string reviewId);
-    Task<List<ProductReviewCommentDto>?> GetCommentsByReviewIdAsync(string reviewId);
-    Task AddCommentToReviewAsync(string reviewId, ProductReviewCommentCreateDto comment);
-    Task<bool> UpdateCommentInReviewAsync(string reviewId, ProductReviewCommentDto comment);
-    Task<bool> DeleteCommentFromReviewAsync(string reviewId, string commentId);
-    Task AddReactionToCommentAsync(string reviewId, string commentId, ProductReviewCommentReactionDto reaction);
+    Task<bool> AddCommentToReviewByProductId(string productId, ProductReviewCommentCreateDto comment);
+    Task<bool> RemoveCommentFromReviewByProductId(string productId, string userId);
+    Task<ProductReviewDto?> GetReviewByProductId(string productId);
+    Task<ProductReviewDto?> GetReviewById(string reviewId);
+    Task<bool> ClearAllReviewsByProductId(string productId);
+    
+    Task<bool> SetReactionToReviewComment(string reviewId, string commentUserId, string reactionUserId, bool reaction);
+    Task<bool> DeleteReactionToReviewComment(string reviewId, string commentUserId, string reactionUserId);
+    Task<IEnumerable<ProductReviewCommentDto>?> GetAllCommentsByProductId(string productId);
 }

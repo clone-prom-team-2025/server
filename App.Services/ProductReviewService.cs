@@ -9,145 +9,169 @@ namespace App.Services;
 /// <summary>
 ///     Provides services for managing product reviews and comments.
 /// </summary>
-public class ProductReviewService(IProductReviewRepository repository, IMapper mapper) : IProductReviewService
+public class ProductReviewService(IProductReviewRepository repository, IMapper mapper, IProductRepository productRepository) : IProductReviewService
 {
     private readonly IMapper _mapper = mapper;
     private readonly IProductReviewRepository _repository = repository;
+    private readonly IProductRepository _productRepository = productRepository;
 
-    /// <summary>
-    ///     Adds a new comment to an existing product review.
-    /// </summary>
-    /// <param name="reviewId">The ID of the review to which the comment is added.</param>
-    /// <param name="comment">The comment data to add.</param>
-    public async Task AddCommentToReviewAsync(string reviewId, ProductReviewCommentCreateDto comment)
+    public async Task<bool> AddCommentToReviewByProductId(string productId, ProductReviewCommentCreateDto comment)
     {
-        var newComment = _mapper.Map<ProductReviewComment>(comment);
-        newComment.Id = Guid.NewGuid().ToString();
-        newComment.CreatedAt = DateTime.UtcNow;
-        if (!ObjectId.TryParse(reviewId, out var objectId))
-            throw new ArgumentException("Invalid product id format.", nameof(reviewId));
-        await _repository.AddCommentToReviewAsync(objectId, newComment);
+        var product = await _productRepository.GetByIdAsync(ObjectId.Parse(productId));
+        if (product == null)
+            return false;
+        var review = await _repository.GetByProductId(product.Id);
+        if (review == null)
+        {
+            review = new ProductReview(product.Id);
+            await _repository.CreateReview(review);
+        }
+
+        if (review.Comments.Any(c => c.UserId == ObjectId.Parse(comment.UserId)))
+            return false;
+
+        review.Comments.Add(_mapper.Map<ProductReviewComment>(comment));
+
+        var result = await _repository.UpdateReview(review);
+        return result;
     }
 
-    /// <summary>
-    ///     Adds a reaction to a specific comment within a product review.
-    /// </summary>
-    /// <param name="reviewId">The ID of the review containing the comment.</param>
-    /// <param name="commentId">The ID of the comment to react to.</param>
-    /// <param name="reaction">The reaction data.</param>
-    public async Task AddReactionToCommentAsync(string reviewId, string commentId,
-        ProductReviewCommentReactionDto reaction)
+    public async Task<bool> RemoveCommentFromReviewByProductId(string productId, string userId)
     {
-        if (!ObjectId.TryParse(reviewId, out var objectId))
-            throw new ArgumentException("Invalid product id format.", nameof(reviewId));
-        await _repository.AddReactionToCommentAsync(objectId, commentId,
-            _mapper.Map<ProductReviewCommentReaction>(reaction));
+        var review = await _repository.GetByProductId(ObjectId.Parse(productId));
+        if (review == null)
+            return false;
+
+        if (!ObjectId.TryParse(userId, out var objectUserId))
+            return false;
+
+        var removedCount = review.Comments.RemoveAll(c => c.UserId == objectUserId);
+
+        if (removedCount == 0)
+            return false;
+
+        await _repository.UpdateReview(review);
+
+        return true;
+    }
+    
+    public async Task<ProductReviewDto?> GetReviewByProductId(string productId)
+    {
+        var review = await _repository.GetByProductId(ObjectId.Parse(productId));
+        if (review == null)
+            return null;
+
+        var dto = _mapper.Map<ProductReviewDto>(review);
+
+        
+        
+        dto.Rating = new ProductReviewRatingListDto
+        {
+            OneStar = review.Comments.Count(c => c.Rating == 1),
+            TwoStar = review.Comments.Count(c => c.Rating == 2),
+            ThreeStar = review.Comments.Count(c => c.Rating == 3),
+            FourStar = review.Comments.Count(c => c.Rating == 4),
+            FiveStar = review.Comments.Count(c => c.Rating == 5),
+        };
+        
+        var averageRating = review.Comments.Any()
+            ? review.Comments.Average(c => c.Rating)
+            : 0;
+        
+        dto.AverageRating = averageRating;
+
+        return dto;
     }
 
-    /// <summary>
-    ///     Creates a new product review.
-    /// </summary>
-    /// <param name="review">The review data to create.</param>
-    public async Task CreateReviewAsync(ProductReviewCreateDto review)
+    public async Task<ProductReviewDto?> GetReviewById(string reviewId)
     {
-        var newReview = _mapper.Map<ProductReview>(review);
-        newReview.Id = ObjectId.GenerateNewId();
-        await _repository.CreateReviewAsync(newReview);
+        var review = await _repository.GetReviewById(ObjectId.Parse(reviewId));
+        if (review == null)
+            return null;
+
+        var dto = _mapper.Map<ProductReviewDto>(review);
+
+        dto.Rating = new ProductReviewRatingListDto
+        {
+            OneStar = review.Comments.Count(c => c.Rating == 1),
+            TwoStar = review.Comments.Count(c => c.Rating == 2),
+            ThreeStar = review.Comments.Count(c => c.Rating == 3),
+            FourStar = review.Comments.Count(c => c.Rating == 4),
+            FiveStar = review.Comments.Count(c => c.Rating == 5),
+        };
+        
+        var averageRating = review.Comments.Any()
+            ? review.Comments.Average(c => c.Rating)
+            : 0;
+        
+        dto.AverageRating = averageRating;
+
+        return dto;
     }
 
-    /// <summary>
-    ///     Deletes a comment from a product review.
-    /// </summary>
-    /// <param name="reviewId">The ID of the review containing the comment.</param>
-    /// <param name="commentId">The ID of the comment to delete.</param>
-    /// <returns>True if deleted successfully, otherwise false.</returns>
-    public async Task<bool> DeleteCommentFromReviewAsync(string reviewId, string commentId)
+    public async Task<bool> ClearAllReviewsByProductId(string productId)
     {
-        if (!ObjectId.TryParse(reviewId, out var objectId))
-            throw new ArgumentException("Invalid product id format.", nameof(reviewId));
-        return await _repository.DeleteCommentFromReviewAsync(objectId, commentId);
+        var deleteResult = await _repository.DeleteReview(ObjectId.Parse(productId));
+        if (!deleteResult)
+            return false;
+        var createResult = await _repository.CreateReview(new ProductReview(ObjectId.Parse(productId)));
+        return createResult;
     }
 
-    /// <summary>
-    ///     Deletes a product review by its ID.
-    /// </summary>
-    /// <param name="reviewId">The ID of the review to delete.</param>
-    /// <returns>True if deleted successfully, otherwise false.</returns>
-    public async Task<bool> DeleteReviewAsync(string reviewId)
+    public async Task<bool> SetReactionToReviewComment(string productId, string commentUserId, string reactionUserId, bool reaction)
     {
-        if (!ObjectId.TryParse(reviewId, out var objectId))
-            throw new ArgumentException("Invalid product id format.", nameof(reviewId));
-        return await _repository.DeleteReviewAsync(objectId);
+        var review = await _repository.GetByProductId(ObjectId.Parse(productId));
+        if (review == null)
+            return false;
+
+        if (!ObjectId.TryParse(commentUserId, out var commentUserObjectId))
+            return false;
+
+        var comment = review.Comments.FirstOrDefault(c => c.UserId == commentUserObjectId);
+        if (comment == null)
+            return false;
+
+        comment.Reactions[reactionUserId] = reaction;
+
+        await _repository.UpdateReview(review);
+
+        return true;
+    }
+    
+    public async Task<bool> DeleteReactionToReviewComment(string productId, string commentUserId, string reactionUserId)
+    {
+        var review = await _repository.GetByProductId(ObjectId.Parse(productId));
+        if (review == null)
+            return false;
+
+        if (!ObjectId.TryParse(commentUserId, out var commentUserObjectId))
+            return false;
+
+        var comment = review.Comments.FirstOrDefault(c => c.UserId == commentUserObjectId);
+        if (comment == null)
+            return false;
+
+        if (!comment.Reactions.ContainsKey(reactionUserId))
+            return false;
+
+        comment.Reactions.Remove(reactionUserId);
+
+        await _repository.UpdateReview(review);
+
+        return true;
     }
 
-    /// <summary>
-    ///     Gets the list of comments for a specific review.
-    /// </summary>
-    /// <param name="reviewId">The ID of the review.</param>
-    /// <returns>List of comments or null if not found.</returns>
-    public async Task<List<ProductReviewCommentDto>?> GetCommentsByReviewIdAsync(string reviewId)
+    public async Task<IEnumerable<ProductReviewCommentDto>?> GetAllCommentsByProductId(string productId)
     {
-        if (!ObjectId.TryParse(reviewId, out var objectId))
-            throw new ArgumentException("Invalid product id format.", nameof(reviewId));
-        return _mapper.Map<List<ProductReviewCommentDto>?>(await _repository.GetCommentsByReviewIdAsync(objectId));
-    }
+        if (!ObjectId.TryParse(productId, out var productObjectId))
+            return Enumerable.Empty<ProductReviewCommentDto>();
 
-    /// <summary>
-    ///     Gets a product review by its ID.
-    /// </summary>
-    /// <param name="reviewId">The ID of the review.</param>
-    /// <returns>The review data or null if not found.</returns>
-    public async Task<ProductReviewDto?> GetReviewByIdAsync(string reviewId)
-    {
-        if (!ObjectId.TryParse(reviewId, out var objectId))
-            throw new ArgumentException("Invalid product id format.", nameof(reviewId));
-        return _mapper.Map<ProductReviewDto?>(await _repository.GetReviewByIdAsync(objectId));
-    }
+        var review = await _repository.GetByProductId(productObjectId);
+        if (review == null || !review.Comments.Any())
+            return Enumerable.Empty<ProductReviewCommentDto>();
 
-    /// <summary>
-    ///     Gets a product review by the product ID.
-    /// </summary>
-    /// <param name="productId">The ID of the product associated with the review.</param>
-    /// <returns>The review data or null if not found.</returns>
-    public async Task<ProductReviewDto?> GetReviewByProductIdAsync(string productId)
-    {
-        if (!ObjectId.TryParse(productId, out var objectId))
-            throw new ArgumentException("Invalid product id format.", nameof(productId));
-        return _mapper.Map<ProductReviewDto?>(await _repository.GetReviewByProductIdAsync(objectId));
-    }
+        var commentDtos = _mapper.Map<IEnumerable<ProductReviewCommentDto>>(review.Comments);
 
-    /// <summary>
-    ///     Gets a list of reviews for a specific seller.
-    /// </summary>
-    /// <param name="sellerId">The ID of the seller.</param>
-    /// <returns>List of reviews or null if none found.</returns>
-    public async Task<List<ProductReviewDto>?> GetReviewsBySellerIdAsync(string sellerId)
-    {
-        if (!ObjectId.TryParse(sellerId, out var objectId))
-            throw new ArgumentException("Invalid product id format.", nameof(sellerId));
-        return _mapper.Map<List<ProductReviewDto>?>(await _repository.GetReviewsBySellerIdAsync(objectId));
-    }
-
-    /// <summary>
-    ///     Updates a comment in a review.
-    /// </summary>
-    /// <param name="reviewId">The ID of the review containing the comment.</param>
-    /// <param name="comment">The updated comment data.</param>
-    /// <returns>True if update was successful, otherwise false.</returns>
-    public async Task<bool> UpdateCommentInReviewAsync(string reviewId, ProductReviewCommentDto comment)
-    {
-        if (!ObjectId.TryParse(reviewId, out var objectId))
-            throw new ArgumentException("Invalid product id format.", nameof(reviewId));
-        return await _repository.UpdateCommentInReviewAsync(objectId, _mapper.Map<ProductReviewComment>(comment));
-    }
-
-    /// <summary>
-    ///     Updates an existing product review.
-    /// </summary>
-    /// <param name="review">The updated review data.</param>
-    /// <returns>True if update was successful, otherwise false.</returns>
-    public async Task<bool> UpdateReviewAsync(ProductReviewDto review)
-    {
-        return await _repository.UpdateReviewAsync(_mapper.Map<ProductReview>(review));
+        return commentDtos;
     }
 }
