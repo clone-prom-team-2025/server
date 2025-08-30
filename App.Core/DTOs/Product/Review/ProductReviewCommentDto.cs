@@ -2,10 +2,9 @@ namespace App.Core.DTOs.Product.Review;
 
 public class ProductReviewCommentDto
 {
-    public ProductReviewCommentDto(string id, double rating, string userId, string comment, DateTime createdAt,
-        List<ProductReviewCommentReactionDto> reactions)
+    public ProductReviewCommentDto(double rating, string userId, string comment, DateTime createdAt,
+        Dictionary<string, bool> reactions)
     {
-        Id = id;
         Rating = rating;
         UserId = userId;
         Comment = comment;
@@ -13,7 +12,6 @@ public class ProductReviewCommentDto
         Reactions = reactions;
     }
 
-    public string Id { get; set; }
     public double Rating { get; set; }
 
     public string UserId { get; set; }
@@ -22,14 +20,9 @@ public class ProductReviewCommentDto
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public List<ProductReviewCommentReactionDto> Reactions { get; set; } = new();
+    public Dictionary<string, bool> Reactions { get; set; } = [];
 
-    public int PositiveCount => Reactions.Count(r => r.Positive);
+    public int PositiveCount => Reactions.Count(r => r.Value);
 
-    public int NegativeCount => Reactions.Count(r => !r.Positive);
-
-    public void AddReaction(ProductReviewCommentReactionDto reaction)
-    {
-        Reactions.Add(reaction);
-    }
+    public int NegativeCount => Reactions.Count(r => r.Value == false);
 }

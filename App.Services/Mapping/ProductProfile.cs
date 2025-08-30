@@ -80,49 +80,6 @@ public class ProductProfile : Profile
         CreateMap<ProductFeatureItem, ProductFeatureItemDto>()
             .ConstructUsing(model => new ProductFeatureItemDto(model.Value, model.Type, model.Nullable));
 
-        CreateMap<ProductReview, ProductReviewDto>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
-            .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.ProductId.ToString()))
-            .ForMember(dest => dest.ModelId, opt => opt.MapFrom(src => src.ModelId))
-            .ForMember(dest => dest.Comments, opt => opt.MapFrom(src => src.Comments));
-
-        CreateMap<ProductReviewDto, ProductReview>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(dto => ObjectId.Parse(dto.Id)))
-            .ForMember(dest => dest.ProductId, opt => opt.MapFrom(dto => ObjectId.Parse(dto.ProductId)))
-            .ForMember(dest => dest.ModelId, opt => opt.MapFrom(dto => dto.ModelId))
-            .ForMember(dest => dest.Comments, opt => opt.MapFrom(dto => dto.Comments));
-
-        CreateMap<ProductReviewComment, ProductReviewCommentDto>()
-            .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserId.ToString()))
-            .ForMember(dest => dest.Reactions, opt => opt.MapFrom(src => src.Reactions));
-
-        CreateMap<ProductReviewCommentDto, ProductReviewComment>()
-            .ConstructUsing(dto =>
-                new ProductReviewComment(dto.Rating, ObjectId.Parse(dto.UserId), dto.Comment))
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(dto => dto.Id))
-            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(dto => dto.CreatedAt))
-            .ForMember(dest => dest.Reactions, opt => opt.MapFrom(dto => dto.Reactions));
-
-        CreateMap<ProductReviewCommentReaction, ProductReviewCommentReactionDto>()
-            .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserId.ToString()));
-
-        CreateMap<ProductReviewCommentReactionDto, ProductReviewCommentReaction>()
-            .ConstructUsing(dto => new ProductReviewCommentReaction(ObjectId.Parse(dto.UserId), dto.Positive));
-
-        CreateMap<ProductReviewCreateDto, ProductReview>()
-            .ForMember(dest => dest.ProductId, opt => opt.MapFrom(dto => ObjectId.Parse(dto.ProductId)))
-            .ForMember(dest => dest.ModelId, opt => opt.MapFrom(dto => dto.ModelId))
-            .ForMember(dest => dest.AverageRating, opt => opt.MapFrom(dto => dto.AverageRating))
-            .ForMember(dest => dest.Comments, opt => opt.Ignore())
-            .ForMember(dest => dest.Id, opt => opt.Ignore());
-
-        CreateMap<ProductReviewCommentCreateDto, ProductReviewComment>()
-            .ConstructUsing(dto =>
-                new ProductReviewComment(dto.Rating, ObjectId.Parse(dto.UserId), dto.Comment))
-            .ForMember(dest => dest.Id, opt => opt.Ignore())
-            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-            .ForMember(dest => dest.Reactions, opt => opt.Ignore());
-
         CreateMap<ProductFilterRequest, ProductFilterRequestDto>()
             .ForMember(dest => dest.CategoryId, opt => opt.MapFrom(src => src.CategoryId.ToString()));
 

@@ -5,15 +5,10 @@ namespace App.Core.Interfaces;
 
 public interface IProductReviewRepository
 {
-    Task<List<ProductReview>?> GetReviewsBySellerIdAsync(ObjectId sellerId);
-    Task<ProductReview?> GetReviewByIdAsync(ObjectId reviewId);
-    Task<ProductReview?> GetReviewByProductIdAsync(ObjectId productId);
-    Task CreateReviewAsync(ProductReview review);
-    Task<bool> UpdateReviewAsync(ProductReview review);
-    Task<bool> DeleteReviewAsync(ObjectId reviewId);
-    Task<List<ProductReviewComment>?> GetCommentsByReviewIdAsync(ObjectId reviewId);
-    Task<bool> AddCommentToReviewAsync(ObjectId reviewId, ProductReviewComment comment);
-    Task<bool> UpdateCommentInReviewAsync(ObjectId reviewId, ProductReviewComment comment);
-    Task<bool> DeleteCommentFromReviewAsync(ObjectId reviewId, string commentId);
-    Task<bool> AddReactionToCommentAsync(ObjectId reviewId, string commentId, ProductReviewCommentReaction reaction);
+    Task<bool> CreateReview(ProductReview review);
+    Task<bool> DeleteReview(ObjectId id);
+    Task<bool> UpdateReview(ProductReview review);
+    Task<ProductReview?> GetReviewById(ObjectId id);
+    Task<ProductReview?> GetByProductId(ObjectId productId);
+    Task<List<ProductReview>?> GetAll();
 }

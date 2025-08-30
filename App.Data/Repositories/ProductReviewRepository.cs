@@ -1,185 +1,110 @@
 ﻿using App.Core.Interfaces;
 using App.Core.Models.Product;
 using App.Core.Models.Product.Review;
+using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace App.Data.Repositories;
 
-/// <summary>
-///     Repository for managing product reviews and related comments in MongoDB.
-///     Provides CRUD operations for reviews, comments, and reactions.
-/// </summary>
-public class ProductReviewRepository(ProductRepository productRepository, MongoDbContext mongoDbContext)
+public class ProductReviewRepository(MongoDbContext mongoDbContext, ILogger<ProductReviewRepository> logger)
     : IProductReviewRepository
 {
-    private readonly IMongoCollection<ProductReview> _reviews = mongoDbContext.ProductReviews;
+    private readonly IMongoCollection<ProductReview> _reviewCollection = mongoDbContext.ProductReviews;
+    private readonly IMongoCollection<Product> _productCollection = mongoDbContext.Products;
+    private readonly ILogger<ProductReviewRepository> _logger = logger;
 
-    /// <summary>
-    ///     Retrieves all product reviews associated with all products of a specific seller.
-    /// </summary>
-    /// <param name="sellerId">The ID of the seller whose products' reviews to fetch.</param>
-    /// <returns>List of product reviews or null if none found.</returns>
-    public async Task<List<ProductReview>?> GetReviewsBySellerIdAsync(ObjectId sellerId)
+    public async Task<bool> CreateReview(ProductReview review)
     {
-        var products = await productRepository.GetBySellerIdAsync(sellerId, new ProductFilterRequest());
-        if (products == null || !products.Products.Any()) return null;
+        _logger.LogInformation("CreateReview called for ProductId={ProductId}", review.ProductId);
 
-        List<ProductReview>? reviews = new();
-        foreach (var product in products.Products)
+        var productFilter = Builders<Product>.Filter.Where(p => p.Id == review.ProductId);
+        if (!await _productCollection.Find(productFilter).Limit(1).AnyAsync())
         {
-            var filter = Builders<ProductReview>.Filter.Eq(r => r.ProductId, product.Id);
-            var temp = await _reviews.Find(r => r.ProductId.Equals(product.Id)).ToListAsync();
-            foreach (var review in temp) reviews.Add(review);
+            _logger.LogWarning("CreateReview failed: ProductId={ProductId} not found", review.ProductId);
+            return false;
         }
 
+        await _reviewCollection.InsertOneAsync(review);
+        _logger.LogInformation("CreateReview completed for ProductId={ProductId}, ReviewId={ReviewId}", review.ProductId, review.Id);
+        return true;
+    }
+
+    public async Task<bool> DeleteReview(ObjectId id)
+    {
+        _logger.LogInformation("DeleteReview called for ReviewId={ReviewId}", id);
+
+        var reviewFilter = Builders<ProductReview>.Filter.Where(p => p.Id == id);
+        var result = await _reviewCollection.DeleteOneAsync(reviewFilter);
+
+        if (result.IsAcknowledged && result.DeletedCount > 0)
+        {
+            _logger.LogInformation("DeleteReview succeeded for ReviewId={ReviewId}", id);
+            return true;
+        }
+        else
+        {
+            _logger.LogWarning("DeleteReview failed for ReviewId={ReviewId}", id);
+            return false;
+        }
+    }
+
+    public async Task<bool> UpdateReview(ProductReview review)
+    {
+        _logger.LogInformation("UpdateReview called for ReviewId={ReviewId}, ProductId={ProductId}", review.Id, review.ProductId);
+
+        var productFilter = Builders<Product>.Filter.Where(p => p.Id == review.ProductId);
+        if (!await _productCollection.Find(productFilter).Limit(1).AnyAsync())
+        {
+            _logger.LogWarning("UpdateReview failed: ProductId={ProductId} not found", review.ProductId);
+            return false;
+        }
+
+        var reviewFilter = Builders<ProductReview>.Filter.Where(p => p.Id == review.Id);
+        var result = await _reviewCollection.ReplaceOneAsync(reviewFilter, review);
+
+        if (result.IsAcknowledged && result.ModifiedCount > 0)
+        {
+            _logger.LogInformation("UpdateReview succeeded for ReviewId={ReviewId}", review.Id);
+            return true;
+        }
+        else
+        {
+            _logger.LogWarning("UpdateReview failed for ReviewId={ReviewId}", review.Id);
+            return false;
+        }
+    }
+
+    public async Task<ProductReview?> GetReviewById(ObjectId id)
+    {
+        _logger.LogInformation("GetReviewById called for ReviewId={ReviewId}", id);
+        var review = await _reviewCollection.Find(r => r.Id == id).FirstOrDefaultAsync();
+        _logger.LogInformation("GetReviewById returned {Found}", review != null);
+        return review;
+    }
+
+    public async Task<ProductReview?> GetByProductId(ObjectId productId)
+    {
+        _logger.LogInformation("GetByProductId called for ProductId={ProductId}", productId);
+
+        var productFilter = Builders<Product>.Filter.Where(p => p.Id == productId);
+        if (!await _productCollection.Find(productFilter).Limit(1).AnyAsync())
+        {
+            _logger.LogWarning("GetByProductId failed: ProductId={ProductId} not found", productId);
+            return null;
+        }
+
+        var reviewFilter = Builders<ProductReview>.Filter.Where(r => r.ProductId == productId);
+        var review = await _reviewCollection.Find(reviewFilter).FirstOrDefaultAsync();
+        _logger.LogInformation("GetByProductId returned {Found}", review != null);
+        return review;
+    }
+
+    public async Task<List<ProductReview>?> GetAll()
+    {
+        _logger.LogInformation("GetAll called");
+        var reviews = await _reviewCollection.Find(FilterDefinition<ProductReview>.Empty).ToListAsync();
+        _logger.LogInformation("GetAll returned {Count} reviews", reviews?.Count ?? 0);
         return reviews;
-    }
-
-    /// <summary>
-    ///     Retrieves a product review by its unique review ID.
-    /// </summary>
-    /// <param name="reviewId">The review ID (MongoDB ObjectId as string).</param>
-    /// <returns>The product review or null if not found.</returns>
-    public async Task<ProductReview?> GetReviewByIdAsync(ObjectId reviewId)
-    {
-        var filter = Builders<ProductReview>.Filter.Eq(r => r.Id, reviewId);
-        return await _reviews.Find(filter).FirstOrDefaultAsync();
-    }
-
-    /// <summary>
-    ///     Retrieves a product review by the associated product ID.
-    /// </summary>
-    /// <param name="productId">The product ID to find the review for.</param>
-    /// <returns>The product review or null if not found.</returns>
-    public async Task<ProductReview?> GetReviewByProductIdAsync(ObjectId productId)
-    {
-        var filters = Builders<ProductReview>.Filter.Eq(r => r.ProductId, productId);
-        return await _reviews.Find(filters).FirstOrDefaultAsync();
-    }
-
-    /// <summary>
-    ///     Inserts a new product review document into the database.
-    /// </summary>
-    /// <param name="review">The product review to create.</param>
-    public async Task CreateReviewAsync(ProductReview review)
-    {
-        await _reviews.InsertOneAsync(review);
-    }
-
-    /// <summary>
-    ///     Updates an existing product review document.
-    /// </summary>
-    /// <param name="review">The updated product review.</param>
-    /// <returns>True if update was acknowledged and modified a document; otherwise false.</returns>
-    public async Task<bool> UpdateReviewAsync(ProductReview review)
-    {
-        var filter = Builders<ProductReview>.Filter.Eq(r => r.Id, review.Id);
-        var result = await _reviews.ReplaceOneAsync(filter, review);
-        return result.IsAcknowledged;
-    }
-
-    /// <summary>
-    ///     Deletes a product review by its review ID.
-    /// </summary>
-    /// <param name="reviewId">The review ID to delete.</param>
-    /// <returns>True if deletion was acknowledged and deleted a document; otherwise false.</returns>
-    public async Task<bool> DeleteReviewAsync(ObjectId reviewId)
-    {
-        var filter = Builders<ProductReview>.Filter.Eq(r => r.Id, reviewId);
-        var result = await _reviews.DeleteOneAsync(filter);
-        return result.IsAcknowledged && result.DeletedCount > 0;
-    }
-
-    /// <summary>
-    ///     Retrieves all comments for a given product review by review ID.
-    /// </summary>
-    /// <param name="reviewId">The review ID whose comments to retrieve.</param>
-    /// <returns>List of review comments or null if review not found.</returns>
-    public async Task<List<ProductReviewComment>?> GetCommentsByReviewIdAsync(ObjectId reviewId)
-    {
-        var filter = Builders<ProductReview>.Filter.Eq(r => r.Id, reviewId);
-        var projection = Builders<ProductReview>.Projection.Expression(r => r.Comments);
-        var comments = await _reviews.Find(filter).Project(projection).FirstOrDefaultAsync();
-
-        return comments ?? null;
-    }
-
-    /// <summary>
-    ///     Adds a new comment to an existing product review.
-    /// </summary>
-    /// <param name="reviewId">The review ID to add the comment to.</param>
-    /// <param name="comment">The comment to add.</param>
-    /// <returns>True if update was successful; otherwise false.</returns>
-    public async Task<bool> AddCommentToReviewAsync(ObjectId reviewId, ProductReviewComment comment)
-    {
-        var productReview = await GetReviewByIdAsync(reviewId);
-        if (productReview == null) return false;
-        productReview.Comments.Add(comment);
-
-        return await UpdateReviewAsync(productReview);
-    }
-
-    /// <summary>
-    ///     Updates an existing comment within a product review.
-    /// </summary>
-    /// <param name="reviewId">The review ID containing the comment.</param>
-    /// <param name="comment">The updated comment object (must have existing comment ID).</param>
-    /// <returns>True if update was successful; otherwise false.</returns>
-    public async Task<bool> UpdateCommentInReviewAsync(ObjectId reviewId, ProductReviewComment comment)
-    {
-        var productReview = await GetReviewByIdAsync(reviewId);
-        if (productReview == null) return false;
-
-        var index = productReview.Comments.FindIndex(c => c.Id == comment.Id);
-        if (index == -1)
-            return false;
-
-        productReview.Comments[index] = comment;
-
-        return await UpdateReviewAsync(productReview);
-    }
-
-    /// <summary>
-    ///     Deletes a comment from a product review.
-    /// </summary>
-    /// <param name="reviewId">The review ID containing the comment.</param>
-    /// <param name="commentId">The comment ID to delete.</param>
-    /// <returns>True if deletion was successful; otherwise false.</returns>
-    public async Task<bool> DeleteCommentFromReviewAsync(ObjectId reviewId, string commentId)
-    {
-        var productReview = await GetReviewByIdAsync(reviewId);
-        if (productReview == null) return false;
-
-        var index = productReview.Comments.FindIndex(c => c.Id == commentId);
-
-        if (index == -1)
-            return false;
-
-        productReview.Comments.RemoveAt(index);
-        return await UpdateReviewAsync(productReview);
-    }
-
-    /// <summary>
-    ///     Adds a reaction (like/dislike) to a specific comment in a product review.
-    /// </summary>
-    /// <param name="reviewId">The review ID containing the comment.</param>
-    /// <param name="commentId">The comment ID to add the reaction to.</param>
-    /// <param name="reaction">The reaction to add.</param>
-    /// <returns>True if update was successful; otherwise false.</returns>
-    public async Task<bool> AddReactionToCommentAsync(ObjectId reviewId, string commentId,
-        ProductReviewCommentReaction reaction)
-    {
-        var productReview = await GetReviewByIdAsync(reviewId);
-        if (productReview == null)
-            return false;
-
-        var comment = productReview.Comments.FirstOrDefault(c => c.Id == commentId);
-        if (comment == null)
-            return false;
-
-        comment.AddReaction(reaction);
-
-        return await UpdateReviewAsync(productReview);
     }
 }

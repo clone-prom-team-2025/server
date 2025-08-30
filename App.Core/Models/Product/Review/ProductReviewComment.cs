@@ -15,7 +15,7 @@ public class ProductReviewComment
     /// <param name="rating">The rating given by the user (typically 1–5).</param>
     /// <param name="userId">The identifier of the user who left the review.</param>
     /// <param name="comment">The content of the comment.</param>
-    public ProductReviewComment(double rating, ObjectId userId, string comment)
+    public ProductReviewComment(int rating, ObjectId userId, string comment)
     {
         Rating = rating;
         UserId = userId;
@@ -23,14 +23,9 @@ public class ProductReviewComment
     }
 
     /// <summary>
-    ///     The unique identifier of the comment.
-    /// </summary>
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-
-    /// <summary>
     ///     The rating value submitted by the user.
     /// </summary>
-    public double Rating { get; set; }
+    public int Rating { get; set; }
 
     /// <summary>
     ///     The identifier of the user who made the comment.
@@ -50,24 +45,5 @@ public class ProductReviewComment
     /// <summary>
     ///     A list of reactions (likes/dislikes) left by other users.
     /// </summary>
-    public List<ProductReviewCommentReaction> Reactions { get; set; } = new();
-
-    /// <summary>
-    ///     Gets the number of positive (like) reactions.
-    /// </summary>
-    public int PositiveCount => Reactions.Count(r => r.Positive);
-
-    /// <summary>
-    ///     Gets the number of negative (dislike) reactions.
-    /// </summary>
-    public int NegativeCount => Reactions.Count(r => !r.Positive);
-
-    /// <summary>
-    ///     Adds a user reaction (like/dislike) to this comment.
-    /// </summary>
-    /// <param name="reaction">The reaction to add.</param>
-    public void AddReaction(ProductReviewCommentReaction reaction)
-    {
-        Reactions.Add(reaction);
-    }
+    public Dictionary<string, bool> Reactions { get; set; } = [];
 }
