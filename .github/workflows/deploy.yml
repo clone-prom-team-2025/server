@@ -64,5 +64,5 @@ jobs:
           script: |
             podman stop app-api-container || true
             podman rm app-api-container || true
-            podman pull pashhun/app-api-image:latest
+            podman pull docker.io/pashhun/app-api-image:latest
             podman run -v /home/pashhun/app-api/logs:/app/logs   -d -p 8080:80   --device /dev/nvidiactl   --device /dev/nvidia0   --device /dev/nvidia-uvm   --device /dev/nvidia-modeset   --restart=always   --name app-api-container   docker.io/pashhun/app-api-image:latest
