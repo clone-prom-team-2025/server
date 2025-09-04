@@ -10,21 +10,11 @@ public interface IUserService
     Task<UserDto?> GetUserByIdAsync(string userId);
     Task<UserDto?> GetUserByUsernameAsync(string username);
     Task<UserDto?> GetUserByEmailAsync(string email);
-    Task<IEnumerable<User>?> GetUsersByRoleAsync(string role);
-    Task<IEnumerable<User>?> GetUsersByRoleAsync(string role, int pageNumber, int pageSize);
-    Task CreateUserAsync(UserCreateDto user);
-    Task<bool> UpdateUserAsync(User user);
+    Task<IEnumerable<UserDto>?> GetUsersByRoleAsync(string role);
+    Task<IEnumerable<UserDto>?> GetUsersByRoleAsync(string role, int pageNumber, int pageSize);
+    Task<bool> UpdateUserAsync(UserDto user);
     Task<bool> DeleteUserAsync(string userId);
     Task<IEnumerable<string>> GetUserRolesAsync(string userId);
-
-    // additionalInfo
-    Task<bool> UpdateUserAdditionalInfoByUserIdAsync(string userId, UserAdditionalInfo userAdditionalInfo);
-    Task<bool> DeleteUserAdditionalInfoByUserIdAsync(string userId);
-    Task<bool> SetUserPhoneNumberConfirmedAsync(string userId, string phoneNumber);
-    Task<bool> SetUserEmailConfirmedAsync(string userId, string email);
-    Task<UserAdditionalInfo?> GetUserAdditionalInfoByUserIdAsync(string userId);
-
-
     Task<bool> BanUser(UserBanCreateDto userBlockInfo, string adminId);
     Task<bool> UnbanUserByBanId(string banId, string adminId);
     Task<IEnumerable<UserBanDto>> GetUserBansByUserId(string userId);

@@ -75,22 +75,6 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     }
 
     /// <summary>
-    ///     Retrieves a user by their phone number stored in additional info.
-    /// </summary>
-    /// <param name="phoneNumber">The phone number to search for.</param>
-    /// <returns>The matching user or null.</returns>
-    public async Task<User?> GetUserByPhoneNumberAsync(string phoneNumber)
-    {
-        var filter = Builders<User>.Filter.And(
-            Builders<User>.Filter.Ne(u => u.AdditionalInfo, null),
-            Builders<User>.Filter.Ne(u => u.AdditionalInfo!.PhoneNumber, null),
-            Builders<User>.Filter.Eq(u => u.AdditionalInfo!.PhoneNumber, phoneNumber)
-        );
-
-        return await _users.Find(filter).FirstOrDefaultAsync();
-    }
-
-    /// <summary>
     ///     Retrieves all users with the specified role.
     /// </summary>
     /// <param name="role">The role name (e.g., "Admin", "User").</param>
@@ -168,56 +152,5 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
             .Find(filter)
             .Project(projection)
             .FirstOrDefaultAsync();
-    }
-
-    /// <summary>
-    ///     Updates the additional info object of a user by their ID.
-    /// </summary>
-    /// <param name="userId">The user's ObjectId as string.</param>
-    /// <param name="userAdditionalInfo">The new additional info to assign.</param>
-    /// <returns>True if update was acknowledged, otherwise false.</returns>
-    public async Task<bool> UpdateUserAdditionalInfoByUserIdAsync(ObjectId userId, UserAdditionalInfo userAdditionalInfo)
-    {
-        if (userAdditionalInfo == null) return false;
-
-        var filter = Builders<User>.Filter.Eq(u => u.Id, userId);
-        var update = Builders<User>.Update.Set(u => u.AdditionalInfo, userAdditionalInfo);
-
-        var result = await _users.UpdateOneAsync(filter, update);
-
-        return result.IsAcknowledged;
-    }
-
-    /// <summary>
-    ///     Deletes the user completely by ID.
-    /// </summary>
-    /// <param name="userId">The user's ObjectId as string.</param>
-    /// <returns>True if deleted successfully, otherwise false.</returns>
-    public async Task<bool> DeleteUserAdditionalInfoByUserIdAsync(ObjectId userId)
-    {
-        var filter = Builders<User>.Filter.Eq(u => u.Id, userId);
-        var result = await _users.DeleteOneAsync(filter);
-
-        return result.IsAcknowledged && result.DeletedCount > 0;
-    }
-
-    /// <summary>
-    ///     Retrieves the additional info object of a user by ID.
-    /// </summary>
-    /// <param name="userId">The user's ObjectId as string.</param>
-    /// <returns>The user's additional info or null.</returns>
-    public async Task<UserAdditionalInfo?> GetUserAdditionalInfoByUserIdAsync(ObjectId userId)
-    {
-        var filter = Builders<User>.Filter.Eq(u => u.Id, userId);
-        var projection = Builders<User>.Projection.Expression(u => u.AdditionalInfo);
-
-        var additionalInfo = await _users
-            .Find(filter)
-            .Project(projection)
-            .FirstOrDefaultAsync();
-
-        if (additionalInfo == null) return null;
-
-        return additionalInfo;
     }
 }

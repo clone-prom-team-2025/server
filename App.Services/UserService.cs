@@ -38,7 +38,7 @@ public class UserService : IUserService
             }
 
             _logger.LogInformation("Fetched {Count} users", users.Count);
-            return users.Select(u => _mapper.Map<UserDto>(u)).ToList();
+            return _mapper.Map<IEnumerable<UserDto>?>(users);
         }
     }
 
@@ -111,37 +111,34 @@ public class UserService : IUserService
         }
     }
 
-    public async Task<IEnumerable<User>?> GetUsersByRoleAsync(string role)
+    public async Task<IEnumerable<UserDto>?> GetUsersByRoleAsync(string role)
+    {
+        using (_logger.BeginScope("GetUsersByRoleAsync(Role={role})", role))
+        {
+            _logger.LogInformation("Fetching users with pagination");
+            var users = await _userRepository.GetUsersByRoleAsync(role);
+            if (users == null || !users.Any())
+            {
+                _logger.LogInformation("No users found");
+                return null;
+            }
+
+            _logger.LogInformation("Fetched {Count} users", users.Count);
+            return _mapper.Map<IEnumerable<UserDto>?>(users);
+        }
+    }
+
+    public async Task<IEnumerable<UserDto>?> GetUsersByRoleAsync(string role, int pageNumber, int pageSize)
     {
         throw new NotImplementedException();
     }
 
-    public async Task<IEnumerable<User>?> GetUsersByRoleAsync(string role, int pageNumber, int pageSize)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task CreateUserAsync(UserCreateDto user)
-    {
-        await _userRepository.CreateUserAsync(_mapper.Map<User>(user));
-    }
-
-    public async Task<bool> UpdateUserAsync(User user)
+    public async Task<bool> UpdateUserAsync(UserDto user)
     {
         throw new NotImplementedException();
     }
 
     public async Task<IEnumerable<string>> GetUserRolesAsync(string userId)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<bool> UpdateUserAdditionalInfoByUserIdAsync(string id, UserAdditionalInfo userAdditionalInfo)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<bool> DeleteUserAdditionalInfoByUserIdAsync(string id)
     {
         throw new NotImplementedException();
     }
@@ -152,11 +149,6 @@ public class UserService : IUserService
     }
 
     public async Task<bool> SetUserEmailConfirmedAsync(string userId, string email)
-    {
-        throw new NotImplementedException();
-    }
-
-    public async Task<UserAdditionalInfo?> GetUserAdditionalInfoByUserIdAsync(string userId)
     {
         throw new NotImplementedException();
     }

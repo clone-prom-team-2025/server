@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using App.Core.Models.FileStorage;
 using App.Core.Utils;
 using MongoDB.Bson;
@@ -16,7 +17,7 @@ public class User
         CreatedAt = DateTime.UtcNow;
     }
 
-    public User(string username, string password, string email, BaseFile avatar, List<string> roles)
+    public User(string username, string password, string email, BaseFile avatar, List<string> roles, string fullName, string? phoneNumber = null, string? gender = null, DateTime? dateOfBirth = null)
     {
         Id = ObjectId.GenerateNewId();
         Username = username;
@@ -25,9 +26,24 @@ public class User
         Avatar = avatar;
         Roles = new List<string>(roles);
         CreatedAt = DateTime.UtcNow;
+        FullName = fullName;
+        PhoneNumber = phoneNumber;
+        Gender = gender;
+        DateOfBirth = dateOfBirth;
     }
 
     [BsonId] public ObjectId Id { get; set; }
+    
+    public string FullName { get; set; }
+    
+    public string? PhoneNumber { get; set; }
+
+    public bool? PhoneNumberConfirmed { get; set; } = false;
+
+    public string? Gender { get; set; }
+
+    [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
+    public DateTime? DateOfBirth { get; set; }
 
     public string Username { get; set; }
 
@@ -43,6 +59,4 @@ public class User
 
     [BsonDateTimeOptions(Kind = DateTimeKind.Utc)]
     public DateTime CreatedAt { get; set; }
-
-    public UserAdditionalInfo? AdditionalInfo { get; set; }
 }
