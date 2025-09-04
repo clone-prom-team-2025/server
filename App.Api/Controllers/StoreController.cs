@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using App.Core.Constants;
 using App.Core.DTOs.Store;
 using App.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -233,6 +234,7 @@ public class StoreController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<ActionResult> ApproveRequest(string requestId)
     {
         using (_logger.BeginScope("ApproveRequest action"))
@@ -266,6 +268,7 @@ public class StoreController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<ActionResult> RejectRequest(string requestId, string reason)
     {
         using (_logger.BeginScope("RejectRequest action"))
@@ -323,6 +326,7 @@ public class StoreController : ControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<StoreDto>> GetStoreById(string storeId)
     {
         using (_logger.BeginScope("GetStoreById action"))
@@ -339,6 +343,7 @@ public class StoreController : ControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<StoreDto>>> GetStores()
     {
         using (_logger.BeginScope("GetStores"))

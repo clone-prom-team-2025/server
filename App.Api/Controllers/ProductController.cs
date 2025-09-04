@@ -1,6 +1,8 @@
+using App.Core.Constants;
 using App.Core.DTOs.Product;
 using App.Core.Interfaces;
 using App.Core.Models.Product;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace App.Api.Controllers;
@@ -54,12 +56,14 @@ public class ProductController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<ActionResult<ProductDto>> CreateAsync([FromBody] ProductCreateDto productDto)
     {
         return Ok(await _productService.CreateAsync(productDto));
     }
 
     [HttpPut]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<ActionResult<ProductDto?>> UpdateAsync(ProductDto productDto)
     {
         var product = await _productService.UpdateAsync(productDto);
@@ -67,6 +71,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpDelete]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<ActionResult> DeleteAsync(string id)
     {
         return await _productService.DeleteAsync(id) ? NoContent() : BadRequest();

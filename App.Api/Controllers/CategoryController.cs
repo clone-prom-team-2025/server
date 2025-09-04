@@ -1,7 +1,9 @@
-﻿using App.Core.DTOs.Categoty;
+﻿using App.Core.Constants;
+using App.Core.DTOs.Categoty;
 using App.Core.Interfaces;
 using App.Core.Models;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace App.Api.Controllers;
@@ -69,6 +71,7 @@ public class CategoryController : ControllerBase
     /// <param name="categoryDto">Category data.</param>
     /// <returns>Created category.</returns>
     [HttpPost]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<ActionResult> Create([FromBody] CategoryCreateDto categoryDto)
     {
         var category = await _categoryService.CreateAsync(categoryDto);
@@ -82,6 +85,7 @@ public class CategoryController : ControllerBase
     /// <param name="categoryDto">Updated category DTO</param>
     /// <returns>NoContent if success; NotFound if category not found.</returns>
     [HttpPut]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<ActionResult> Update([FromBody] CategoryDto categoryDto)
     {
         var category = await _categoryService.UpdateAsync(categoryDto);
@@ -95,6 +99,7 @@ public class CategoryController : ControllerBase
     /// <param name="id">Category ID.</param>
     /// <returns>NoContent if success; NotFound if category not found.</returns>
     [HttpDelete("{id}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<ActionResult> Delete(string id)
     {
         var deleted = await _categoryService.DeleteAsync(id);

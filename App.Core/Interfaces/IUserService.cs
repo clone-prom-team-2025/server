@@ -9,12 +9,10 @@ public interface IUserService
     Task<IEnumerable<UserDto>?> GetAllUsersAsync(int pageNumber, int pageSize);
     Task<UserDto?> GetUserByIdAsync(string userId);
     Task<UserDto?> GetUserByUsernameAsync(string username);
-    Task<UserDto?> GetUserByEmailAsync(string email);
     Task<IEnumerable<UserDto>?> GetUsersByRoleAsync(string role);
     Task<IEnumerable<UserDto>?> GetUsersByRoleAsync(string role, int pageNumber, int pageSize);
     Task<bool> UpdateUserAsync(UserDto user);
-    Task<bool> DeleteUserAsync(string userId);
-    Task<IEnumerable<string>> GetUserRolesAsync(string userId);
+    //Task<bool> DeleteUserAsync(string userId);
     Task<bool> BanUser(UserBanCreateDto userBlockInfo, string adminId);
     Task<bool> UnbanUserByBanId(string banId, string adminId);
     Task<IEnumerable<UserBanDto>> GetUserBansByUserId(string userId);

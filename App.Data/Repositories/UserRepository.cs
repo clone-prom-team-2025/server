@@ -143,7 +143,7 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     /// </summary>
     /// <param name="userId">The user's ObjectId as string.</param>
     /// <returns>List of user roles or empty list if not found.</returns>
-    public async Task<List<string>> GetUserRolesAsync(ObjectId userId)
+    public async Task<List<string>?> GetUserRolesAsync(ObjectId userId)
     {
         var filter = Builders<User>.Filter.Eq(u => u.Id, userId);
         var projection = Builders<User>.Projection.Expression(u => u.Roles);

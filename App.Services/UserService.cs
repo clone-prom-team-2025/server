@@ -56,7 +56,7 @@ public class UserService : IUserService
             }
 
             _logger.LogInformation("Fetched {Count} users on page {PageNumber}", users.Count, pageNumber);
-            return users.Select(u => _mapper.Map<UserDto>(u)).ToList();
+            return _mapper.Map<IEnumerable<UserDto>?>(users);
         }
     }
 
@@ -130,33 +130,66 @@ public class UserService : IUserService
 
     public async Task<IEnumerable<UserDto>?> GetUsersByRoleAsync(string role, int pageNumber, int pageSize)
     {
-        throw new NotImplementedException();
+        using (_logger.BeginScope("GetUsersByRoleAsync(Role={role}, PageNumber={pageNumber}, PageSize={pageSize})", role, pageNumber,
+                   pageSize))
+        {
+            _logger.LogInformation("Fetching users with pagination");
+            var users = await _userRepository.GetUsersByRoleAsync(role, pageNumber, pageSize);
+            if (users == null || !users.Any())
+            {
+                _logger.LogInformation("No users found on page {PageNumber}", pageNumber);
+                return null;
+            }
+
+            _logger.LogInformation("Fetched {Count} users on page {PageNumber}", users.Count, pageNumber);
+            return _mapper.Map<IEnumerable<UserDto>?>(users);
+        }
     }
 
     public async Task<bool> UpdateUserAsync(UserDto user)
     {
-        throw new NotImplementedException();
-    }
+        using (_logger.BeginScope("UpdateUserAsync(UserDto)"))
+        {
+            var result = await _userRepository.UpdateUserAsync(_mapper.Map<User>(user));
+            if (!result)
+            {
+                _logger.LogWarning("User with ID {UserId} not found", user.Id.ToString());
+                return false;
+            }
 
-    public async Task<IEnumerable<string>> GetUserRolesAsync(string userId)
-    {
-        throw new NotImplementedException();
+            _logger.LogInformation("Updated user by Id={id}", user.Id.ToString());
+            return result;
+        }
     }
 
     public async Task<bool> SetUserPhoneNumberConfirmedAsync(string userId, string phoneNumber)
     {
-        throw new NotImplementedException();
+        using (_logger.BeginScope("SetUserPhoneNumberConfirmedAsync(UserId={userId})", userId))
+        {
+            _logger.LogInformation("Fetching users with pagination");
+            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+            if (user == null)
+            {
+                _logger.LogInformation("User not found");
+                return false;
+            }
+            user.PhoneNumberConfirmed = true;
+            var result = await _userRepository.UpdateUserAsync(_mapper.Map<User>(user));
+            if (!result)
+            {
+                _logger.LogWarning("User with ID {UserId} not found", user.Id);
+                return false;
+            }
+
+            _logger.LogInformation("Updated user with Id={id}", userId);
+            return result;
+        }
     }
 
-    public async Task<bool> SetUserEmailConfirmedAsync(string userId, string email)
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<bool> DeleteUserAsync(string userId)
-    {
-        throw new NotImplementedException();
-    }
+    // public Task<bool> DeleteUserAsync(string userId)
+    // {
+    //     throw new NotImplementedException();
+    // }
 
     public async Task<bool> BanUser(UserBanCreateDto userBlockInfo, string adminId)
     {
