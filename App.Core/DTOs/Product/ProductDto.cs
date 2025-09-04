@@ -42,9 +42,7 @@ public class ProductDto
     public decimal? DiscountPrice { get; set; }
 
     public bool HasDiscount => DiscountPrice.HasValue && DiscountPrice.Value < Price;
-
-    public decimal FinalPrice => HasDiscount ? DiscountPrice!.Value : Price;
-
+    
     public decimal? DiscountPercentage => HasDiscount
         ? Math.Round(100 * (Price - DiscountPrice!.Value) / Price, 2)
         : null;
