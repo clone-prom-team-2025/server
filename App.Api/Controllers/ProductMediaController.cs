@@ -1,6 +1,8 @@
+using App.Core.Constants;
 using App.Core.DTOs;
 using App.Core.DTOs.Product;
 using App.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace App.Api.Controllers;
@@ -24,12 +26,14 @@ public class ProductMediaController : ControllerBase
     }
 
     [HttpDelete("by-id/{id}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<ActionResult> DeleteMediaAsync(string id)
     {
         return await _productMediaService.DeleteAsync(id) ? Ok() : NotFound();
     }
 
     [HttpDelete("by-product-id/{productId}")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<ActionResult> DeleteMediaByProductIdAsync(string productId)
     {
         return await _productMediaService.DeleteByProductIdAsync(productId) ? Ok() : NotFound();
@@ -42,6 +46,7 @@ public class ProductMediaController : ControllerBase
     }
 
     [HttpPut("many")]
+    [Authorize(Roles = RoleNames.Admin)]
     public async Task<ActionResult<List<ProductMediaDto>?>> SyncProductMediaAsync([FromForm] IFormFile[] files,
         [FromQuery] string productId)
     {

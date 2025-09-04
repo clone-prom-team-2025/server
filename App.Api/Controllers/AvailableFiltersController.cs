@@ -1,10 +1,13 @@
+using App.Core.Constants;
 using App.Core.DTOs.AvailableFilters;
 using App.Core.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace App.Api.Controllers;
 
 [ApiController]
+[Authorize(Roles = RoleNames.Admin)]
 [Route("api/[controller]")]
 public class AvailableFiltersController : ControllerBase
 {
@@ -23,6 +26,7 @@ public class AvailableFiltersController : ControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<List<AvailableFiltersDto>>> GetAllFilters()
     {
         var filters = await _availableFiltersService.GetAllFiltersAsync();
@@ -30,6 +34,7 @@ public class AvailableFiltersController : ControllerBase
     }
 
     [HttpGet("{categoryId}")]
+    [AllowAnonymous]
     public async Task<ActionResult<List<AvailableFiltersDto>>> GetAllFiltersByCategory(string categoryId)
     {
         var filters = await _availableFiltersService.GetAllFiltersAsync(categoryId);

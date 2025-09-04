@@ -83,7 +83,7 @@ public class UserController : ControllerBase
 
     [HttpGet]
     [Authorize]
-    public async Task<ActionResult<IEnumerable<UserBanDto>>> GetAllByUserId(string userId)
+    public async Task<ActionResult<IEnumerable<UserBanDto>>> GetAllBansByUserId(string userId)
     {
         using (_logger.BeginScope("GetAllByUserId action"))
         {
@@ -97,7 +97,7 @@ public class UserController : ControllerBase
 
     [Authorize]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<UserBanDto>>> GetAllByMyUserId()
+    public async Task<ActionResult<IEnumerable<UserBanDto>>> GetAllBansByMyUserId()
     {
         using (_logger.BeginScope("GetAllByMyUserId action"))
         {
@@ -176,4 +176,101 @@ public class UserController : ControllerBase
             return user;
         }
     }
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<UserDto>>> GetAllUsersByPages(int pageNumber, int pageSize)
+    {
+        using (_logger.BeginScope("GetAllUsersByPages action"))
+        {
+            _logger.LogInformation("GetAllUsersByPages called with PageNumber={pageNumber}, PageSize={pageSize}", pageNumber, pageSize);
+            var users = await _userService.GetAllUsersAsync(pageNumber, pageSize);
+            if (users == null)
+            {
+                _logger.LogWarning("No users found");
+                return NotFound();
+            }
+            var any = users.ToArray();
+            _logger.LogInformation("Found {Count} users", any.Length);
+            return any;
+        }
+    }
+    
+    [HttpGet]
+    public async Task<ActionResult<UserDto>> GetUserByUsername(string username)
+    {
+        using (_logger.BeginScope("GetUserByUsername action"))
+        {
+            _logger.LogInformation("GetUserByUsername called with Username={username}", username);
+            var users = await _userService.GetUserByUsernameAsync(username);
+            if (users == null)
+            {
+                _logger.LogWarning("User found");
+                return NotFound();
+            }
+            _logger.LogInformation("Found user for current Username={username}", username);
+            return users;
+        }
+    }
+
+    [Authorize(Roles = RoleNames.Admin)]
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<UserDto>>> GetUsersByRole(string role)
+    {
+        using (_logger.BeginScope("GetUsersByRole action"))
+        {
+            _logger.LogInformation("GetUsersByRole called with Role={role}", role);
+            var users = await _userService.GetUsersByRoleAsync(role);
+            if (users == null)
+            {
+                _logger.LogWarning("No users found");
+                return NotFound();
+            }
+            var any = users.ToArray();
+            _logger.LogInformation("Found {Count} users", any.Length);
+            return any;
+        }
+    }
+    
+    [Authorize(Roles = RoleNames.Admin)]
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<UserDto>>> GetUsersByRoleByPages(string role, int pageNumber, int pageSize)
+    {
+        using (_logger.BeginScope("GetUsersByRoleByPages action"))
+        {
+            _logger.LogInformation("GetUsersByRoleByPages called with Role={role}", role);
+            var users = await _userService.GetUsersByRoleAsync(role, pageNumber, pageSize);
+            if (users == null)
+            {
+                _logger.LogWarning("No users found");
+                return NotFound();
+            }
+            var any = users.ToArray();
+            _logger.LogInformation("Found {Count} users", any.Length);
+            return any;
+        }
+    }
+
+    // [HttpPut]
+    // [Authorize]
+    // public async Task<ActionResult> UpdateUser([FromBody] UserDto user)
+    // {
+    //     using (_logger.BeginScope("UpdateUser action"))
+    //     {
+    //         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    //         if (userId == null)
+    //         {
+    //             _logger.LogWarning("UserId claim is missing");
+    //             return BadRequest();
+    //         }
+    //         _logger.LogInformation("UpdateUser called with UserId={userId}", userId);
+    //         if (user.Id != userId)
+    //         {
+    //             _logger.LogWarning("UserId does not match");
+    //             return Forbid();
+    //         }
+    //         var result = await _userService.UpdateUserAsync(user);
+    //         _logger.LogInformation("Updated user id={userId}", userId);
+    //         return NoContent();
+    //     }
+    // }
 }
