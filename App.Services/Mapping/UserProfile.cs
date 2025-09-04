@@ -16,11 +16,5 @@ public class UserProfile : Profile
             .ForMember(dest => dest.Id,
                 opt => opt.MapFrom(dto =>
                     string.IsNullOrWhiteSpace(dto.Id) ? ObjectId.GenerateNewId() : ObjectId.Parse(dto.Id)));
-
-        CreateMap<UserCreateDto, User>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => ObjectId.GenerateNewId()));
-
-        CreateMap<UserCreateDto, UserDto>()
-            .ForMember(dest => dest.Id, opt => opt.Ignore());
     }
 }

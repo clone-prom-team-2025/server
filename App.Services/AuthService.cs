@@ -89,14 +89,16 @@ public class AuthService(
 
         var index = model.Email.IndexOf('@');
         var username = model.Email.Substring(0, index);
+        
+        var normalizedEmail = model.Email.ToLower();
 
         await using (var image = AvatarGenerator.ByteToStream(AvatarGenerator.CreateAvatar(model.FullName)))
         {
             BaseFile file = new();
             (file.SourceUrl, file.CompressedFileName, file.SourceFileName, file.CompressedFileName) =
                 await _fileService.SaveImageAsync(image, username + "-avatar", "user-avatars");
-            var user = new User(username, model.Password, model.Email,
-                file, [RoleNames.User]);
+            var user = new User(username, model.Password, normalizedEmail,
+                file, [RoleNames.User], model.FullName);
 
             await _userRepository.CreateUserAsync(user);
         }
