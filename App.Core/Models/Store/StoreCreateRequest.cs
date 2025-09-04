@@ -15,6 +15,5 @@ public class StoreCreateRequest
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public ObjectId? ApprovedByAdminId { get; set; } = null;
     public ObjectId? RejectedByAdminId { get; set; } = null;
-    public List<StoreRequestComment> Comments { get; set; } = [];
     public StorePlans Plan { get; set; } = StorePlans.None;
 }
