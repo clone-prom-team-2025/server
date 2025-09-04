@@ -23,18 +23,6 @@ public class StoreProfile : Profile
             .ForMember(dest => dest.ApprovedByAdminId, opt => opt.MapFrom(src => src.ApprovedByAdminId.ToString()))
             .ForMember(dest => dest.RejectedByAdminId, opt => opt.MapFrom(src => src.RejectedByAdminId.ToString()));
 
-        CreateMap<StoreRequestCommentDto, StoreRequestComment>()
-            .ForMember(
-                dest => dest.UserId,
-                opt => opt.MapFrom(src => ObjectId.Parse(src.UserId))
-            );
-
-        CreateMap<StoreRequestComment, StoreRequestCommentDto>()
-            .ForMember(
-                dest => dest.UserId,
-                opt => opt.MapFrom(src => src.UserId.ToString())
-            );
-
         CreateMap<Store, StoreDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()));
         
