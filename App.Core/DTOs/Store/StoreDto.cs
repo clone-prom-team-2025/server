@@ -4,13 +4,13 @@ using App.Core.Models.FileStorage;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace App.Core.Models.Store;
+namespace App.Core.DTOs.Store;
 
-public class Store
+public class StoreDto
 {
-    public Store(string name, BaseFile avatar, Dictionary<string, StoreRole> roles, StorePlans plan = StorePlans.None)
+    public StoreDto(string id, string name, BaseFile avatar, Dictionary<string, StoreRole> roles, StorePlans plan = StorePlans.None)
     {
-        Id = ObjectId.GenerateNewId();
+        Id = id;
         Name = name;
         Avatar = avatar;
         Roles = roles;
@@ -18,8 +18,7 @@ public class Store
         CreatedAt = DateTime.UtcNow;
     }
 
-    [BsonId] 
-    public ObjectId Id { get; set; }
+    public string Id { get; set; }
 
     public string Name { get; set; }
 

@@ -59,6 +59,7 @@ builder.Services.AddSingleton<IUserBanRepository, UserBanRepository>();
 builder.Services.AddSingleton<IUserSessionRepository, UserSessionRepository>();
 builder.Services.AddSingleton<IStoreCreateRequestRepository, StoreCreateRequestRepository>();
 builder.Services.AddSingleton<ICartRepository, CartRepository>();
+builder.Services.AddSingleton<IStoreRepository, StoreRepository>();
 
 // --- Services ---
 builder.Services.AddSingleton<ICategoryService, CategoryService>();
@@ -186,7 +187,6 @@ using (var scope = app.Services.CreateScope())
     await dbContext.CreateCategoryIndexesAsync();
     await dbContext.CreateProductIndexesAsync();
     await dbContext.CreateProductReviewIndexesAsync();
-    await dbContext.CreateStoreReviewIndexesAsync();
     await dbContext.CreateAvailableFiltersIndexesAsync();
     await dbContext.CreateUserIndexesAsync();
     await dbContext.CreateStoreCreateRequestsIndexesAsync();
