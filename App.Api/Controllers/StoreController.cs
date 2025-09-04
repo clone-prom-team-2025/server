@@ -266,7 +266,7 @@ public class StoreController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult> RejectRequest(string requestId)
+    public async Task<ActionResult> RejectRequest(string requestId, string reason)
     {
         using (_logger.BeginScope("RejectRequest action"))
         {
