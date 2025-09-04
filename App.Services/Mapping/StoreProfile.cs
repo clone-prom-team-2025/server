@@ -34,5 +34,11 @@ public class StoreProfile : Profile
                 dest => dest.UserId,
                 opt => opt.MapFrom(src => src.UserId.ToString())
             );
+
+        CreateMap<Store, StoreDto>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()));
+        
+        CreateMap<StoreDto, Store>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => ObjectId.Parse(src.Id)));
     }
 }

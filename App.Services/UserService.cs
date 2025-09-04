@@ -65,7 +65,7 @@ public class UserService : IUserService
         using (_logger.BeginScope("GetUserByIdAsync(UserId={userId})", userId))
         {
             _logger.LogInformation("Fetching user by ID");
-            var user = await _userRepository.GetUserByIdAsync(userId);
+            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
             if (user == null)
             {
                 _logger.LogWarning("User with ID {UserId} not found", userId);

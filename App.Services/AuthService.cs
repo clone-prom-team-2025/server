@@ -189,7 +189,7 @@ public class AuthService(
         
         if (_cache.TryGetValue(cacheKey, out string userId))
         {
-            var user = await _userRepository.GetUserByIdAsync(userId);
+            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
             if (user == null)
                 return false;
             
@@ -208,7 +208,7 @@ public class AuthService(
     /// <returns>True if the email was sent successfully; otherwise, false.</returns>
     public async Task<bool> SendEmailVerificationCodeAsync(string userId)
     {
-        var user = await _userRepository.GetUserByIdAsync(userId);
+        var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
         if (user == null || user.EmailConfirmed) return false;
 
         var assembly = Assembly.GetExecutingAssembly();
@@ -242,7 +242,7 @@ public class AuthService(
     /// <returns>True if the code is correct and email is confirmed; otherwise, false.</returns>
     public async Task<bool> VerifyCode(string userId, string inputCode)
     {
-        var user = await _userRepository.GetUserByIdAsync(userId);
+        var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
         if (user == null) return false;
 
         var cacheKey = $"verify:{user.Email}";

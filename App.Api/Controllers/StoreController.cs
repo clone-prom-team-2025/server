@@ -33,7 +33,8 @@ public class StoreController : ControllerBase
                 return BadRequest();
             }
 
-            var result = await _storeService.CreateRequest(dto, userIdClaims.Value);
+            var stream = dto.File.OpenReadStream();
+            var result = await _storeService.CreateRequest(dto, userIdClaims.Value, stream, dto.File.FileName);
             if (!result)
             {
                 _logger.LogError("CreateStore failed for dto={dto}", dto);
@@ -294,6 +295,65 @@ public class StoreController : ControllerBase
 
             _logger.LogInformation("Successfully rejected request for Id={id}", requestId);
             return NoContent();
+        }
+    }
+
+    [HttpDelete]
+    public async Task<ActionResult> DeleteStore(string storeId)
+    {
+        using (_logger.BeginScope("DeleteStore action"))
+        {
+            _logger.LogInformation("DeleteStore called");
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if  (userIdClaim == null)
+            {
+                _logger.LogWarning("UserId claim is missing for current user");
+                return BadRequest();
+            }
+
+            var result = await _storeService.DeleteStore(storeId, userIdClaim);
+            if (!result)
+            {
+                _logger.LogError("Failed to delete store with Id={storeId}", storeId);
+                return BadRequest();
+            }
+            _logger.LogInformation("Successfully deleted store with Id={storeId}", storeId);
+            return NoContent();
+        }
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<StoreDto>> GetStoreById(string storeId)
+    {
+        using (_logger.BeginScope("GetStoreById action"))
+        {
+            _logger.LogInformation("GetStoreById called");
+            var result = await _storeService.GetStoreById(storeId);
+            if (result == null)
+            {
+                _logger.LogError("GetStoreById returned null");
+                return NotFound();
+            }
+            return result;
+        }
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<StoreDto>>> GetStores()
+    {
+        using (_logger.BeginScope("GetStores"))
+        {
+            _logger.LogInformation("GetStores called");
+            var result = await _storeService.GetStores();
+            if (result == null)
+            {
+                _logger.LogError("GetStores returned null");
+                return NotFound();
+            }
+            var all = result.ToArray();
+            _logger.LogInformation("Found {Count} stores", all.Length);
+            if (all.Length == 0) return NotFound();
+            return all;
         }
     }
 }

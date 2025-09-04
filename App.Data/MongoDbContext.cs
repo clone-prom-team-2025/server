@@ -5,7 +5,6 @@ using App.Core.Models.Cart;
 using App.Core.Models.Product;
 using App.Core.Models.Product.Review;
 using App.Core.Models.Store;
-using App.Core.Models.Store.Review;
 using App.Core.Models.User;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
@@ -57,11 +56,6 @@ public class MongoDbContext
     ///     Gets the MongoDB collection for <see cref="Store" /> document
     /// </summary>
     public IMongoCollection<Store> Stores => _database.GetCollection<Store>("Stores");
-
-    /// <summary>
-    ///     Gets the MongoDB collection for <see cref="StoreReview" /> document
-    /// </summary>
-    public IMongoCollection<StoreReview> StoreReviews => _database.GetCollection<StoreReview>("StoreReviews");
 
     /// <summary>
     ///     Gets the MongoDB collection for <see cref="AvailableFilters" />
@@ -186,43 +180,6 @@ public class MongoDbContext
 
         var emailIndexExists = existingIndexes
             .Any(index => index["name"] == "Email_1");
-    }
-
-    /// <summary>
-    ///     Ensures that the necessary indexes for the <see cref="StoreReview" /> collection are created.
-    ///     Specifically, creates non-unique ascending indexes on StoreId and AverageRating fields if they do not already
-    ///     exist.
-    /// </summary>
-    public async Task CreateStoreReviewIndexesAsync()
-    {
-        var collection = StoreReviews;
-
-        var existingIndexesCursor = await collection.Indexes.ListAsync();
-        var existingIndexes = await existingIndexesCursor.ToListAsync();
-
-        var storeIdReviewIndexExists = existingIndexes
-            .Any(index => index["name"] == "StoreId_1");
-
-        var averageRatingIndexExist = existingIndexes
-            .Any(index => index["name"] == "AverageRating_1");
-
-        if (!storeIdReviewIndexExists)
-        {
-            var indexKeys = Builders<StoreReview>.IndexKeys.Ascending(p => p.StoreId);
-            var indexOptions = new CreateIndexOptions { Unique = false };
-            var indexModel = new CreateIndexModel<StoreReview>(indexKeys, indexOptions);
-
-            await collection.Indexes.CreateOneAsync(indexModel);
-        }
-
-        if (!averageRatingIndexExist)
-        {
-            var indexKeys = Builders<StoreReview>.IndexKeys.Ascending(p => p.AverageRating);
-            var indexOptions = new CreateIndexOptions { Unique = false };
-            var indexModel = new CreateIndexModel<StoreReview>(indexKeys, indexOptions);
-
-            await collection.Indexes.CreateOneAsync(indexModel);
-        }
     }
 
     public async Task CreateAvailableFiltersIndexesAsync()

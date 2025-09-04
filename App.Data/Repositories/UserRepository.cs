@@ -41,9 +41,9 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     /// </summary>
     /// <param name="userId">The user's ObjectId as string.</param>
     /// <returns>The user matching the ID or null if not found.</returns>
-    public async Task<User?> GetUserByIdAsync(string userId)
+    public async Task<User?> GetUserByIdAsync(ObjectId userId)
     {
-        var filter = Builders<User>.Filter.Eq(u => u.Id, ObjectId.Parse(userId));
+        var filter = Builders<User>.Filter.Eq(u => u.Id, userId);
 
         return await _users.Find(filter).FirstOrDefaultAsync();
     }
@@ -146,9 +146,9 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     /// </summary>
     /// <param name="userId">The user's ObjectId as string.</param>
     /// <returns>True if deletion was acknowledged, otherwise false.</returns>
-    public async Task<bool> DeleteUserAsync(string userId)
+    public async Task<bool> DeleteUserAsync(ObjectId userId)
     {
-        var filter = Builders<User>.Filter.Eq(u => u.Id, ObjectId.Parse(userId));
+        var filter = Builders<User>.Filter.Eq(u => u.Id, userId);
         var result = await _users.DeleteOneAsync(filter);
 
         return result.IsAcknowledged;
@@ -159,9 +159,9 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     /// </summary>
     /// <param name="userId">The user's ObjectId as string.</param>
     /// <returns>List of user roles or empty list if not found.</returns>
-    public async Task<List<string>> GetUserRolesAsync(string userId)
+    public async Task<List<string>> GetUserRolesAsync(ObjectId userId)
     {
-        var filter = Builders<User>.Filter.Eq(u => u.Id, ObjectId.Parse(userId));
+        var filter = Builders<User>.Filter.Eq(u => u.Id, userId);
         var projection = Builders<User>.Projection.Expression(u => u.Roles);
 
         return await _users
@@ -176,11 +176,11 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     /// <param name="userId">The user's ObjectId as string.</param>
     /// <param name="userAdditionalInfo">The new additional info to assign.</param>
     /// <returns>True if update was acknowledged, otherwise false.</returns>
-    public async Task<bool> UpdateUserAdditionalInfoByUserIdAsync(string userId, UserAdditionalInfo userAdditionalInfo)
+    public async Task<bool> UpdateUserAdditionalInfoByUserIdAsync(ObjectId userId, UserAdditionalInfo userAdditionalInfo)
     {
         if (userAdditionalInfo == null) return false;
 
-        var filter = Builders<User>.Filter.Eq(u => u.Id, ObjectId.Parse(userId));
+        var filter = Builders<User>.Filter.Eq(u => u.Id, userId);
         var update = Builders<User>.Update.Set(u => u.AdditionalInfo, userAdditionalInfo);
 
         var result = await _users.UpdateOneAsync(filter, update);
@@ -193,9 +193,9 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     /// </summary>
     /// <param name="userId">The user's ObjectId as string.</param>
     /// <returns>True if deleted successfully, otherwise false.</returns>
-    public async Task<bool> DeleteUserAdditionalInfoByUserIdAsync(string userId)
+    public async Task<bool> DeleteUserAdditionalInfoByUserIdAsync(ObjectId userId)
     {
-        var filter = Builders<User>.Filter.Eq(u => u.Id, ObjectId.Parse(userId));
+        var filter = Builders<User>.Filter.Eq(u => u.Id, userId);
         var result = await _users.DeleteOneAsync(filter);
 
         return result.IsAcknowledged && result.DeletedCount > 0;
@@ -206,9 +206,9 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
     /// </summary>
     /// <param name="userId">The user's ObjectId as string.</param>
     /// <returns>The user's additional info or null.</returns>
-    public async Task<UserAdditionalInfo?> GetUserAdditionalInfoByUserIdAsync(string userId)
+    public async Task<UserAdditionalInfo?> GetUserAdditionalInfoByUserIdAsync(ObjectId userId)
     {
-        var filter = Builders<User>.Filter.Eq(u => u.Id, ObjectId.Parse(userId));
+        var filter = Builders<User>.Filter.Eq(u => u.Id, userId);
         var projection = Builders<User>.Projection.Expression(u => u.AdditionalInfo);
 
         var additionalInfo = await _users
