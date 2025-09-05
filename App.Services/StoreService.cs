@@ -325,4 +325,124 @@ public class StoreService(
             return _mapper.Map<IEnumerable<StoreDto>>(result);
         }
     }
+
+    public async Task<bool> AddMemberToStoreAsync(string userId, string storeId, string memberEmail, StoreRole role)
+    {
+        using (_logger.BeginScope("AddMemberToStoreAsync"))
+        {
+            _logger.LogInformation("AddMemberToStoreAsync called");
+            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+            if (user == null)
+            {
+                _logger.LogError("AddMemberToStoreAsync can't find user with Id={userId}", userId);
+                return false;
+            }
+            var store = await _storeRepository.GetStoreById(ObjectId.Parse(storeId));
+            if (store == null)
+            {
+                _logger.LogError("Store not found");
+                return false;
+            }
+            if (!store.Roles.ContainsKey(userId) || store.Roles[userId] != StoreRole.Owner)
+            {
+                _logger.LogError("You are not the owner!");
+                return false;
+            }
+            var member = await _userRepository.GetUserByEmailAsync(memberEmail);
+            if (member == null)
+            {
+                _logger.LogError("Member not found");
+                return false;
+            }
+            store.Roles.Add(member.Id.ToString(), role);
+            var result = await _storeRepository.UpdateStore(store);
+            if (!result)
+            {
+                _logger.LogError("AddMemberToStoreAsync failed to update store");
+                return false;
+            }
+            _logger.LogInformation("AddMemberToStoreAsync succeeded");
+            return true;
+        }
+    }
+    
+    public async Task<bool> RemoveMemberFromStoreAsync(string userId, string storeId, string memberId)
+    {
+        using (_logger.BeginScope("RemoveMemberFromStoreAsync"))
+        {
+            _logger.LogInformation("RemoveMemberFromStoreAsync called");
+            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+            if (user == null)
+            {
+                _logger.LogError("RemoveMemberFromStoreAsync can't find user with Id={userId}", userId);
+                return false;
+            }
+            if (user.Id.ToString() == memberId)
+            {
+                _logger.LogError("You can't remove yourself");
+                return false;
+            }
+            var store = await _storeRepository.GetStoreById(ObjectId.Parse(storeId));
+            if (store == null)
+            {
+                _logger.LogError("Store not found");
+                return false;
+            }
+            if (!store.Roles.ContainsKey(userId) || store.Roles[userId] != StoreRole.Owner)
+            {
+                _logger.LogError("You are not the owner!");
+                return false;
+            }
+            
+            store.Roles.Remove(memberId);
+            var result = await _storeRepository.UpdateStore(store);
+            if (!result)
+            {
+                _logger.LogError("RemoveMemberFromStoreAsync failed to update store");
+                return false;
+            }
+            _logger.LogInformation("RemoveMemberFromStoreAsync succeeded");
+            return true;
+        }
+    }
+
+    public async Task<Dictionary<string, string>?> GetStoreMembers(string userId, string? storeId)
+    {
+        using (_logger.BeginScope("GetStoreMembers"))
+        {
+            _logger.LogInformation("GetStoreMembers called");
+            
+            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+            
+            if (user == null)
+            {
+                _logger.LogError("GetStoreMembers can't find user with Id={userId}", userId);
+                return null;
+            }
+            Store? store = null;
+            if (storeId == null) store = await _storeRepository.GetStoreByUserId(user.Id);
+            else store = await _storeRepository.GetStoreById(ObjectId.Parse(storeId));
+            
+            if (store == null)
+            {
+                _logger.LogError("Store not found");
+                return null;
+            }
+            
+            if (!store.Roles.ContainsKey(userId) && user.Roles.Contains(RoleNames.Admin))
+            {
+                _logger.LogError("You are not the owner!");
+                return null;
+            }
+            
+            var result = store.Roles.ToDictionary(
+                kvp => kvp.Key,
+                kvp => kvp.Value.ToString()
+            );
+            
+            _logger.LogInformation("GetStoreMembers succeeded");
+            
+            return result;
+        }
+    }
 }

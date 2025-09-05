@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using App.Core.Constants;
 using App.Core.DTOs.Store;
+using App.Core.Enums;
 using App.Core.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -362,6 +363,102 @@ public class StoreController : ControllerBase
             _logger.LogInformation("Found {Count} stores", all.Length);
             if (all.Length == 0) return NotFound();
             return all;
+        }
+    }
+
+    [HttpPost]
+    [Authorize]
+    public async Task<ActionResult> AddMemberToStore(string storeId, string memberEmail, StoreRole role)
+    {
+        using (_logger.BeginScope("AddMemberToStore action"))
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                _logger.LogWarning("UserId claim is missing for current user");
+                return BadRequest();
+            }
+            _logger.LogInformation("AddMemberToStore called");
+            var result = await _storeService.AddMemberToStoreAsync(userId, storeId, memberEmail, role);
+            if (!result)
+            {
+                _logger.LogError("Failed to add member to store with Id={storeId}", storeId);
+                return BadRequest();
+            }
+            _logger.LogInformation("Successfully added member to store with Id={storeId}", storeId);
+            return NoContent();
+        }
+    }
+    
+    [HttpDelete]
+    [Authorize]
+    public async Task<ActionResult> RemoveMemberFromStore(string storeId, string memberId)
+    {
+        using (_logger.BeginScope("RemoveMemberFromStore action"))
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                _logger.LogWarning("UserId claim is missing for current user");
+                return BadRequest();
+            }
+            _logger.LogInformation("RemoveMemberFromStore called");
+            var result = await _storeService.RemoveMemberFromStoreAsync(userId, storeId, memberId);
+            if (!result)
+            {
+                _logger.LogError("Failed to remove member from store with Id={storeId}", storeId);
+                return BadRequest();
+            }
+            _logger.LogInformation("Successfully removed member from store with Id={storeId}", storeId);
+            return NoContent();
+        }
+    }
+
+    [HttpGet]
+    [Authorize]
+    public async Task<ActionResult<Dictionary<string, string>>> GetStoreMembersByMyId()
+    {
+        using (_logger.BeginScope("GetStoreMembers action"))
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                _logger.LogWarning("UserId claim is missing for current user");
+                return BadRequest();
+            }
+            _logger.LogInformation("GetStoreMembers called");
+            var result = await _storeService.GetStoreMembers(userId, null);
+            if (result == null)
+            {
+                _logger.LogError("GetStoreMembers returned null");
+                return NotFound();
+            }
+            _logger.LogInformation("Found {Count} store members", result.ToArray().Length);
+            return result;
+        }
+    }
+    
+    [HttpGet]
+    [Authorize(Roles = RoleNames.Admin)]
+    public async Task<ActionResult<Dictionary<string, string>>> GetStoreMembers(string storeId)
+    {
+        using (_logger.BeginScope("GetStoreMembers action"))
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                _logger.LogWarning("UserId claim is missing for current user");
+                return BadRequest();
+            }
+            _logger.LogInformation("GetStoreMembers called");
+            var result = await _storeService.GetStoreMembers(userId, storeId);
+            if (result == null)
+            {
+                _logger.LogError("GetStoreMembers returned null");
+                return NotFound();
+            }
+            _logger.LogInformation("Found {Count} store members", result.ToArray().Length);
+            return result;
         }
     }
 }

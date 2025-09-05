@@ -1,4 +1,5 @@
 using App.Core.DTOs.Store;
+using App.Core.Enums;
 
 namespace App.Core.Interfaces;
 
@@ -18,4 +19,8 @@ public interface IStoreService
     Task<bool> DeleteStore(string storeId, string userId);
     Task<StoreDto?> GetStoreById(string storeId);
     Task<IEnumerable<StoreDto>?> GetStores();
+
+    Task<bool> AddMemberToStoreAsync(string userId, string storeId, string memberEmail, StoreRole role);
+    Task<bool> RemoveMemberFromStoreAsync(string userId, string storeId, string memberId);
+    Task<Dictionary<string, string>?> GetStoreMembers(string userId, string? storeId);
 }
