@@ -57,12 +57,8 @@ public class AvailableFiltersRepository(MongoDbContext mongoDbContext) : IAvaila
             if (existing != null)
             {
                 foreach (var value in newFilter.Values)
-                {
                     if (!existing.Values.Contains(value))
-                    {
                         existing.Values.Add(value);
-                    }
-                }
             }
             else
             {

@@ -1,7 +1,6 @@
 using App.Core.DTOs.Product;
 using App.Core.Interfaces;
 using App.Core.Models.Product;
-using App.Data.Repositories;
 using AutoMapper;
 using MongoDB.Bson;
 
@@ -79,10 +78,7 @@ public class ProductService(
     public async Task<bool> CreateAsync(ProductCreateDto productDto)
     {
         var store = await _storeRepository.GetStoreById(ObjectId.Parse(productDto.SellerId));
-        if (store == null)
-        {
-            return false;
-        }
+        if (store == null) return false;
         var categories = await _categoryRepository.GetCategoryPathAsync(productDto.Category);
         var product = _mapper.Map<Product>(productDto);
         product.Id = ObjectId.GenerateNewId();
@@ -99,10 +95,7 @@ public class ProductService(
     public async Task<bool> UpdateAsync(ProductDto productDto)
     {
         var store = await _storeRepository.GetStoreById(ObjectId.Parse(productDto.SellerId));
-        if (store == null)
-        {
-            return false;
-        }
+        if (store == null) return false;
         var product = _mapper.Map<Product>(productDto);
         var success = await _productRepository.UpdateAsync(product);
         if (!success) return false;

@@ -24,7 +24,8 @@ public class StoreRepository(MongoDbContext context) : IStoreRepository
     {
         var filter = Builders<Store>.Filter.Eq(x => x.Id, storeId);
         var result = await _storeCollection.DeleteOneAsync(filter);
-        return result.IsAcknowledged && result.DeletedCount > 0;;
+        return result.IsAcknowledged && result.DeletedCount > 0;
+        ;
     }
 
     public async Task<Store?> GetStoreById(ObjectId storeId)

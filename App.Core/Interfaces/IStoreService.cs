@@ -1,6 +1,4 @@
 using App.Core.DTOs.Store;
-using App.Core.Models.Store;
-using MongoDB.Bson;
 
 namespace App.Core.Interfaces;
 
@@ -16,7 +14,7 @@ public interface IStoreService
     Task<IEnumerable<StoreCreateRequestDto>> GetRequestRejectedByAdminId(string adminId);
     Task<bool> ApproveRequest(string requestId, string adminId);
     Task<bool> RejectRequest(string requestId, string adminId);
-    
+
     Task<bool> DeleteStore(string storeId, string userId);
     Task<StoreDto?> GetStoreById(string storeId);
     Task<IEnumerable<StoreDto>?> GetStores();

@@ -1,29 +1,36 @@
+using System.Reflection;
+using App.Core.Constants;
 using App.Core.DTOs.User;
 using App.Core.Interfaces;
+using App.Core.Models.Email;
+using App.Core.Models.FileStorage;
 using App.Core.Models.User;
+using App.Core.Utils;
 using AutoMapper;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 
 namespace App.Services;
 
-public class UserService : IUserService
+public class UserService(
+    IUserRepository userRepository,
+    IUserSessionRepository userSessionRepository,
+    IUserBanRepository userBanRepository,
+    IMapper mapper,
+    ILogger<UserService> logger,
+    IMemoryCache cache,
+    IEmailService emailService,
+    IFileService fileService) : IUserService
 {
-    private readonly ILogger<UserService> _logger;
-    private readonly IMapper _mapper;
-    private readonly IUserBanRepository _userBanRepository;
-    private readonly IUserRepository _userRepository;
-    private readonly IUserSessionRepository _userSessionRepository;
-
-    public UserService(IUserRepository userRepository, IUserSessionRepository userSessionRepository,
-        IUserBanRepository userBanRepository, IMapper mapper, ILogger<UserService> logger)
-    {
-        _userRepository = userRepository;
-        _mapper = mapper;
-        _userSessionRepository = userSessionRepository;
-        _userBanRepository = userBanRepository;
-        _logger = logger;
-    }
+    private readonly IMemoryCache _cache = cache;
+    private readonly IEmailService _emailService = emailService;
+    private readonly IFileService _fileService = fileService;
+    private readonly ILogger<UserService> _logger = logger;
+    private readonly IMapper _mapper = mapper;
+    private readonly IUserBanRepository _userBanRepository = userBanRepository;
+    private readonly IUserRepository _userRepository = userRepository;
+    private readonly IUserSessionRepository _userSessionRepository = userSessionRepository;
 
     public async Task<IEnumerable<UserDto>?> GetAllUsersAsync()
     {
@@ -94,23 +101,6 @@ public class UserService : IUserService
         }
     }
 
-    public async Task<UserDto?> GetUserByEmailAsync(string email)
-    {
-        using (_logger.BeginScope("GetUserByEmailAsync(Email={email})", email))
-        {
-            _logger.LogInformation("Fetching user by email");
-            var user = await _userRepository.GetUserByEmailAsync(email);
-            if (user == null)
-            {
-                _logger.LogWarning("User with email {Email} not found", email);
-                return null;
-            }
-
-            _logger.LogInformation("Fetched user with email {Email}", email);
-            return _mapper.Map<UserDto?>(user);
-        }
-    }
-
     public async Task<IEnumerable<UserDto>?> GetUsersByRoleAsync(string role)
     {
         using (_logger.BeginScope("GetUsersByRoleAsync(Role={role})", role))
@@ -130,7 +120,8 @@ public class UserService : IUserService
 
     public async Task<IEnumerable<UserDto>?> GetUsersByRoleAsync(string role, int pageNumber, int pageSize)
     {
-        using (_logger.BeginScope("GetUsersByRoleAsync(Role={role}, PageNumber={pageNumber}, PageSize={pageSize})", role, pageNumber,
+        using (_logger.BeginScope("GetUsersByRoleAsync(Role={role}, PageNumber={pageNumber}, PageSize={pageSize})",
+                   role, pageNumber,
                    pageSize))
         {
             _logger.LogInformation("Fetching users with pagination");
@@ -146,50 +137,73 @@ public class UserService : IUserService
         }
     }
 
-    public async Task<bool> UpdateUserAsync(UserDto user)
+    public async Task<bool> DeleteUserAsync(string userId, string code)
     {
-        using (_logger.BeginScope("UpdateUserAsync(UserDto)"))
+        var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+        if (user == null)
         {
-            var result = await _userRepository.UpdateUserAsync(_mapper.Map<User>(user));
-            if (!result)
+            _logger.LogWarning("User with ID {UserId} not found", userId);
+            return false;
+        }
+
+        var cacheKey = $"delete-account:{userId}";
+
+        if (_cache.TryGetValue(cacheKey, out string? stored))
+            if (string.Equals(stored, code, StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogWarning("User with ID {UserId} not found", user.Id.ToString());
-                return false;
+                _cache.Remove(cacheKey);
+
+                var sessions = await _userSessionRepository.GetSessionsAsync(ObjectId.Parse(userId));
+                var result = await _userRepository.DeleteUserAsync(user.Id);
+                if (!result)
+                {
+                    _logger.LogWarning("User with ID {UserId} not found", user.Id);
+                    return false;
+                }
+
+                if (sessions != null)
+                    foreach (var session in sessions)
+                        await _userSessionRepository.RevokeSessionAsync(session.Id);
+                _logger.LogInformation("User with ID {UserId} successfully deleted", user.Id);
+                return true;
             }
 
-            _logger.LogInformation("Updated user by Id={id}", user.Id.ToString());
-            return result;
-        }
+        return false;
     }
 
-    public async Task<bool> SetUserPhoneNumberConfirmedAsync(string userId, string phoneNumber)
+    public async Task<bool> SendDeleteAccountCodeAsync(string userId)
     {
-        using (_logger.BeginScope("SetUserPhoneNumberConfirmedAsync(UserId={userId})", userId))
+        var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+        if (user == null)
         {
-            _logger.LogInformation("Fetching users with pagination");
-            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
-            if (user == null)
-            {
-                _logger.LogInformation("User not found");
-                return false;
-            }
-            user.PhoneNumberConfirmed = true;
-            var result = await _userRepository.UpdateUserAsync(_mapper.Map<User>(user));
-            if (!result)
-            {
-                _logger.LogWarning("User with ID {UserId} not found", user.Id);
-                return false;
-            }
-
-            _logger.LogInformation("Updated user with Id={id}", userId);
-            return result;
+            _logger.LogWarning("User with ID {UserId} not found", userId);
+            return false;
         }
-    }
 
-    // public Task<bool> DeleteUserAsync(string userId)
-    // {
-    //     throw new NotImplementedException();
-    // }
+        var assembly = Assembly.GetExecutingAssembly();
+        await using var stream = assembly.GetManifestResourceStream("App.Services.EmailTemplates.DeleteAccount.html");
+        using var reader = new StreamReader(stream!);
+        var html = await reader.ReadToEndAsync();
+
+        var code = CodeGenerator.GenerateCode(6);
+        var readyHtml = html.Replace("__CODE__", code).Replace("__TIME__", "15");
+
+
+        var cacheEntryOptions = new MemoryCacheEntryOptions()
+            .SetSlidingExpiration(TimeSpan.FromMinutes(15));
+        _cache.Set($"delete-account:{userId}", code, cacheEntryOptions);
+
+        var mail = new EmailMessage
+        {
+            From = "no-reply@sellpoint.pp.ua",
+            To = [user.Email!],
+            Subject = "Delete Account",
+            HtmlBody = readyHtml
+        };
+
+        await _emailService.SendEmailAsync(mail);
+        return true;
+    }
 
     public async Task<bool> BanUser(UserBanCreateDto userBlockInfo, string adminId)
     {
@@ -288,8 +302,136 @@ public class UserService : IUserService
         }
     }
 
-    public async Task<bool> DeleteUserAsync(User user)
+    public async Task<bool> UpdateUser(string userId, UpdateUserDto dto)
     {
-        throw new NotImplementedException();
+        using (_logger.BeginScope("UpdateUser: UserId={userId}, Dto", userId))
+        {
+            _logger.LogInformation("UpdateUser called");
+
+            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+            if (user == null)
+            {
+                _logger.LogWarning("User not found");
+                return false;
+            }
+
+            if (dto.Username != null) user.Username = dto.Username;
+            if (dto.FullName != null) user.FullName = dto.FullName;
+            if (dto.Gender != null) user.Gender = dto.Gender;
+            if (dto.DateOfBirth != null) user.DateOfBirth = dto.DateOfBirth;
+            if (dto.Avatar != null)
+            {
+                await _fileService.DeleteFileAsync("user-avatars", user.Avatar.SourceFileName);
+                await _fileService.DeleteFileAsync("user-avatars", user.Avatar.CompressedFileName!);
+                BaseFile file = new();
+                var stream = dto.Avatar.OpenReadStream();
+                (file.SourceUrl, file.CompressedUrl, file.SourceFileName, file.CompressedFileName) =
+                    await _fileService.SaveImageAsync(stream, dto.Avatar.FileName, "user-avatars");
+                user.Avatar = file;
+            }
+
+            var result = await _userRepository.UpdateUserAsync(user);
+            if (!result)
+            {
+                _logger.LogWarning("Failed to update user");
+                return false;
+            }
+
+            _logger.LogInformation("User successfully updated");
+            return true;
+        }
+    }
+
+    public async Task<UserDto?> GetUserByEmailAsync(string email)
+    {
+        using (_logger.BeginScope("GetUserByEmailAsync(Email={email})", email))
+        {
+            _logger.LogInformation("Fetching user by email");
+            var user = await _userRepository.GetUserByEmailAsync(email);
+            if (user == null)
+            {
+                _logger.LogWarning("User with email {Email} not found", email);
+                return null;
+            }
+
+            _logger.LogInformation("Fetched user with email {Email}", email);
+            return _mapper.Map<UserDto?>(user);
+        }
+    }
+
+    public async Task<bool> UpdateUserAsync(UserDto user)
+    {
+        using (_logger.BeginScope("UpdateUserAsync(UserDto)"))
+        {
+            var result = await _userRepository.UpdateUserAsync(_mapper.Map<User>(user));
+            if (!result)
+            {
+                _logger.LogWarning("User with ID {UserId} not found", user.Id);
+                return false;
+            }
+
+            _logger.LogInformation("Updated user by Id={id}", user.Id);
+            return result;
+        }
+    }
+
+    public async Task<bool> SetUserPhoneNumberConfirmedAsync(string userId, string phoneNumber)
+    {
+        using (_logger.BeginScope("SetUserPhoneNumberConfirmedAsync(UserId={userId})", userId))
+        {
+            _logger.LogInformation("Fetching users with pagination");
+            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+            if (user == null)
+            {
+                _logger.LogInformation("User not found");
+                return false;
+            }
+
+            user.PhoneNumberConfirmed = true;
+            var result = await _userRepository.UpdateUserAsync(_mapper.Map<User>(user));
+            if (!result)
+            {
+                _logger.LogWarning("User with ID {UserId} not found", user.Id);
+                return false;
+            }
+
+            _logger.LogInformation("Updated user with Id={id}", userId);
+            return result;
+        }
+    }
+
+    public async Task<bool> CreateAdminAsync(string email, string password, string fullName)
+    {
+        using (_logger.BeginScope("CreateAdminAsync"))
+        {
+            _logger.LogInformation("Creating admin");
+            var user = await _userRepository.GetUserByEmailAsync(email);
+            if (user != null)
+            {
+                _logger.LogInformation("User with email {Email} already exists", email);
+                return false;
+            }
+
+            var index = email.IndexOf('@');
+            var username = email.Substring(0, index);
+
+            var normalizedEmail = email.ToLower();
+
+            await using (var image = AvatarGenerator.ByteToStream(AvatarGenerator.CreateAvatar(fullName)))
+            {
+                BaseFile file = new();
+                var id = ObjectId.GenerateNewId();
+                (file.SourceUrl, file.CompressedFileName, file.SourceFileName, file.CompressedFileName) =
+                    await _fileService.SaveImageAsync(image, id.ToString() + "-avatar", "user-avatars");
+                var admin = new User(username, password, normalizedEmail,
+                    file, [RoleNames.User, RoleNames.Admin], fullName)
+                {
+                    Id = id
+                };
+
+                await _userRepository.CreateUserAsync(admin);
+            }
+            return true;
+        }
     }
 }

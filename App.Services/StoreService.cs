@@ -10,17 +10,24 @@ using MongoDB.Bson;
 
 namespace App.Services;
 
-    public class StoreService(IStoreCreateRequestRepository requestRepository, ILogger<StoreService> logger, IMapper mapper, IStoreRepository storeRepository, IFileService fileService, IUserRepository userRepository)
+public class StoreService(
+    IStoreCreateRequestRepository requestRepository,
+    ILogger<StoreService> logger,
+    IMapper mapper,
+    IStoreRepository storeRepository,
+    IFileService fileService,
+    IUserRepository userRepository)
     : IStoreService
 {
+    private readonly IFileService _fileService = fileService;
     private readonly ILogger<StoreService> _logger = logger;
     private readonly IMapper _mapper = mapper;
     private readonly IStoreCreateRequestRepository _requestRepository = requestRepository;
     private readonly IStoreRepository _storeRepository = storeRepository;
-    private readonly IFileService _fileService = fileService;
     private readonly IUserRepository _userRepository = userRepository;
 
-    public async Task<bool> CreateRequest(CreateStoreCreateRequestDto dto, string userId, Stream stream, string fileName)
+    public async Task<bool> CreateRequest(CreateStoreCreateRequestDto dto, string userId, Stream stream,
+        string fileName)
     {
         using (_logger.BeginScope("CreateStoreCreateRequestService"))
         {
@@ -29,7 +36,7 @@ namespace App.Services;
             model.Id = ObjectId.GenerateNewId();
             model.UserId = ObjectId.Parse(userId);
             model.CreatedAt = DateTime.UtcNow;
-            
+
             var type = MediaInspector.GetMediaType(stream, fileName);
             if (type == MediaType.Unknown || type == MediaType.Video)
                 return false;
@@ -39,6 +46,7 @@ namespace App.Services;
                 _logger.LogError("CreateStoreCreateRequestService failed to create store");
                 return false;
             }
+
             BaseFile file = new();
             (file.SourceUrl, file.CompressedUrl, file.SourceFileName, file.CompressedFileName) =
                 await _fileService.SaveImageAsync(stream, fileName, "store-avatars");
@@ -49,7 +57,7 @@ namespace App.Services;
                 _logger.LogError("CreateStoreCreateRequestService failed to add store avatar");
                 return false;
             }
-            
+
             _logger.LogInformation("CreateStoreCreateRequestService succeeded");
             return true;
         }
@@ -66,6 +74,7 @@ namespace App.Services;
                 await _fileService.DeleteFileAsync("store-avatars", request.Avatar.SourceFileName);
                 await _fileService.DeleteFileAsync("store-avatars", request.Avatar.CompressedFileName!);
             }
+
             var result = await _requestRepository.Delete(ObjectId.Parse(requestId));
             if (!result)
             {
@@ -198,6 +207,7 @@ namespace App.Services;
                 _logger.LogWarning("Already rejected");
                 return false;
             }
+
             request.ApprovedByAdminId = ObjectId.Parse(adminId);
             var result = await _requestRepository.Update(request);
             if (!result)
@@ -205,8 +215,9 @@ namespace App.Services;
                 _logger.LogError("ApproveRequest failed to update request");
                 return false;
             }
-            
-            var store = new Store(request.Name, request.Avatar,  new Dictionary<string, StoreRole> { { request.UserId.ToString(), StoreRole.Owner } }, request.Plan);
+
+            var store = new Store(request.Name, request.Avatar,
+                new Dictionary<string, StoreRole> { { request.UserId.ToString(), StoreRole.Owner } }, request.Plan);
             await _storeRepository.CreateStore(store);
 
             _logger.LogInformation("Approved successfully for RequestId={requestId} by AdminId={adminId}", requestId,
@@ -240,6 +251,7 @@ namespace App.Services;
                 _logger.LogWarning("Already rejected");
                 return false;
             }
+
             request.RejectedByAdminId = ObjectId.Parse(adminId);
             var result = await _requestRepository.Update(request);
             if (!result)
@@ -266,6 +278,7 @@ namespace App.Services;
                 _logger.LogError("DeleteStore can't find user with Id={userId}", userId);
                 return false;
             }
+
             var store = await _storeRepository.GetStoreById(ObjectId.Parse(storeId));
             if (store == null)
             {
@@ -275,15 +288,17 @@ namespace App.Services;
 
             if (store.Roles[userId] != StoreRole.Owner && !user.Roles.Contains(RoleNames.Admin))
             {
-                    _logger.LogError("You are not the owner! UserId={userId} StoreId={storeId}", userId, storeId);
+                _logger.LogError("You are not the owner! UserId={userId} StoreId={storeId}", userId, storeId);
                 return false;
             }
+
             var result = await _storeRepository.DeleteStore(ObjectId.Parse(storeId));
             if (!result)
             {
                 _logger.LogError("DeleteStore failed to delete request with Id={storeId}", storeId);
                 return false;
             }
+
             _logger.LogInformation("DeleteStore succeeded");
             return true;
         }

@@ -119,6 +119,7 @@ public class UserController : ControllerBase
                 _logger.LogInformation("No bans found for current UserId={UserId}", userIdClaim.Value);
                 return NotFound();
             }
+
             return allByMyUserId;
         }
     }
@@ -182,19 +183,21 @@ public class UserController : ControllerBase
     {
         using (_logger.BeginScope("GetAllUsersByPages action"))
         {
-            _logger.LogInformation("GetAllUsersByPages called with PageNumber={pageNumber}, PageSize={pageSize}", pageNumber, pageSize);
+            _logger.LogInformation("GetAllUsersByPages called with PageNumber={pageNumber}, PageSize={pageSize}",
+                pageNumber, pageSize);
             var users = await _userService.GetAllUsersAsync(pageNumber, pageSize);
             if (users == null)
             {
                 _logger.LogWarning("No users found");
                 return NotFound();
             }
+
             var any = users.ToArray();
             _logger.LogInformation("Found {Count} users", any.Length);
             return any;
         }
     }
-    
+
     [HttpGet]
     public async Task<ActionResult<UserDto>> GetUserByUsername(string username)
     {
@@ -207,6 +210,7 @@ public class UserController : ControllerBase
                 _logger.LogWarning("User found");
                 return NotFound();
             }
+
             _logger.LogInformation("Found user for current Username={username}", username);
             return users;
         }
@@ -225,15 +229,17 @@ public class UserController : ControllerBase
                 _logger.LogWarning("No users found");
                 return NotFound();
             }
+
             var any = users.ToArray();
             _logger.LogInformation("Found {Count} users", any.Length);
             return any;
         }
     }
-    
+
     [Authorize(Roles = RoleNames.Admin)]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<UserDto>>> GetUsersByRoleByPages(string role, int pageNumber, int pageSize)
+    public async Task<ActionResult<IEnumerable<UserDto>>> GetUsersByRoleByPages(string role, int pageNumber,
+        int pageSize)
     {
         using (_logger.BeginScope("GetUsersByRoleByPages action"))
         {
@@ -244,33 +250,88 @@ public class UserController : ControllerBase
                 _logger.LogWarning("No users found");
                 return NotFound();
             }
+
             var any = users.ToArray();
             _logger.LogInformation("Found {Count} users", any.Length);
             return any;
         }
     }
 
-    // [HttpPut]
-    // [Authorize]
-    // public async Task<ActionResult> UpdateUser([FromBody] UserDto user)
-    // {
-    //     using (_logger.BeginScope("UpdateUser action"))
-    //     {
-    //         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    //         if (userId == null)
-    //         {
-    //             _logger.LogWarning("UserId claim is missing");
-    //             return BadRequest();
-    //         }
-    //         _logger.LogInformation("UpdateUser called with UserId={userId}", userId);
-    //         if (user.Id != userId)
-    //         {
-    //             _logger.LogWarning("UserId does not match");
-    //             return Forbid();
-    //         }
-    //         var result = await _userService.UpdateUserAsync(user);
-    //         _logger.LogInformation("Updated user id={userId}", userId);
-    //         return NoContent();
-    //     }
-    // }
+    [HttpPost]
+    [Authorize]
+    public async Task<ActionResult> SendPasswordResetCode()
+    {
+        using (_logger.BeginScope("SendPasswordResetCode action"))
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                _logger.LogWarning("UserId claim is missing");
+                return BadRequest();
+            }
+
+            _logger.LogInformation("SendPasswordResetCode called with UserId={userId}", userId);
+            var result = await _userService.SendDeleteAccountCodeAsync(userId);
+            if (!result)
+            {
+                _logger.LogWarning("SendPasswordResetCode failed");
+                return BadRequest();
+            }
+
+            _logger.LogInformation("SendPasswordResetCode succeeded");
+            return NoContent();
+        }
+    }
+
+    [HttpDelete]
+    [Authorize]
+    public async Task<ActionResult> DeleteUser(string code)
+    {
+        using (_logger.BeginScope("DeleteUser action"))
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                _logger.LogWarning("UserId claim is missing");
+                return BadRequest();
+            }
+
+            _logger.LogInformation("DeleteUser called with UserId={userId}", userId);
+            var result = await _userService.DeleteUserAsync(userId, code);
+            if (!result)
+            {
+                _logger.LogWarning("DeleteUser failed");
+                return BadRequest();
+            }
+
+            _logger.LogInformation("DeleteUser succeeded");
+            return NoContent();
+        }
+    }
+
+    [HttpPut]
+    [Authorize]
+    public async Task<ActionResult> UpdateUser([FromForm]UpdateUserDto dto)
+    {
+        using (_logger.BeginScope("UpdateUser action"))
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                _logger.LogWarning("UserId claim is missing");
+                return BadRequest();
+            }
+
+            _logger.LogInformation("UpdateUser called with UserId={userId}", userId);
+            var result = await _userService.UpdateUser(userId, dto);
+            if (!result)
+            {
+                _logger.LogWarning("UpdateUser failed");
+                return BadRequest();
+            }
+
+            _logger.LogInformation("UpdateUser succeeded");
+            return NoContent();
+        }
+    }
 }

@@ -25,7 +25,7 @@ public class StoreProfile : Profile
 
         CreateMap<Store, StoreDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()));
-        
+
         CreateMap<StoreDto, Store>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => ObjectId.Parse(src.Id)));
     }

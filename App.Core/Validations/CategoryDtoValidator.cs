@@ -12,7 +12,7 @@ public class CategoryDtoValidator : AbstractValidator<CategoryDto>
 
         RuleFor(x => x.Name)
             .NotNull();
-        
+
         RuleFor(x => x.ParentId)
             .Matches("^[a-fA-F0-9]{24}$").WithMessage("Id must be a 24-character hex string")
             .When(x => x != null);

@@ -17,9 +17,9 @@ public class ProductReviewDto
     public string Id { get; set; }
 
     public string ProductId { get; set; }
-    
+
     public ProductReviewRatingListDto Rating { get; set; }
-    
+
     public double AverageRating { get; set; }
 
     public List<ProductReviewCommentDto> Comments { get; set; } = [];

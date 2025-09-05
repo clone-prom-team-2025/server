@@ -308,7 +308,7 @@ public class StoreController : ControllerBase
         {
             _logger.LogInformation("DeleteStore called");
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if  (userIdClaim == null)
+            if (userIdClaim == null)
             {
                 _logger.LogWarning("UserId claim is missing for current user");
                 return BadRequest();
@@ -320,6 +320,7 @@ public class StoreController : ControllerBase
                 _logger.LogError("Failed to delete store with Id={storeId}", storeId);
                 return BadRequest();
             }
+
             _logger.LogInformation("Successfully deleted store with Id={storeId}", storeId);
             return NoContent();
         }
@@ -338,6 +339,7 @@ public class StoreController : ControllerBase
                 _logger.LogError("GetStoreById returned null");
                 return NotFound();
             }
+
             return result;
         }
     }
@@ -355,6 +357,7 @@ public class StoreController : ControllerBase
                 _logger.LogError("GetStores returned null");
                 return NotFound();
             }
+
             var all = result.ToArray();
             _logger.LogInformation("Found {Count} stores", all.Length);
             if (all.Length == 0) return NotFound();

@@ -68,7 +68,7 @@ public class CategoryRepository(MongoDbContext mongoDbContext, IMapper mapper) :
     {
         await _categories.InsertOneAsync(category);
     }
-    
+
     public async Task CreateManyAsync(List<Category> categoryList)
     {
         await _categories.InsertManyAsync(categoryList);
@@ -289,6 +289,4 @@ public class CategoryRepository(MongoDbContext mongoDbContext, IMapper mapper) :
 
         return path;
     }
-    
-    
 }
