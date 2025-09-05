@@ -11,19 +11,21 @@ namespace App.Data.Repositories;
 public class CartRepository(MongoDbContext mongoDbContext, ILogger<CartRepository> logger) : ICartRepository
 {
     private readonly IMongoCollection<Cart> _carts = mongoDbContext.Carts;
+    private readonly ILogger<CartRepository> _logger = logger;
     private readonly IMongoCollection<Product> _products = mongoDbContext.Products;
     private readonly IMongoCollection<User> _users = mongoDbContext.Users;
-    private readonly ILogger<CartRepository> _logger = logger;
-    
+
     public async Task<bool> CreateAsync(Cart cart)
     {
-        _logger.LogInformation("CreateAsync called for ProductId={productId} by UserId={userId}", cart.ProductId, cart.UserId);
+        _logger.LogInformation("CreateAsync called for ProductId={productId} by UserId={userId}", cart.ProductId,
+            cart.UserId);
         var productFilter = Builders<Product>.Filter.Eq(x => x.Id, cart.ProductId);
         if (!await _products.Find(productFilter).AnyAsync())
         {
             _logger.LogError("CreateAsync failed: product not found for Id={productId}", cart.ProductId);
             return false;
         }
+
         var userFilter = Builders<User>.Filter.Eq(x => x.Id, cart.UserId);
         if (!await _users.Find(userFilter).AnyAsync())
         {
@@ -40,6 +42,7 @@ public class CartRepository(MongoDbContext mongoDbContext, ILogger<CartRepositor
             _logger.LogError("CreateAsync failed: cart already exists");
             return false;
         }
+
         _logger.LogDebug("ProductId: {id}", cart.ProductId);
         await _carts.InsertOneAsync(cart);
         return true;
@@ -47,20 +50,22 @@ public class CartRepository(MongoDbContext mongoDbContext, ILogger<CartRepositor
 
     public async Task<bool> UpdateAsync(Cart cart)
     {
-        _logger.LogInformation("UpdateAsync called for ProductId={productId} by UserId={userId}", cart.ProductId, cart.UserId);
+        _logger.LogInformation("UpdateAsync called for ProductId={productId} by UserId={userId}", cart.ProductId,
+            cart.UserId);
         var productFilter = Builders<Product>.Filter.Eq(x => x.Id, cart.ProductId);
         if (!await _products.Find(productFilter).AnyAsync())
         {
             _logger.LogError("UpdateAsync failed: product not found for Id={productId}", cart.ProductId);
             return false;
         }
+
         var userFilter = Builders<User>.Filter.Eq(x => x.Id, cart.UserId);
         if (!await _users.Find(userFilter).AnyAsync())
         {
             _logger.LogError("UpdateAsync failed: user not found for UserId={userId}", cart.UserId);
             return false;
         }
-        
+
         var filter = Builders<Cart>.Filter.Eq(c => c.Id, cart.Id);
         var result = await _carts.ReplaceOneAsync(filter, cart);
         _logger.LogInformation("UpdateAsync result for CartId={id}: {IsAcknowledged}", cart.Id, result.IsAcknowledged);
@@ -73,13 +78,15 @@ public class CartRepository(MongoDbContext mongoDbContext, ILogger<CartRepositor
         var filter = Builders<Cart>.Filter.And(
             Builders<Cart>.Filter.Eq(c => c.Id, id),
             Builders<Cart>.Filter.Eq(c => c.UserId, userId)
-        );  
-        
+        );
+
         var result = await _carts.DeleteOneAsync(filter);
 
         if (!result.IsAcknowledged || result.DeletedCount == 0)
         {
-            _logger.LogWarning("DeleteAsync failed: cart not found or does not belong to user. CartId={cartId}, UserId={userId}", id, userId);
+            _logger.LogWarning(
+                "DeleteAsync failed: cart not found or does not belong to user. CartId={cartId}, UserId={userId}", id,
+                userId);
             return false;
         }
 
@@ -106,6 +113,7 @@ public class CartRepository(MongoDbContext mongoDbContext, ILogger<CartRepositor
             _logger.LogError("GetByIdAsync failed: Cart not found for Id={cartId}", id);
             return null;
         }
+
         _logger.LogInformation("GetByIdAsync result: {@Cart}", result);
         return result;
     }
@@ -122,8 +130,8 @@ public class CartRepository(MongoDbContext mongoDbContext, ILogger<CartRepositor
     public async Task<bool> DeleteByUserIdAsync(ObjectId userId)
     {
         _logger.LogInformation("DeleteByUserIdAsync called for UserId={cartId}", userId);
-        var filter = Builders<Cart>.Filter.Eq(c => c.UserId, userId);  
-        
+        var filter = Builders<Cart>.Filter.Eq(c => c.UserId, userId);
+
         var result = await _carts.DeleteOneAsync(filter);
 
         if (!result.IsAcknowledged || result.DeletedCount == 0)
@@ -142,8 +150,8 @@ public class CartRepository(MongoDbContext mongoDbContext, ILogger<CartRepositor
         var filter = Builders<Cart>.Filter.And(
             Builders<Cart>.Filter.Eq(c => c.UserId, userId),
             Builders<Cart>.Filter.Eq(c => c.ProductId, productId)
-        );  
-        
+        );
+
         var result = await _carts.Find(filter).AnyAsync();
         _logger.LogInformation("ExistsAsync result: {res}", result);
         return result;

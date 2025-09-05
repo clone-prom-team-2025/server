@@ -92,9 +92,9 @@ public class Product
     ///     Price of product
     /// </summary>
     public decimal Price { get; set; }
-    
+
     public PriceType PriceType { get; set; }
-    
+
     public PaymentOptions PaymentOptions { get; set; }
 
     /// <summary>
@@ -110,6 +110,6 @@ public class Product
     public QuantityStatus QuantityStatus { get; set; }
 
     public int Quantity { get; set; }
-    
+
     public ProductDeliveryType DeliveryType { get; set; }
 }

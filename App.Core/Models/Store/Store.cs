@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using App.Core.Enums;
 using App.Core.Models.FileStorage;
 using MongoDB.Bson;
@@ -18,8 +17,7 @@ public class Store
         CreatedAt = DateTime.UtcNow;
     }
 
-    [BsonId] 
-    public ObjectId Id { get; set; }
+    [BsonId] public ObjectId Id { get; set; }
 
     public string Name { get; set; }
 

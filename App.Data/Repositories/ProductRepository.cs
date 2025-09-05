@@ -25,17 +25,17 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 
         var skip = (page - 1) * pageSize;
         var limit = pageSize;
-        
+
         var products = await _products
             .Find(finalFilter)
             .Skip(skip)
             .Limit(limit)
             .ToListAsync();
-        
+
         var totalCount = await _products.CountDocumentsAsync(finalFilter);
 
         var pages = (int)Math.Ceiling(totalCount / (double)pageSize);
-        
+
         var priceRange = await _products
             .Aggregate()
             .Match(finalFilter)
@@ -56,7 +56,7 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
             PriceTo = priceTo,
             Pages = pages,
             Products = products,
-            Count = products.Count,
+            Count = products.Count
         };
     }
 
@@ -85,11 +85,11 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
             .Skip(skip)
             .Limit(limit)
             .ToListAsync();
-        
+
         var totalCount = await _products.CountDocumentsAsync(finalFilter);
 
         var pages = (int)Math.Ceiling(totalCount / (double)pageSize);
-        
+
         var priceRange = await _products
             .Aggregate()
             .Match(finalFilter)
@@ -134,11 +134,11 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
             .Skip(skip)
             .Limit(limit)
             .ToListAsync();
-        
+
         var totalCount = await _products.CountDocumentsAsync(finalFilter);
 
         var pages = (int)Math.Ceiling(totalCount / (double)pageSize);
-        
+
         var priceRange = await _products
             .Aggregate()
             .Match(finalFilter)

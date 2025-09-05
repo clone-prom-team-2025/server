@@ -10,15 +10,16 @@ namespace App.Services;
 public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger<CartService> logger) : ICartService
 {
     private readonly ICartRepository _cartRepository = cartRepository;
-    private readonly IMapper _mapper = mapper;
     private readonly ILogger<CartService> _logger = logger;
-    
+    private readonly IMapper _mapper = mapper;
+
     public async Task<bool> AddAsync(CreateCartDto dto, string userId)
     {
         using (_logger.BeginScope("AddAsync: ProductId={productId}, UserId={userId}", dto.ProductId, userId))
         {
-            _logger.LogInformation("AddAsync called with ProductId={productId}, Pcs={pcs}, UserId={userId}", dto.ProductId, dto.Pcs, userId);
-            var model = new Cart()
+            _logger.LogInformation("AddAsync called with ProductId={productId}, Pcs={pcs}, UserId={userId}",
+                dto.ProductId, dto.Pcs, userId);
+            var model = new Cart
             {
                 Id = ObjectId.GenerateNewId(),
                 ProductId = ObjectId.Parse(dto.ProductId),
@@ -32,6 +33,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
                 _logger.LogError("AddAsync: Failed to create cart");
                 return false;
             }
+
             _logger.LogInformation("AddAsync: Successfully created cart");
             return true;
         }
@@ -48,11 +50,12 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
                 _logger.LogError("RemoveAsync: Failed to delete cart");
                 return false;
             }
+
             _logger.LogInformation("RemoveAsync: Successfully deleted cart");
             return true;
         }
     }
-    
+
     public async Task<bool> ClearAsync(string userId)
     {
         using (_logger.BeginScope("RemoveAsync: UserId={userId}", userId))
@@ -64,6 +67,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
                 _logger.LogError("RemoveAsync: Failed to delete carts");
                 return false;
             }
+
             _logger.LogInformation("RemoveAsync: Successfully deleted carts");
             return true;
         }
@@ -96,10 +100,11 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
                     _logger.LogError("ChangePcsAsync: Failed to update cart");
                     return false;
                 }
+
                 _logger.LogInformation("ChangePcsAsync: Successfully updated cart(Removed)");
                 return true;
             }
-            
+
             cart.Pcs = pcs;
             var result = await _cartRepository.UpdateAsync(cart);
             if (!result)
@@ -107,6 +112,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
                 _logger.LogError("ChangePcsAsync: Failed to update cart");
                 return false;
             }
+
             _logger.LogInformation("ChangePcsAsync: Successfully updated cart");
             return true;
         }
@@ -123,6 +129,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
                 _logger.LogInformation("GetAllAsync: no carts found");
                 return null;
             }
+
             _logger.LogInformation("GetAllAsync: Successfully retrieved carts");
             return _mapper.Map<IEnumerable<CartDto>?>(carts);
         }
@@ -139,6 +146,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
                 _logger.LogError("GetByIdAsync: Failed to find cart. Cart not found");
                 return null;
             }
+
             _logger.LogInformation("GetByIdAsync: Successfully retrieved carts");
             return _mapper.Map<CartDto?>(cart);
         }
@@ -155,6 +163,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
                 _logger.LogInformation("GetByUserIdAsync: no carts found");
                 return null;
             }
+
             _logger.LogInformation("GetByIdAsync: Successfully retrieved carts");
             return _mapper.Map<IEnumerable<CartDto>?>(carts);
         }
@@ -164,12 +173,10 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
     {
         using (_logger.BeginScope("GetByIdAsync: ProductId={productId}, UserId={userId}", productId, userId))
         {
-            _logger.LogInformation("GetByIdAsync called with ProductId={productId}, UserId={userId}", productId, userId);
+            _logger.LogInformation("GetByIdAsync called with ProductId={productId}, UserId={userId}", productId,
+                userId);
             var result = await _cartRepository.ExistsAsync(ObjectId.Parse(userId), ObjectId.Parse(productId));
-            if (!result)
-            {
-                _logger.LogInformation("GetByIdAsync: Product not in UserId={userId} cart", userId);
-            }
+            if (!result) _logger.LogInformation("GetByIdAsync: Product not in UserId={userId} cart", userId);
             return result;
         }
     }

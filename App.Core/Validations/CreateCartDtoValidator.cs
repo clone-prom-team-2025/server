@@ -9,9 +9,8 @@ public class CreateCartDtoValidator : AbstractValidator<CreateCartDto>
     {
         RuleFor(x => x.ProductId)
             .Matches("^[a-fA-F0-9]{24}$").WithMessage("Id must be a 24-character hex string");
-        
+
         RuleFor(x => x.Pcs)
             .Must(f => f > 0).WithMessage("Pcs must be a positive number.");
-
     }
 }

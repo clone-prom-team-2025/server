@@ -1,14 +1,12 @@
-using System.ComponentModel.DataAnnotations;
 using App.Core.Enums;
 using App.Core.Models.FileStorage;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
 
 namespace App.Core.DTOs.Store;
 
 public class StoreDto
 {
-    public StoreDto(string id, string name, BaseFile avatar, Dictionary<string, StoreRole> roles, StorePlans plan = StorePlans.None)
+    public StoreDto(string id, string name, BaseFile avatar, Dictionary<string, StoreRole> roles,
+        StorePlans plan = StorePlans.None)
     {
         Id = id;
         Name = name;

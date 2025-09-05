@@ -1,9 +1,7 @@
 using App.Core.DTOs.AvailableFilters;
 using App.Core.DTOs.Product;
-using App.Core.DTOs.Product.Review;
 using App.Core.Models.AvailableFilters;
 using App.Core.Models.Product;
-using App.Core.Models.Product.Review;
 using AutoMapper;
 using MongoDB.Bson;
 

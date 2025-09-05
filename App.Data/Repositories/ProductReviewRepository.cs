@@ -10,9 +10,9 @@ namespace App.Data.Repositories;
 public class ProductReviewRepository(MongoDbContext mongoDbContext, ILogger<ProductReviewRepository> logger)
     : IProductReviewRepository
 {
-    private readonly IMongoCollection<ProductReview> _reviewCollection = mongoDbContext.ProductReviews;
-    private readonly IMongoCollection<Product> _productCollection = mongoDbContext.Products;
     private readonly ILogger<ProductReviewRepository> _logger = logger;
+    private readonly IMongoCollection<Product> _productCollection = mongoDbContext.Products;
+    private readonly IMongoCollection<ProductReview> _reviewCollection = mongoDbContext.ProductReviews;
 
     public async Task<bool> CreateReview(ProductReview review)
     {
@@ -26,7 +26,8 @@ public class ProductReviewRepository(MongoDbContext mongoDbContext, ILogger<Prod
         }
 
         await _reviewCollection.InsertOneAsync(review);
-        _logger.LogInformation("CreateReview completed for ProductId={ProductId}, ReviewId={ReviewId}", review.ProductId, review.Id);
+        _logger.LogInformation("CreateReview completed for ProductId={ProductId}, ReviewId={ReviewId}",
+            review.ProductId, review.Id);
         return true;
     }
 
@@ -42,16 +43,15 @@ public class ProductReviewRepository(MongoDbContext mongoDbContext, ILogger<Prod
             _logger.LogInformation("DeleteReview succeeded for ReviewId={ReviewId}", id);
             return true;
         }
-        else
-        {
-            _logger.LogWarning("DeleteReview failed for ReviewId={ReviewId}", id);
-            return false;
-        }
+
+        _logger.LogWarning("DeleteReview failed for ReviewId={ReviewId}", id);
+        return false;
     }
 
     public async Task<bool> UpdateReview(ProductReview review)
     {
-        _logger.LogInformation("UpdateReview called for ReviewId={ReviewId}, ProductId={ProductId}", review.Id, review.ProductId);
+        _logger.LogInformation("UpdateReview called for ReviewId={ReviewId}, ProductId={ProductId}", review.Id,
+            review.ProductId);
 
         var productFilter = Builders<Product>.Filter.Where(p => p.Id == review.ProductId);
         if (!await _productCollection.Find(productFilter).Limit(1).AnyAsync())
@@ -68,11 +68,9 @@ public class ProductReviewRepository(MongoDbContext mongoDbContext, ILogger<Prod
             _logger.LogInformation("UpdateReview succeeded for ReviewId={ReviewId}", review.Id);
             return true;
         }
-        else
-        {
-            _logger.LogWarning("UpdateReview failed for ReviewId={ReviewId}", review.Id);
-            return false;
-        }
+
+        _logger.LogWarning("UpdateReview failed for ReviewId={ReviewId}", review.Id);
+        return false;
     }
 
     public async Task<ProductReview?> GetReviewById(ObjectId id)

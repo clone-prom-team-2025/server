@@ -29,6 +29,7 @@
     <ItemGroup>
         <EmbeddedResource Include="EmailTemplates/ConfirmEmail.html"/>
         <EmbeddedResource Include="EmailTemplates/ResetPassword.html"/>
+        <EmbeddedResource Include="EmailTemplates/DeleteAccount.html"/>
     </ItemGroup>
 
 </Project>

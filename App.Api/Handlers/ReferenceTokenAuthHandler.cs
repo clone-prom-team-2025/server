@@ -109,7 +109,7 @@ public class ReferenceTokenAuthHandler : AuthenticationHandler<AuthenticationSch
                 new("City", session.DeviceInfo.City),
                 new("Browser", session.DeviceInfo.Browser),
                 new("Os", session.DeviceInfo.Os),
-                new("Device", session.DeviceInfo.Device),
+                new("Device", session.DeviceInfo.Device)
             };
 
             foreach (var role in session.Roles) claims.Add(new Claim(ClaimTypes.Role, role));

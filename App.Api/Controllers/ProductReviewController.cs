@@ -11,8 +11,8 @@ namespace App.Api.Controllers;
 [Route("api/[controller]/[action]")]
 public class ProductReviewController : ControllerBase
 {
-    private readonly IProductReviewService _productReviewService;
     private readonly ILogger<ProductReviewController> _logger;
+    private readonly IProductReviewService _productReviewService;
 
     public ProductReviewController(IProductReviewService productReviewService, ILogger<ProductReviewController> logger)
     {
@@ -32,9 +32,12 @@ public class ProductReviewController : ControllerBase
                 _logger.LogError("UserId claim is missing");
                 return BadRequest();
             }
-            _logger.LogInformation("AddCommentByMyId called with UserId={UserId}, Rating={rating}, Comment={comment}", userIdClaim, rating, comment);
 
-            var result = await _productReviewService.AddCommentToReviewByProductId(productId, new ProductReviewCommentCreateDto(rating, userIdClaim, comment));
+            _logger.LogInformation("AddCommentByMyId called with UserId={UserId}, Rating={rating}, Comment={comment}",
+                userIdClaim, rating, comment);
+
+            var result = await _productReviewService.AddCommentToReviewByProductId(productId,
+                new ProductReviewCommentCreateDto(rating, userIdClaim, comment));
             if (!result)
             {
                 _logger.LogWarning("AddCommentByMyId failed for UserId={UserId}", userIdClaim);
@@ -52,9 +55,11 @@ public class ProductReviewController : ControllerBase
     {
         using (_logger.BeginScope("AddComment action"))
         {
-            _logger.LogInformation("AddComment called with UserId={UserId}, Rating={rating}, Comment={comment}", userId, rating, comment);
+            _logger.LogInformation("AddComment called with UserId={UserId}, Rating={rating}, Comment={comment}", userId,
+                rating, comment);
 
-            var result = await _productReviewService.AddCommentToReviewByProductId(productId, new ProductReviewCommentCreateDto(rating, userId, comment));
+            var result = await _productReviewService.AddCommentToReviewByProductId(productId,
+                new ProductReviewCommentCreateDto(rating, userId, comment));
             if (!result)
             {
                 _logger.LogWarning("AddComment failed for UserId={UserId}", userId);
@@ -79,16 +84,19 @@ public class ProductReviewController : ControllerBase
                 return BadRequest();
             }
 
-            _logger.LogInformation("RemoveCommentByMyId called with UserId={UserId}, ProductId={productId}", userIdClaim, productId);
+            _logger.LogInformation("RemoveCommentByMyId called with UserId={UserId}, ProductId={productId}",
+                userIdClaim, productId);
 
             var result = await _productReviewService.RemoveCommentFromReviewByProductId(productId, userIdClaim);
             if (!result)
             {
-                _logger.LogWarning("RemoveCommentByMyId failed for UserId={UserId}, ProductId={productId}", userIdClaim, productId);
+                _logger.LogWarning("RemoveCommentByMyId failed for UserId={UserId}, ProductId={productId}", userIdClaim,
+                    productId);
                 return NotFound();
             }
 
-            _logger.LogInformation("RemoveCommentByMyId completed for UserId={UserId}, ProductId={productId}", userIdClaim, productId);
+            _logger.LogInformation("RemoveCommentByMyId completed for UserId={UserId}, ProductId={productId}",
+                userIdClaim, productId);
             return Ok();
         }
     }
@@ -99,16 +107,19 @@ public class ProductReviewController : ControllerBase
     {
         using (_logger.BeginScope("RemoveComment action"))
         {
-            _logger.LogInformation("RemoveComment called with UserId={UserId}, ProductId={productId}", userId, productId);
+            _logger.LogInformation("RemoveComment called with UserId={UserId}, ProductId={productId}", userId,
+                productId);
 
             var result = await _productReviewService.RemoveCommentFromReviewByProductId(productId, userId);
             if (!result)
             {
-                _logger.LogWarning("RemoveComment failed for UserId={UserId}, ProductId={productId}", userId, productId);
+                _logger.LogWarning("RemoveComment failed for UserId={UserId}, ProductId={productId}", userId,
+                    productId);
                 return NotFound();
             }
 
-            _logger.LogInformation("RemoveComment completed for UserId={UserId}, ProductId={productId}", userId, productId);
+            _logger.LogInformation("RemoveComment completed for UserId={UserId}, ProductId={productId}", userId,
+                productId);
             return Ok();
         }
     }
@@ -163,16 +174,22 @@ public class ProductReviewController : ControllerBase
                 _logger.LogError("UserId claim is missing");
                 return BadRequest();
             }
-            _logger.LogInformation("SetReaction called with ProductId={productId}, CommentUserId={CommentUserId}, ReactionUserId={ReactionUserId}, Reaction={Reaction}", productId, commentUserId, userIdClaim, reaction);
 
-            var result = await _productReviewService.SetReactionToReviewComment(productId, commentUserId, userIdClaim, reaction);
+            _logger.LogInformation(
+                "SetReaction called with ProductId={productId}, CommentUserId={CommentUserId}, ReactionUserId={ReactionUserId}, Reaction={Reaction}",
+                productId, commentUserId, userIdClaim, reaction);
+
+            var result =
+                await _productReviewService.SetReactionToReviewComment(productId, commentUserId, userIdClaim, reaction);
             if (!result)
             {
-                _logger.LogWarning("SetReaction failed for ProductId={productId}, ReactionUserId={ReactionUserId}", productId, userIdClaim);
+                _logger.LogWarning("SetReaction failed for ProductId={productId}, ReactionUserId={ReactionUserId}",
+                    productId, userIdClaim);
                 return BadRequest();
             }
 
-            _logger.LogInformation("SetReaction completed for ProductId={productId}, ReactionUserId={ReactionUserId}", productId, userIdClaim);
+            _logger.LogInformation("SetReaction completed for ProductId={productId}, ReactionUserId={ReactionUserId}",
+                productId, userIdClaim);
             return Ok();
         }
     }
@@ -189,16 +206,23 @@ public class ProductReviewController : ControllerBase
                 _logger.LogError("UserId claim is missing");
                 return BadRequest();
             }
-            _logger.LogInformation("DeleteReaction called with ProductId={productId}, CommentUserId={CommentUserId}, ReactionUserId={ReactionUserId}", productId, commentUserId, userIdClaim);
 
-            var result = await _productReviewService.DeleteReactionToReviewComment(productId, commentUserId, userIdClaim);
+            _logger.LogInformation(
+                "DeleteReaction called with ProductId={productId}, CommentUserId={CommentUserId}, ReactionUserId={ReactionUserId}",
+                productId, commentUserId, userIdClaim);
+
+            var result =
+                await _productReviewService.DeleteReactionToReviewComment(productId, commentUserId, userIdClaim);
             if (!result)
             {
-                _logger.LogWarning("DeleteReaction failed for ProductId={productId}, ReactionUserId={ReactionUserId}", productId, userIdClaim);
+                _logger.LogWarning("DeleteReaction failed for ProductId={productId}, ReactionUserId={ReactionUserId}",
+                    productId, userIdClaim);
                 return BadRequest();
             }
 
-            _logger.LogInformation("DeleteReaction completed for ProductId={productId}, ReactionUserId={ReactionUserId}", productId, userIdClaim);
+            _logger.LogInformation(
+                "DeleteReaction completed for ProductId={productId}, ReactionUserId={ReactionUserId}", productId,
+                userIdClaim);
             return Ok();
         }
     }

@@ -22,17 +22,15 @@ public static class DeviceInfoHelper
         var device = clientInfo.Device.Family;
 
         if (string.IsNullOrEmpty(device) || device == "Other")
-        {
             device = clientInfo.OS.Family switch
             {
                 "Windows" => "Desktop",
-                "Linux"   => "Desktop",
-                "macOS"   => "Desktop",
+                "Linux" => "Desktop",
+                "macOS" => "Desktop",
                 "Android" => "Mobile",
-                "iOS"     => "Mobile",
-                _         => "Other"
+                "iOS" => "Mobile",
+                _ => "Other"
             };
-        }
 
         // 3. Геолокація через GeoIP2
         var country = "Unknown";
@@ -42,7 +40,8 @@ public static class DeviceInfoHelper
         {
             if (!string.IsNullOrEmpty(ip) && IPAddress.TryParse(ip, out var ipAddr))
             {
-                using var reader = new DatabaseReader(Path.Combine(AppContext.BaseDirectory, "database", "GeoLite2-City.mmdb"));
+                using var reader =
+                    new DatabaseReader(Path.Combine(AppContext.BaseDirectory, "database", "GeoLite2-City.mmdb"));
                 var response = reader.City(ipAddr);
 
                 country = response?.Country?.Name ?? "Unknown";

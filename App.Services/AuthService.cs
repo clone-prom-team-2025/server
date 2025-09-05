@@ -32,9 +32,9 @@ public class AuthService(
     private readonly IEmailService _emailService = emailService;
     private readonly IFileService _fileService = fileService;
     private readonly IMapper _mapper = mapper;
+    private readonly SessionsOptions _options = options.Value;
     private readonly IUserSessionRepository _sessionRepository = sessionRepository;
     private readonly IUserRepository _userRepository = userRepository;
-    private readonly SessionsOptions _options = options.Value;
 
 
     /// <summary>
@@ -57,7 +57,7 @@ public class AuthService(
             s.DeviceInfo.Os == deviceInfo.Os &&
             s.DeviceInfo.Device == deviceInfo.Device
         );
-        
+
         if (existingSession != null)
         {
             if (existingSession.IsRevoked || existingSession.ExpiresAt <= DateTime.UtcNow)
@@ -70,7 +70,7 @@ public class AuthService(
             await _sessionRepository.ReplaceSessionsAsync(user.Id, sessions);
             return existingSession.Id.ToString();
         }
-        else
+
         {
             var newSession = await _sessionRepository.CreateSessionAsync(user.Id, deviceInfo);
             return newSession?.Id.ToString();
@@ -89,21 +89,25 @@ public class AuthService(
 
         var index = model.Email.IndexOf('@');
         var username = model.Email.Substring(0, index);
-        
+
         var normalizedEmail = model.Email.ToLower();
 
         await using (var image = AvatarGenerator.ByteToStream(AvatarGenerator.CreateAvatar(model.FullName)))
         {
             BaseFile file = new();
+            var id = ObjectId.GenerateNewId();
             (file.SourceUrl, file.CompressedFileName, file.SourceFileName, file.CompressedFileName) =
-                await _fileService.SaveImageAsync(image, username + "-avatar", "user-avatars");
+                await _fileService.SaveImageAsync(image, id.ToString() + "-avatar", "user-avatars");
             var user = new User(username, model.Password, normalizedEmail,
-                file, [RoleNames.User], model.FullName);
+                file, [RoleNames.User], model.FullName)
+            {
+                Id = id
+            };
 
             await _userRepository.CreateUserAsync(user);
         }
 
-        return await LoginAsync(new LoginDto { Login = model.Email, Password = model.Password },  deviceInfo);
+        return await LoginAsync(new LoginDto { Login = model.Email, Password = model.Password }, deviceInfo);
     }
 
     /// <summary>
@@ -131,7 +135,7 @@ public class AuthService(
 
         if (user == null)
             return null;
-        
+
         var assembly = Assembly.GetExecutingAssembly();
         await using var stream = assembly.GetManifestResourceStream("App.Services.EmailTemplates.ResetPassword.html");
         using var reader = new StreamReader(stream!);
@@ -140,7 +144,7 @@ public class AuthService(
         var resetToken = Guid.NewGuid().ToString("N");
         var code = GenerateCode(6);
         var readyHtml = html.Replace("__CODE__", code).Replace("__TIME__", "15");
-        
+
         var cacheEntryOptions = new MemoryCacheEntryOptions()
             .SetSlidingExpiration(TimeSpan.FromMinutes(15));
         var resetData = new ResetPassData
@@ -149,7 +153,7 @@ public class AuthService(
             UserId = user.Id.ToString()
         };
         _cache.Set($"reset-pass:{resetToken}", resetData, cacheEntryOptions);
-        
+
         var mail = new EmailMessage
         {
             From = "no-reply@sellpoint.pp.ua",
@@ -157,7 +161,7 @@ public class AuthService(
             Subject = "Reset Password",
             HtmlBody = readyHtml
         };
-        
+
         await _emailService.SendEmailAsync(mail);
         return resetToken;
     }
@@ -167,7 +171,6 @@ public class AuthService(
         var cacheKey = $"reset-pass:{resetToken}";
 
         if (_cache.TryGetValue(cacheKey, out ResetPassData? stored))
-        {
             if (string.Equals(stored.Code, inputCode, StringComparison.OrdinalIgnoreCase))
             {
                 _cache.Remove(cacheKey);
@@ -179,27 +182,26 @@ public class AuthService(
 
                 return newAccessCode;
             }
-        }
 
         return null;
     }
 
     public async Task<bool> ResetPassword(string password, string accessCode)
     {
-        
         var cacheKey = $"reset-pass-access-code:{accessCode}";
-        
+
         if (_cache.TryGetValue(cacheKey, out string userId))
         {
             var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
             if (user == null)
                 return false;
-            
+
             _cache.Remove(cacheKey);
             user.PasswordHash = PasswordHasher.HashPassword(password);
             await _userRepository.UpdateUserAsync(user);
             return true;
         }
+
         return false;
     }
 

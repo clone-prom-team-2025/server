@@ -114,6 +114,6 @@ public class AuthController : ControllerBase
     public async Task<ActionResult> ResetPassword(string password, string accessCode)
     {
         var result = await _authService.ResetPassword(password, accessCode);
-        return  result ? Ok() : BadRequest();
+        return result ? Ok() : BadRequest();
     }
 }
