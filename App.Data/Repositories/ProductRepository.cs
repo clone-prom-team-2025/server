@@ -172,7 +172,7 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
     public async Task<bool> UpdateAsync(Product product)
     {
         var result = await _products.ReplaceOneAsync(p => p.Id.Equals(product.Id), product);
-        return result.IsAcknowledged && result.ModifiedCount > 0;
+        return result.IsAcknowledged;
     }
 
     public async Task<bool> DeleteAsync(ObjectId id)

@@ -326,18 +326,22 @@ public class StoreService(
         }
     }
 
-    public async Task<bool> AddMemberToStoreAsync(string userId, string storeId, string memberEmail, StoreRole role)
+    public async Task<bool> AddMemberToStoreAsync(string userId, string memberId, StoreRole role)
     {
         using (_logger.BeginScope("AddMemberToStoreAsync"))
         {
             _logger.LogInformation("AddMemberToStoreAsync called");
+            if (memberId == userId)
+            {
+                return false;
+            }
             var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
             if (user == null)
             {
                 _logger.LogError("AddMemberToStoreAsync can't find user with Id={userId}", userId);
                 return false;
             }
-            var store = await _storeRepository.GetStoreById(ObjectId.Parse(storeId));
+            var store = await _storeRepository.GetStoreByUserId(ObjectId.Parse(userId));
             if (store == null)
             {
                 _logger.LogError("Store not found");
@@ -348,12 +352,13 @@ public class StoreService(
                 _logger.LogError("You are not the owner!");
                 return false;
             }
-            var member = await _userRepository.GetUserByEmailAsync(memberEmail);
+            var member = await _userRepository.GetUserByIdAsync(ObjectId.Parse(memberId));
             if (member == null)
             {
                 _logger.LogError("Member not found");
                 return false;
             }
+            store.Roles.Remove(memberId);
             store.Roles.Add(member.Id.ToString(), role);
             var result = await _storeRepository.UpdateStore(store);
             if (!result)
@@ -366,7 +371,7 @@ public class StoreService(
         }
     }
     
-    public async Task<bool> RemoveMemberFromStoreAsync(string userId, string storeId, string memberId)
+    public async Task<bool> RemoveMemberFromStoreAsync(string userId, string memberId)
     {
         using (_logger.BeginScope("RemoveMemberFromStoreAsync"))
         {
@@ -382,7 +387,7 @@ public class StoreService(
                 _logger.LogError("You can't remove yourself");
                 return false;
             }
-            var store = await _storeRepository.GetStoreById(ObjectId.Parse(storeId));
+            var store = await _storeRepository.GetStoreByUserId(ObjectId.Parse(userId));
             if (store == null)
             {
                 _logger.LogError("Store not found");

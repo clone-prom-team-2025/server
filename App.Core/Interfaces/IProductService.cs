@@ -11,8 +11,8 @@ public interface IProductService
 
     //Task<IEnumerable<ProductDto>?> GetByCategoryAsync(string categoryId, ProductFilterRequestDto filter);
     Task<ProductFilterResponseDto?> GetBySellerIdAsync(string sellerId, ProductFilterRequestDto filter);
-    Task<bool> CreateAsync(ProductCreateDto productDto);
-    Task<bool> UpdateAsync(ProductDto productDto);
-    Task<bool> DeleteAsync(string id);
+    Task CreateAsync(ProductCreateDto productDto, string userId);
+    Task UpdateAsync(UpdateProductDto productDto, string userId);
+    Task DeleteAsync(string id, string userId);
     Task<IEnumerable<ProductSearchResultDto>?> SearchByNameAsync(string name);
 }

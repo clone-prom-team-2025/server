@@ -20,7 +20,7 @@ public interface IStoreService
     Task<StoreDto?> GetStoreById(string storeId);
     Task<IEnumerable<StoreDto>?> GetStores();
 
-    Task<bool> AddMemberToStoreAsync(string userId, string storeId, string memberEmail, StoreRole role);
-    Task<bool> RemoveMemberFromStoreAsync(string userId, string storeId, string memberId);
+    Task<bool> AddMemberToStoreAsync(string userId, string memberId, StoreRole role);
+    Task<bool> RemoveMemberFromStoreAsync(string userId, string memberId);
     Task<Dictionary<string, string>?> GetStoreMembers(string userId, string? storeId);
 }

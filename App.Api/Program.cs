@@ -12,6 +12,7 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
@@ -78,6 +79,21 @@ builder.Services.AddSingleton<ICartService, CartService>();
 builder.Services.AddMemoryCache();
 
 // --- Validation ---
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var errors = context.ModelState
+                .Where(x => x.Value.Errors.Count > 0)
+                .ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                );
+
+            return new BadRequestObjectResult(new { errors });
+        };
+    });
 builder.Services.AddValidatorsFromAssemblyContaining<ProductCreateDtoValidator>();
 builder.Services.AddFluentValidationAutoValidation();
 

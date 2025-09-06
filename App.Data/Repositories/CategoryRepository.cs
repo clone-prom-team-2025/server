@@ -264,7 +264,7 @@ public class CategoryRepository(MongoDbContext mongoDbContext, IMapper mapper) :
         return result;
     }
 
-    public async Task<List<ObjectId>> GetCategoryPathAsync(string categoryId)
+    public async Task<List<ObjectId>?> GetCategoryPathAsync(string categoryId)
     {
         if (!ObjectId.TryParse(categoryId, out var currentId))
             throw new ArgumentException("Invalid category ID format", nameof(categoryId));

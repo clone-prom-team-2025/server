@@ -1,9 +1,11 @@
+using System.Security.Claims;
 using App.Core.Constants;
 using App.Core.DTOs.Product;
 using App.Core.Interfaces;
 using App.Core.Models.Product;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using App.Services.Exceptions;
 
 namespace App.Api.Controllers;
 
@@ -19,62 +21,131 @@ public class ProductController : ControllerBase
     }
 
     [HttpPost("get-all")]
-    public async Task<ActionResult<ProductFilterResponseDto?>> GetAllAsync(ProductFilterRequestDto filter)
+    public async Task<IActionResult> GetAllAsync(ProductFilterRequestDto filter)
     {
-        var products = await _productService.GetAllAsync(filter);
-        if (products == null || products.Products.Count() == 0)
-            return NoContent();
+        try
+        {
+            var products = await _productService.GetAllAsync(filter);
+            if (products == null || products.Products.Count == 0)
+                return NoContent();
 
-        return Ok(products);
+            return Ok(products);
+        }
+        catch (AppException e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpGet("get-by-id/{id}")]
     public async Task<ActionResult<ProductDto?>> GetByIdAsync(string id)
     {
-        var product = await _productService.GetByIdAsync(id);
-        return product == null ? NotFound() : Ok(product);
+        try
+        {
+            var product = await _productService.GetByIdAsync(id);
+            return product == null ? NotFound() : Ok(product);
+        }
+        catch (AppException e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpPost("get-by-name/{name}")]
-    public async Task<ActionResult<ProductFilterResponseDto?>> GetByNameAsync([FromQuery] string name,
+    public async Task<ActionResult<ProductFilterResponseDto?>> GetByNameAsync(string name,
         ProductFilterRequestDto filter)
     {
-        var products = await _productService.GetByNameAsync(name, filter);
-        if (products == null || products.Products.Count == 0)
-            return NotFound();
-        return Ok(products);
+        try
+        {
+            var products = await _productService.GetByNameAsync(name, filter);
+            if (products == null || products.Products.Count == 0)
+                return NotFound();
+            return Ok(products);
+        }
+        catch (AppException e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpPost("get-by-seller-id/{sellerId}")]
-    public async Task<ActionResult<ProductFilterResponseDto?>> GetBySellerIdAsync([FromQuery] string sellerId,
+    public async Task<IActionResult> GetBySellerIdAsync(string sellerId,
         ProductFilterRequestDto filter)
     {
-        var products = await _productService.GetBySellerIdAsync(sellerId, filter);
-        if (products == null || products.Products.Count == 0)
-            return NotFound();
-        return Ok(products);
+        try
+        {
+            var products = await _productService.GetBySellerIdAsync(sellerId, filter);
+            if (products == null || products.Products.Count == 0)
+                return NotFound();
+            return Ok(products);
+        }
+        catch (AppException e)
+        {
+            return BadRequest(e.Message);
+        }
+        
     }
 
     [HttpPost]
-    [Authorize(Roles = RoleNames.Admin)]
-    public async Task<ActionResult<ProductDto>> CreateAsync([FromBody] ProductCreateDto productDto)
+    [Authorize]
+    public async Task<IActionResult> CreateAsync([FromBody] ProductCreateDto productDto)
     {
-        return Ok(await _productService.CreateAsync(productDto));
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                return BadRequest();
+            }
+
+            await _productService.CreateAsync(productDto, userId);
+            return NoContent();
+        }
+        catch (AppException e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpPut]
-    [Authorize(Roles = RoleNames.Admin)]
-    public async Task<ActionResult<ProductDto?>> UpdateAsync(ProductDto productDto)
+    [Authorize]
+    public async Task<ActionResult<ProductDto?>> UpdateAsync(UpdateProductDto productDto)
     {
-        var product = await _productService.UpdateAsync(productDto);
-        return product == null ? NotFound() : Ok(product);
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                return BadRequest();
+            }
+            await _productService.UpdateAsync(productDto, userId);
+            return NoContent();
+        }
+        catch (AppException e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpDelete]
-    [Authorize(Roles = RoleNames.Admin)]
+    [Authorize]
     public async Task<ActionResult> DeleteAsync(string id)
     {
-        return await _productService.DeleteAsync(id) ? NoContent() : BadRequest();
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                return BadRequest();
+            }
+
+            await _productService.DeleteAsync(id, userId);
+            return NoContent();
+        }
+        catch (AppException e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpGet("search")]

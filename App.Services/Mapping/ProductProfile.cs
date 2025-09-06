@@ -25,7 +25,13 @@ public class ProductProfile : Profile
     {
         CreateMap<ProductFeatureItem, ProductFeatureDto>().ReverseMap();
 
-
+        CreateMap<UpdateProductDto, Product>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(dto => ObjectId.Parse(dto.Id)))
+            .ForMember(dest => dest.SellerId, opt => opt.MapFrom(dto => ObjectId.Parse(dto.SellerId)))
+            .ForMember(dest => dest.CategoryPath, opt => opt.Ignore())
+            .ForMember(dest => dest.Features, opt => opt.MapFrom(dto => dto.Features))
+            .ForMember(dest => dest.Name, opt => opt.MapFrom(dto => dto.Name));
+        
         CreateMap<Product, ProductDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
             .ForMember(dest => dest.SellerId, opt => opt.MapFrom(src => src.SellerId.ToString()))

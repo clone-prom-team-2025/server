@@ -366,9 +366,9 @@ public class StoreController : ControllerBase
         }
     }
 
-    [HttpPost]
+    [HttpPut]
     [Authorize]
-    public async Task<ActionResult> AddMemberToStore(string storeId, string memberEmail, StoreRole role)
+    public async Task<ActionResult> AddMemberToStore(string memberId, StoreRole role)
     {
         using (_logger.BeginScope("AddMemberToStore action"))
         {
@@ -379,20 +379,20 @@ public class StoreController : ControllerBase
                 return BadRequest();
             }
             _logger.LogInformation("AddMemberToStore called");
-            var result = await _storeService.AddMemberToStoreAsync(userId, storeId, memberEmail, role);
+            var result = await _storeService.AddMemberToStoreAsync(userId, memberId, role);
             if (!result)
             {
-                _logger.LogError("Failed to add member to store with Id={storeId}", storeId);
+                _logger.LogError("Failed to add member to store");
                 return BadRequest();
             }
-            _logger.LogInformation("Successfully added member to store with Id={storeId}", storeId);
+            _logger.LogInformation("Successfully added member to store");
             return NoContent();
         }
     }
     
     [HttpDelete]
     [Authorize]
-    public async Task<ActionResult> RemoveMemberFromStore(string storeId, string memberId)
+    public async Task<ActionResult> RemoveMemberFromStore(string memberId)
     {
         using (_logger.BeginScope("RemoveMemberFromStore action"))
         {
@@ -403,13 +403,13 @@ public class StoreController : ControllerBase
                 return BadRequest();
             }
             _logger.LogInformation("RemoveMemberFromStore called");
-            var result = await _storeService.RemoveMemberFromStoreAsync(userId, storeId, memberId);
+            var result = await _storeService.RemoveMemberFromStoreAsync(userId, memberId);
             if (!result)
             {
-                _logger.LogError("Failed to remove member from store with Id={storeId}", storeId);
+                _logger.LogError("Failed to remove member from store");
                 return BadRequest();
             }
-            _logger.LogInformation("Successfully removed member from store with Id={storeId}", storeId);
+            _logger.LogInformation("Successfully removed member from store");
             return NoContent();
         }
     }
