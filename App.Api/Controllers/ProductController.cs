@@ -5,7 +5,6 @@ using App.Core.Interfaces;
 using App.Core.Models.Product;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using App.Services.Exceptions;
 
 namespace App.Api.Controllers;
 
@@ -31,7 +30,7 @@ public class ProductController : ControllerBase
 
             return Ok(products);
         }
-        catch (AppException e)
+        catch (Exception e)
         {
             return BadRequest(e.Message);
         }
@@ -45,7 +44,7 @@ public class ProductController : ControllerBase
             var product = await _productService.GetByIdAsync(id);
             return product == null ? NotFound() : Ok(product);
         }
-        catch (AppException e)
+        catch (Exception e)
         {
             return BadRequest(e.Message);
         }
@@ -62,7 +61,7 @@ public class ProductController : ControllerBase
                 return NotFound();
             return Ok(products);
         }
-        catch (AppException e)
+        catch (Exception e)
         {
             return BadRequest(e.Message);
         }
@@ -79,7 +78,7 @@ public class ProductController : ControllerBase
                 return NotFound();
             return Ok(products);
         }
-        catch (AppException e)
+        catch (Exception e)
         {
             return BadRequest(e.Message);
         }
@@ -101,7 +100,7 @@ public class ProductController : ControllerBase
             await _productService.CreateAsync(productDto, userId);
             return NoContent();
         }
-        catch (AppException e)
+        catch (Exception e)
         {
             return BadRequest(e.Message);
         }
@@ -121,7 +120,7 @@ public class ProductController : ControllerBase
             await _productService.UpdateAsync(productDto, userId);
             return NoContent();
         }
-        catch (AppException e)
+        catch (Exception e)
         {
             return BadRequest(e.Message);
         }
@@ -142,7 +141,7 @@ public class ProductController : ControllerBase
             await _productService.DeleteAsync(id, userId);
             return NoContent();
         }
-        catch (AppException e)
+        catch (Exception e)
         {
             return BadRequest(e.Message);
         }

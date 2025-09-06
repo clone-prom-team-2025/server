@@ -115,17 +115,13 @@ public class AuthService(
     /// </summary>
     /// <param name="sessionId">The ID of the session to revoke.</param>
     /// <returns>True if the session was successfully revoked; otherwise, false.</returns>
-    public async Task<bool> LogoutAsync(string sessionId)
+    public async Task LogoutAsync(string sessionId)
     {
-        if (!ObjectId.TryParse(sessionId, out var objectId))
-            return false;
-
-        var session = await _sessionRepository.GetSessionAsync(objectId);
+        var session = await _sessionRepository.GetSessionAsync(ObjectId.Parse(sessionId));
         if (session == null || session.IsRevoked)
-            return false;
+            throw new Exception("Session doesn't exist");
 
-        await _sessionRepository.RevokeSessionAsync(objectId);
-        return true;
+        await _sessionRepository.RevokeSessionAsync(ObjectId.Parse(sessionId));
     }
 
     public async Task<string?> SendPasswordReset(string login)
@@ -186,7 +182,7 @@ public class AuthService(
         return null;
     }
 
-    public async Task<bool> ResetPassword(string password, string accessCode)
+    public async Task ResetPassword(string password, string accessCode)
     {
         var cacheKey = $"reset-pass-access-code:{accessCode}";
 
@@ -194,15 +190,14 @@ public class AuthService(
         {
             var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
             if (user == null)
-                return false;
+                throw new Exception("User not found");
 
             _cache.Remove(cacheKey);
             user.PasswordHash = PasswordHasher.HashPassword(password);
             await _userRepository.UpdateUserAsync(user);
-            return true;
         }
 
-        return false;
+        throw new Exception("Invalid code");
     }
 
     /// <summary>
@@ -210,10 +205,14 @@ public class AuthService(
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     /// <returns>True if the email was sent successfully; otherwise, false.</returns>
-    public async Task<bool> SendEmailVerificationCodeAsync(string userId)
+    public async Task SendEmailVerificationCodeAsync(string userId)
     {
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
-        if (user == null || user.EmailConfirmed) return false;
+        if (user == null)
+            throw new Exception("User not found");
+        
+        if (user.EmailConfirmed == true)
+            throw new Exception("Email is already confirmed");
 
         var assembly = Assembly.GetExecutingAssembly();
         using var stream = assembly.GetManifestResourceStream("App.Services.EmailTemplates.ConfirmEmail.html");
@@ -234,7 +233,6 @@ public class AuthService(
         };
 
         await _emailService.SendEmailAsync(mail);
-        return true;
     }
 
     /// <summary>
@@ -244,10 +242,10 @@ public class AuthService(
     /// <param name="userId">The ID of the user.</param>
     /// <param name="inputCode">The verification code entered by the user.</param>
     /// <returns>True if the code is correct and email is confirmed; otherwise, false.</returns>
-    public async Task<bool> VerifyCode(string userId, string inputCode)
+    public async Task VerifyCode(string userId, string inputCode)
     {
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
-        if (user == null) return false;
+        if (user == null) throw new Exception("User not found");
 
         var cacheKey = $"verify:{user.Email}";
 
@@ -257,10 +255,9 @@ public class AuthService(
                 _cache.Remove(cacheKey);
                 user.EmailConfirmed = true;
                 await _userRepository.UpdateUserAsync(user);
-                return true;
             }
 
-        return false;
+        throw new Exception("Invalid code");
     }
 
     /// <summary>

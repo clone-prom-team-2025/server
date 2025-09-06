@@ -36,9 +36,7 @@ public class ProductMediaService(
     ///     Repository interface for accessing product media data from the database.
     /// </summary>
     private readonly IProductMediaRepository _repository = repository;
-
-    //private const string RootPrefix = "wwwroot/";
-
+    
     /// <summary>
     ///     Retrieves all product media from the database.
     /// </summary>
@@ -63,7 +61,7 @@ public class ProductMediaService(
     public async Task<ProductMediaDto> PushMediaAsync(string productId, Stream stream, string fileName, int order)
     {
         if (!MediaInspector.IsSafeMedia(stream, fileName))
-            throw new InvalidOperationException("Invalid or potentially harmful file");
+            throw new Exception("Invalid or potentially harmful file");
 
         var type = MediaInspector.GetMediaType(stream, fileName);
 
@@ -76,7 +74,7 @@ public class ProductMediaService(
             (file.SourceUrl, file.SourceFileName) =
                 await _fileService.SaveVideoAsync(stream, fileName, _productMediaKeys.Video);
         else
-            throw new ArgumentException("Unsupported media type");
+            throw new Exception("Unsupported media type");
 
         var medias = await _repository.GetByProductIdAsync(productId);
         if (medias == null || medias.Count == 0)
@@ -111,6 +109,12 @@ public class ProductMediaService(
     public async Task<List<ProductMediaDto>?> SyncMediaFromTempFilesAsync(List<FileArrayItemDto> files,
         string productId)
     {
+        foreach (var file in files)
+        {
+            if (!MediaInspector.IsSafeMedia(file.Stream, file.FileName))
+                throw new Exception("Invalid or potentially harmful file");
+        }
+        
         var existing = await _repository.GetByProductIdAsync(productId);
         if (existing is { Count: > 0 })
             foreach (var media in existing)
@@ -146,15 +150,16 @@ public class ProductMediaService(
     /// </summary>
     /// <param name="id">ID of the media to delete.</param>
     /// <returns>True if deletion was successful; otherwise, false.</returns>
-    public async Task<bool> DeleteAsync(string id)
+    public async Task DeleteAsync(string id)
     {
         var media = await _repository.GetByIdAsync(id);
-        if (media == null) return false;
+        if (media == null) throw new Exception("Media not found");
 
         await _fileService.DeleteFileAsync(_productMediaKeys.Image, media.Files.SourceFileName);
         if (media.Files.CompressedUrl != null && media.Files.CompressedFileName != null)
             await _fileService.DeleteFileAsync(_productMediaKeys.Image, media.Files.CompressedFileName);
-        return await _repository.RemoveAsync(id);
+        if (!await _repository.RemoveAsync(id))
+            throw new Exception("Can't delete media");
     }
 
     /// <summary>
@@ -163,11 +168,11 @@ public class ProductMediaService(
     /// </summary>
     /// <param name="productId">ID of the product to delete its media.</param>
     /// <returns>True if deletion was successful; otherwise, false.</returns>
-    public async Task<bool> DeleteByProductIdAsync(string productId)
+    public async Task DeleteByProductIdAsync(string productId)
     {
         var media = await _repository.GetByProductIdAsync(productId);
-        if (media == null) return false;
-        if (media.Count == 0) return false;
+        if (media == null) return;
+        if (media.Count == 0) return;
 
         foreach (var m in media)
             if (m.Type == MediaType.Image)
@@ -181,8 +186,8 @@ public class ProductMediaService(
                 await _fileService.DeleteFileAsync(_productMediaKeys.Video, m.Files.SourceFileName);
             }
 
-        return await _repository.RemoveByProdutIdAsync(productId);
-        ;
+        if (!await _repository.RemoveByProdutIdAsync(productId))
+            throw new Exception("Can't delete media");
     }
 
     /// <summary>

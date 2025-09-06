@@ -13,7 +13,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
     private readonly ILogger<CartService> _logger = logger;
     private readonly IMapper _mapper = mapper;
 
-    public async Task<bool> AddAsync(CreateCartDto dto, string userId)
+    public async Task AddAsync(CreateCartDto dto, string userId)
     {
         using (_logger.BeginScope("AddAsync: ProductId={productId}, UserId={userId}", dto.ProductId, userId))
         {
@@ -31,15 +31,14 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
             if (!result)
             {
                 _logger.LogError("AddAsync: Failed to create cart");
-                return false;
+                throw new Exception("Failed to create cart");
             }
 
             _logger.LogInformation("AddAsync: Successfully created cart");
-            return true;
         }
     }
 
-    public async Task<bool> RemoveAsync(string id, string userId)
+    public async Task RemoveAsync(string id, string userId)
     {
         using (_logger.BeginScope("RemoveAsync: id={id}, UserId={userId}", id, userId))
         {
@@ -48,15 +47,14 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
             if (!result)
             {
                 _logger.LogError("RemoveAsync: Failed to delete cart");
-                return false;
+                throw new Exception("Failed to delete cart");
             }
 
             _logger.LogInformation("RemoveAsync: Successfully deleted cart");
-            return true;
         }
     }
 
-    public async Task<bool> ClearAsync(string userId)
+    public async Task ClearAsync(string userId)
     {
         using (_logger.BeginScope("RemoveAsync: UserId={userId}", userId))
         {
@@ -65,15 +63,14 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
             if (!result)
             {
                 _logger.LogError("RemoveAsync: Failed to delete carts");
-                return false;
+                throw new Exception("Failed to delete carts");
             }
 
             _logger.LogInformation("RemoveAsync: Successfully deleted carts");
-            return true;
         }
     }
 
-    public async Task<bool> ChangePcsAsync(string id, int pcs, string userId)
+    public async Task ChangePcsAsync(string id, int pcs, string userId)
     {
         using (_logger.BeginScope("ChangePcsAsync: Id={id}, Pcs={pcs}, UserId={userId}", id, pcs, userId))
         {
@@ -82,13 +79,13 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
             if (cart == null)
             {
                 _logger.LogError("ChangePcsAsync: Failed to find cart. Cart not found");
-                return false;
+                throw new Exception("Cart not found");
             }
 
             if (cart.UserId.ToString() != userId)
             {
-                _logger.LogError("ChangePcsAsync: Failed to find cart. It's now your cart!");
-                return false;
+                _logger.LogError("ChangePcsAsync: Failed to find cart. It's not your cart!");
+                throw new Exception("It's not your cart");
             }
 
             if (pcs <= 0)
@@ -98,11 +95,10 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
                 if (!resultDelete)
                 {
                     _logger.LogError("ChangePcsAsync: Failed to update cart");
-                    return false;
+                    throw new Exception("Failed to update cart");
                 }
 
                 _logger.LogInformation("ChangePcsAsync: Successfully updated cart(Removed)");
-                return true;
             }
 
             cart.Pcs = pcs;
@@ -110,11 +106,10 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
             if (!result)
             {
                 _logger.LogError("ChangePcsAsync: Failed to update cart");
-                return false;
+                throw new Exception("Failed to update cart");
             }
 
             _logger.LogInformation("ChangePcsAsync: Successfully updated cart");
-            return true;
         }
     }
 

@@ -7,6 +7,7 @@ using MailKit.Search;
 using MailKit.Security;
 using Microsoft.Extensions.Configuration;
 using MimeKit;
+using MongoDB.Driver;
 
 namespace App.Services;
 
@@ -28,7 +29,7 @@ public class EmailService : IEmailService
     public async Task SendEmailAsync(EmailMessage message)
     {
         if (!_accounts.TryGetValue(GetAccountKeyFromEmail(message.From), out var sender))
-            throw new InvalidOperationException($"Sender '{message.From}' is not configured");
+            return;
 
         var email = new MimeMessage();
         email.From.Add(new MailboxAddress(sender.DisplayName, sender.Email));
@@ -47,7 +48,7 @@ public class EmailService : IEmailService
     public async Task<List<MimeMessage>> GetInboxAsync(string from)
     {
         if (!_accounts.TryGetValue(GetAccountKeyFromEmail(from), out var acc))
-            throw new InvalidOperationException($"Account '{from}' not found");
+            return [];
 
         using var client = new ImapClient();
         await client.ConnectAsync(acc.ImapServer, 993, SecureSocketOptions.SslOnConnect);
@@ -71,6 +72,6 @@ public class EmailService : IEmailService
     private string GetAccountKeyFromEmail(string email)
     {
         return _accounts.FirstOrDefault(kvp => kvp.Value.Email == email).Key
-               ?? throw new InvalidOperationException($"Email '{email}' not configured");
+               ?? "";
     }
 }

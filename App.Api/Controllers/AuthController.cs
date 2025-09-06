@@ -20,100 +20,171 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult> Login([FromForm] LoginDto loginDto)
+    public async Task<IActionResult> Login([FromForm] LoginDto loginDto)
     {
-        var deviceInfo = DeviceInfoHelper.GetDeviceInfo(Request);
+        try
+        {
+            var deviceInfo = DeviceInfoHelper.GetDeviceInfo(Request);
 
-        var result = await _authService.LoginAsync(loginDto, deviceInfo);
-        if (result == null)
-            return Unauthorized("Invalid username, email, or password");
+            var result = await _authService.LoginAsync(loginDto, deviceInfo);
+            if (result == null)
+                return Unauthorized("Invalid username, email, or password");
 
-        return Ok(result);
+            return Ok(result);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpPost("register")]
-    public async Task<ActionResult> Register([FromForm] RegisterDto registerDto)
+    public async Task<IActionResult> Register([FromForm] RegisterDto registerDto)
     {
-        var deviceInfo = DeviceInfoHelper.GetDeviceInfo(Request);
-        var result = await _authService.RegisterAsync(registerDto, deviceInfo);
-        if (result == null)
-            return Unauthorized("Invalid username, email, or password");
-        return Ok(result);
+        try
+        {
+            var deviceInfo = DeviceInfoHelper.GetDeviceInfo(Request);
+            var result = await _authService.RegisterAsync(registerDto, deviceInfo);
+            if (result == null)
+                return Unauthorized("Invalid username, email, or password");
+            return Ok(result);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [Authorize]
     [HttpPost("logout")]
-    public async Task<ActionResult> Logout()
+    public async Task<IActionResult> Logout()
     {
-        var sessionId = User.FindFirstValue(ClaimTypes.Sid);
-        if (string.IsNullOrEmpty(sessionId))
-            return Unauthorized("Session ID not found in token");
+        try
+        {
+            var sessionId = User.FindFirstValue(ClaimTypes.Sid);
+            if (string.IsNullOrEmpty(sessionId))
+                return Unauthorized("Session ID not found in token");
 
-        var result = await _authService.LogoutAsync(sessionId);
+            await _authService.LogoutAsync(sessionId);
 
-        return result ? Ok() : Unauthorized("Invalid username, email, or password");
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [Authorize]
     [HttpPost("send-email-verification-code")]
-    public async Task<ActionResult> SendEmailVerificationCode()
+    public async Task<IActionResult> SendEmailVerificationCode()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized("Session ID not found in token");
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("Session ID not found in token");
 
-        await _authService.SendEmailVerificationCodeAsync(userId);
-        return Ok("Email verification code sent");
+            await _authService.SendEmailVerificationCodeAsync(userId);
+            return Ok("Email verification code sent");
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [Authorize]
     [HttpGet("verify-email-code")]
-    public async Task<ActionResult> VerifyEmailCode(string code)
+    public async Task<IActionResult> VerifyEmailCode(string code)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userId))
-            return Unauthorized("Session ID not found in token");
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("Session ID not found in token");
 
-        var result = await _authService.VerifyCode(userId, code);
-        return result ? Ok() : Unauthorized("Invalid code");
+            await _authService.VerifyCode(userId, code);
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+        
     }
 
     [Authorize]
     [HttpGet("check-login")]
-    public ActionResult CheckLogin()
+    public IActionResult CheckLogin()
     {
-        return Ok();
+        try
+        {
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [Authorize(Roles = RoleNames.Admin)]
     [HttpGet("check-admin")]
-    public ActionResult CheckAdmin()
+    public IActionResult CheckAdmin()
     {
-        return Ok();
+        try
+        {
+            return Ok();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpPost("send-password-reset-code")]
-    public async Task<ActionResult<string>> SendPasswordResetCode(string login)
+    public async Task<IActionResult> SendPasswordResetCode(string login)
     {
-        var result = await _authService.SendPasswordReset(login);
-        if (result == null)
-            return BadRequest();
-        return Ok(result);
+        try
+        {
+            var result = await _authService.SendPasswordReset(login);
+            if (result == null)
+                return BadRequest();
+            return Ok(result);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpGet("verify-password-reset-code")]
-    public async Task<ActionResult<string>> VerifyPasswordResetCode(string resetToken, string code)
+    public async Task<IActionResult> VerifyPasswordResetCode(string resetToken, string code)
     {
-        var result = await _authService.VerifyPasswordCodeAsync(resetToken, code);
-        if (result == null)
-            return BadRequest();
-        return Ok(result);
+        try
+        {
+            var result = await _authService.VerifyPasswordCodeAsync(resetToken, code);
+            if (result == null)
+                return BadRequest();
+            return Ok(result);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpPost("reset-password")]
-    public async Task<ActionResult> ResetPassword(string password, string accessCode)
+    public async Task<IActionResult> ResetPassword(string password, string accessCode)
     {
-        var result = await _authService.ResetPassword(password, accessCode);
-        return result ? Ok() : BadRequest();
+        try
+        {
+            await _authService.ResetPassword(password, accessCode);
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 }

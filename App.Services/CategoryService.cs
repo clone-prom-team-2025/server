@@ -66,20 +66,18 @@ public class CategoryService(ICategoryRepository categoryRepository, IMapper map
     /// </summary>
     /// <param name="categoryCreateDto">The category object to be created.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    public async Task<CategoryDto> CreateAsync(CategoryCreateDto categoryCreateDto)
+    public async Task CreateAsync(CategoryCreateDto categoryCreateDto)
     {
         var category = _mapper.Map<Category>(categoryCreateDto);
         category.Id = ObjectId.GenerateNewId();
         await _categoryRepository.CreateAsync(category);
-        return _mapper.Map<CategoryDto>(category);
     }
 
-    public async Task<List<CategoryDto>> CreateManyAsync(List<CategoryCreateDto> categoryCreateDtoList)
+    public async Task CreateManyAsync(List<CategoryCreateDto> categoryCreateDtoList)
     {
         var categories = _mapper.Map<List<Category>>(categoryCreateDtoList);
         foreach (var category in categories) category.Id = ObjectId.GenerateNewId();
         await _categoryRepository.CreateManyAsync(categories);
-        return _mapper.Map<List<CategoryDto>>(categories);
     }
 
     /// <summary>
@@ -87,13 +85,12 @@ public class CategoryService(ICategoryRepository categoryRepository, IMapper map
     /// </summary>
     /// <param name="categoryUpdateDto">The category object containing updated data.</param>
     /// <returns>True if the update was successful; otherwise, false.</returns>
-    public async Task<CategoryDto?> UpdateAsync(CategoryDto categoryUpdateDto)
+    public async Task UpdateAsync(CategoryDto categoryUpdateDto)
     {
         var category = _mapper.Map<Category>(categoryUpdateDto);
         var result = await _categoryRepository.UpdateAsync(category);
-        if (!result) return null;
+        if (!result) throw new Exception("Could not update category");
         var updatedCategory = await _categoryRepository.GetByIdAsync(category.Id.ToString());
-        return _mapper.Map<CategoryDto?>(updatedCategory);
     }
 
     /// <summary>
@@ -101,9 +98,9 @@ public class CategoryService(ICategoryRepository categoryRepository, IMapper map
     /// </summary>
     /// <param name="id">The unique identifier of the category to delete.</param>
     /// <returns>True if the deletion was successful; otherwise, false.</returns>
-    public async Task<bool> DeleteAsync(string id)
+    public async Task DeleteAsync(string id)
     {
-        return await _categoryRepository.DeleteAsync(id);
+        await _categoryRepository.DeleteAsync(id);
     }
 
     /// <summary>
