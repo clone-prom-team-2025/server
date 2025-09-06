@@ -1,4 +1,3 @@
-using System.Text.Json;
 using MongoDB.Driver;
 
 namespace App.Api.Middleware;
@@ -22,75 +21,30 @@ public class ExceptionHandlingMiddleware
         }
         catch (FormatException ex) when (ex.Message.Contains("is not a valid 24 digit hex string"))
         {
-            await HandleValidationErrorAsync(context, "id", "The id field must be a 24-character hex string.");
+            await HandleErrorAsync(context, "The id field must be a 24-character hex string.", 400);
         }
         catch (ArgumentException ex)
         {
-            // Використовуємо paramName, якщо є, інакше дефолтне значення
             var field = string.IsNullOrWhiteSpace(ex.ParamName) ? "value" : ex.ParamName;
-            await HandleValidationErrorAsync(context, field, ex.Message);
+            await HandleErrorAsync(context, ex.Message, 400);
         }
         catch (MongoWriteException ex) when (ex.WriteError.Category == ServerErrorCategory.DuplicateKey)
         {
             var duplicateField = GetDuplicateFieldFromMessage(ex.Message) ?? "UnknownField";
-            await HandleValidationErrorAsync(context, duplicateField, $"{duplicateField} must be unique.");
+            await HandleErrorAsync(context, $"{duplicateField} must be unique.", 400);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception");
-
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            context.Response.ContentType = "application/problem+json";
-
-            var problemDetails = new
-            {
-                type = "https://tools.ietf.org/html/rfc9110#section-15.6.1",
-                title = "Internal Server Error",
-                status = 500,
-                detail = "An unexpected error occurred. Please try again later.",
-                traceId = context.TraceIdentifier
-            };
-
-            await context.Response.WriteAsync(JsonSerializer.Serialize(problemDetails));
+            await HandleErrorAsync(context, "Internal Server Error", 500);
         }
     }
 
-    private string? GetObjectIdParamName(HttpContext context)
+    private async Task HandleErrorAsync(HttpContext context, string message, int statusCode)
     {
-        var routeValues = context.Request.RouteValues;
-
-        foreach (var kvp in routeValues)
-        {
-            var key = kvp.Key;
-            var value = kvp.Value?.ToString();
-
-            if (key == "controller" || key == "action")
-                continue;
-
-            if (!string.IsNullOrWhiteSpace(value) && value.Length < 24) return key;
-        }
-
-        return null;
-    }
-
-    private async Task HandleValidationErrorAsync(HttpContext context, string field, string message)
-    {
-        context.Response.StatusCode = StatusCodes.Status400BadRequest;
-        context.Response.ContentType = "application/problem+json";
-
-        var problemDetails = new
-        {
-            type = "https://tools.ietf.org/html/rfc9110#section-15.5.1",
-            title = "One or more validation errors occurred.",
-            status = 400,
-            errors = new Dictionary<string, string[]>
-            {
-                { field, new[] { message } }
-            },
-            traceId = context.TraceIdentifier
-        };
-
-        await context.Response.WriteAsync(JsonSerializer.Serialize(problemDetails));
+        context.Response.StatusCode = statusCode;
+        context.Response.ContentType = "text/plain";
+        await context.Response.WriteAsync(message);
     }
 
     private string? GetDuplicateFieldFromMessage(string message)
@@ -104,7 +58,7 @@ public class ExceptionHandlingMiddleware
         if (endIndex == -1) return null;
 
         var indexName = message[startIndex..endIndex];
-        var fieldName = indexName.Split('_').FirstOrDefault(); // For example: CategoryId_1 -> CategoryId
+        var fieldName = indexName.Split('_').FirstOrDefault();
 
         return fieldName;
     }

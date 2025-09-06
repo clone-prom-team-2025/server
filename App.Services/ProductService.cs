@@ -1,6 +1,8 @@
 using App.Core.DTOs.Product;
+using App.Core.Enums;
 using App.Core.Interfaces;
 using App.Core.Models.Product;
+using App.Services.Exceptions;
 using AutoMapper;
 using MongoDB.Bson;
 
@@ -13,12 +15,14 @@ public class ProductService(
     IProductRepository productRepository,
     IMapper mapper,
     ICategoryRepository categoryRepository,
-    IStoreRepository storeRepository) : IProductService
+    IStoreRepository storeRepository,
+    IUserRepository userRepository) : IProductService
 {
     private readonly ICategoryRepository _categoryRepository = categoryRepository;
     private readonly IMapper _mapper = mapper;
     private readonly IProductRepository _productRepository = productRepository;
     private readonly IStoreRepository _storeRepository = storeRepository;
+    private readonly IUserRepository _userRepository = userRepository;
 
     /// <summary>
     ///     Retrieves all products matching the specified filter.
@@ -38,9 +42,7 @@ public class ProductService(
     /// <returns>The matching product or null.</returns>
     public async Task<ProductDto?> GetByIdAsync(string id)
     {
-        if (!ObjectId.TryParse(id, out var objectId))
-            throw new ArgumentException("Invalid product id format.", nameof(id));
-        var product = await _productRepository.GetByIdAsync(objectId);
+        var product = await _productRepository.GetByIdAsync(ObjectId.Parse(id));
         return _mapper.Map<ProductDto>(product);
     }
 
@@ -64,9 +66,7 @@ public class ProductService(
     /// <returns>A list of products by the seller or null.</returns>
     public async Task<ProductFilterResponseDto?> GetBySellerIdAsync(string sellerId, ProductFilterRequestDto filter)
     {
-        if (!ObjectId.TryParse(sellerId, out var objectId))
-            throw new ArgumentException("Invalid product id format.", nameof(sellerId));
-        var products = await _productRepository.GetBySellerIdAsync(objectId, _mapper.Map<ProductFilterRequest>(filter));
+        var products = await _productRepository.GetBySellerIdAsync(ObjectId.Parse(sellerId), _mapper.Map<ProductFilterRequest>(filter));
         return _mapper.Map<ProductFilterResponseDto?>(products);
     }
 
@@ -74,47 +74,87 @@ public class ProductService(
     ///     Creates a new product.
     /// </summary>
     /// <param name="productDto">Data to create the product.</param>
+    /// <param name="userId">Product creator.</param>
     /// <returns>The created product DTO.</returns>
-    public async Task<bool> CreateAsync(ProductCreateDto productDto)
+    public async Task CreateAsync(ProductCreateDto productDto, string userId)
     {
         var store = await _storeRepository.GetStoreById(ObjectId.Parse(productDto.SellerId));
-        if (store == null) return false;
+        if (store == null)
+            throw new AppException("Store not found.");
+        
+        var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+        if (user == null)
+            throw new AppException("User not found.");
+        
+        if (!store.Roles.TryGetValue(userId, out var role))
+            throw new AppException("User is not owner or manager.");
+
+        if (role != StoreRole.Owner && role != StoreRole.Manager)
+            throw new AppException("User is not owner or manager.");
+
         var categories = await _categoryRepository.GetCategoryPathAsync(productDto.Category);
+        if (categories == null)
+            throw new AppException("Category not found.");
+
         var product = _mapper.Map<Product>(productDto);
+
         product.Id = ObjectId.GenerateNewId();
         product.CategoryPath = [..categories];
+
         await _productRepository.CreateAsync(product);
-        return true;
     }
 
     /// <summary>
     ///     Updates an existing product.
     /// </summary>
     /// <param name="productDto">Product data to update.</param>
+    /// <param name="userId">Product updater.</param>
     /// <returns>The updated product or null if update failed.</returns>
-    public async Task<bool> UpdateAsync(ProductDto productDto)
+    public async Task UpdateAsync(UpdateProductDto productDto, string userId)
     {
         var store = await _storeRepository.GetStoreById(ObjectId.Parse(productDto.SellerId));
-        if (store == null) return false;
+        if (store == null)
+            throw new AppException("Store not found.");
+        
+        var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+        if (user == null)
+            throw new AppException("User not found.");
+        
+        if (!store.Roles.TryGetValue(userId.ToString(), out var role) || role != StoreRole.Owner && role != StoreRole.Manager)
+            throw new AppException("User is not owner or manager.");
+        
+        var categories = await _categoryRepository.GetCategoryPathAsync(productDto.Category);
+        if (categories == null)
+            throw new AppException("Category not found.");
         var product = _mapper.Map<Product>(productDto);
+        product.CategoryPath = categories;
         var success = await _productRepository.UpdateAsync(product);
-        if (!success) return false;
-        if (!ObjectId.TryParse(productDto.Id, out var objectId))
-            throw new ArgumentException("Invalid product id format.", nameof(productDto.Id));
-        var updatedProduct = await _productRepository.GetByIdAsync(objectId);
-        return true;
+        if (!success) 
+            throw new AppException("Product could not be updated.");
     }
 
     /// <summary>
     ///     Deletes a product by ID.
     /// </summary>
     /// <param name="id">The ID of the product to delete.</param>
+    /// <param name="userId">Product deleter</param>
     /// <returns>True if deleted successfully; otherwise, false.</returns>
-    public async Task<bool> DeleteAsync(string id)
+    public async Task DeleteAsync(string id, string userId)
     {
-        if (!ObjectId.TryParse(id, out var objectId))
-            throw new ArgumentException("Invalid product id format.", nameof(id));
-        return await _productRepository.DeleteAsync(objectId);
+        var store = await _storeRepository.GetStoreById(ObjectId.Parse(id));
+        if (store == null)
+            throw new AppException("Store not found.");
+        
+        var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(id));
+        if (user == null)
+            throw new AppException("User not found.");
+        
+        if (!store.Roles.TryGetValue(userId.ToString(), out var role) || role != StoreRole.Owner && role != StoreRole.Manager)
+            throw new AppException("User is not owner or manager.");
+        if (!await _productRepository.DeleteAsync(ObjectId.Parse(id)))
+        {
+            throw new AppException("Product could not be deleted.");
+        }
     }
 
     /// <summary>

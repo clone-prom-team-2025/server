@@ -10,4 +10,5 @@ public interface IStoreRepository
     Task<bool> DeleteStore(ObjectId storeId);
     Task<Store?> GetStoreById(ObjectId storeId);
     Task<List<Store>?> GetStores();
+    Task<Store?> GetStoreByUserId(ObjectId userId);
 }
