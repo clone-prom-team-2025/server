@@ -21,67 +21,130 @@ public class AvailableFiltersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateFilterCollection([FromBody] AvailableFiltersCreateDto filters)
     {
-        await _availableFiltersService.CreateFilterCollectionAsync(filters);
-        return Ok();
+        try
+        {
+            await _availableFiltersService.CreateFilterCollectionAsync(filters);
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpGet]
     [AllowAnonymous]
-    public async Task<ActionResult<List<AvailableFiltersDto>>> GetAllFilters()
+    public async Task<IActionResult> GetAllFilters()
     {
-        var filters = await _availableFiltersService.GetAllFiltersAsync();
-        return Ok(filters);
+        try
+        {
+            var filters = await _availableFiltersService.GetAllFiltersAsync();
+            return Ok(filters);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpGet("{categoryId}")]
     [AllowAnonymous]
-    public async Task<ActionResult<List<AvailableFiltersDto>>> GetAllFiltersByCategory(string categoryId)
+    public async Task<IActionResult> GetAllFiltersByCategory(string categoryId)
     {
-        var filters = await _availableFiltersService.GetAllFiltersAsync(categoryId);
-        return Ok(filters);
+        try
+        {
+            var filters = await _availableFiltersService.GetAllFiltersAsync(categoryId);
+            return Ok(filters);
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpDelete("by-category/{categoryId}")]
     public async Task<IActionResult> RemoveCollectionByCategoryId(string categoryId)
     {
-        var result = await _availableFiltersService.RemoveCollectionByCategoryIdAsync(categoryId);
-        return result ? Ok() : NotFound();
+        try
+        {
+            await _availableFiltersService.RemoveCollectionByCategoryIdAsync(categoryId);
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> RemoveCollectionById(string id)
     {
-        var result = await _availableFiltersService.RemoveCollectionByIdAsync(id);
-        return result ? Ok() : NotFound();
+        try
+        {
+            await _availableFiltersService.RemoveCollectionByIdAsync(id);
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpPut("{categoryId}/insert-filters")]
     public async Task<IActionResult> AddFilterToCollection(string categoryId,
         [FromBody] List<AvailableFiltersItemDto> filtersDto)
     {
-        await _availableFiltersService.AddFilterToCollectionAsync(categoryId, filtersDto);
-        return Ok();
+        try
+        {
+            await _availableFiltersService.AddFilterToCollectionAsync(categoryId, filtersDto);
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpDelete("{categoryId}/remove-filters")]
     public async Task<IActionResult> RemoveFilterFromCollection(string categoryId, [FromBody] List<string> values)
     {
-        var result = await _availableFiltersService.RemoveFilterFromCollectionAsync(categoryId, values);
-        return result ? Ok() : NotFound();
+        try
+        {
+            await _availableFiltersService.RemoveFilterFromCollectionAsync(categoryId, values);
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpPut("{id}/update-filters")]
     public async Task<IActionResult> UpdateFilterCollectionById(string id,
         [FromBody] List<AvailableFiltersItemDto> filters)
     {
-        var result = await _availableFiltersService.UpdateFilterCollectionAsync(id, filters);
-        return result ? Ok() : NotFound();
+        try
+        {
+            await _availableFiltersService.UpdateFilterCollectionAsync(id, filters);
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     [HttpPut]
     public async Task<IActionResult> UpdateFilterCollection([FromBody] AvailableFiltersDto updatedFilters)
     {
-        var result = await _availableFiltersService.UpdateFilterCollectionAsync(updatedFilters);
-        return result ? Ok() : NotFound();
+        try
+        {
+            await _availableFiltersService.UpdateFilterCollectionAsync(updatedFilters);
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 }

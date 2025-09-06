@@ -2,7 +2,6 @@ using App.Core.DTOs.Product;
 using App.Core.Enums;
 using App.Core.Interfaces;
 using App.Core.Models.Product;
-using App.Services.Exceptions;
 using AutoMapper;
 using MongoDB.Bson;
 
@@ -80,21 +79,21 @@ public class ProductService(
     {
         var store = await _storeRepository.GetStoreById(ObjectId.Parse(productDto.SellerId));
         if (store == null)
-            throw new AppException("Store not found.");
+            throw new Exception("Store not found.");
         
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
         if (user == null)
-            throw new AppException("User not found.");
+            throw new Exception("User not found.");
         
         if (!store.Roles.TryGetValue(userId, out var role))
-            throw new AppException("User is not owner or manager.");
+            throw new Exception("User is not owner or manager.");
 
         if (role != StoreRole.Owner && role != StoreRole.Manager)
-            throw new AppException("User is not owner or manager.");
+            throw new Exception("User is not owner or manager.");
 
         var categories = await _categoryRepository.GetCategoryPathAsync(productDto.Category);
         if (categories == null)
-            throw new AppException("Category not found.");
+            throw new Exception("Category not found.");
 
         var product = _mapper.Map<Product>(productDto);
 
@@ -114,23 +113,23 @@ public class ProductService(
     {
         var store = await _storeRepository.GetStoreById(ObjectId.Parse(productDto.SellerId));
         if (store == null)
-            throw new AppException("Store not found.");
+            throw new Exception("Store not found.");
         
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
         if (user == null)
-            throw new AppException("User not found.");
+            throw new Exception("User not found.");
         
         if (!store.Roles.TryGetValue(userId.ToString(), out var role) || role != StoreRole.Owner && role != StoreRole.Manager)
-            throw new AppException("User is not owner or manager.");
+            throw new Exception("User is not owner or manager.");
         
         var categories = await _categoryRepository.GetCategoryPathAsync(productDto.Category);
         if (categories == null)
-            throw new AppException("Category not found.");
+            throw new Exception("Category not found.");
         var product = _mapper.Map<Product>(productDto);
         product.CategoryPath = categories;
         var success = await _productRepository.UpdateAsync(product);
         if (!success) 
-            throw new AppException("Product could not be updated.");
+            throw new Exception("Product could not be updated.");
     }
 
     /// <summary>
@@ -143,17 +142,17 @@ public class ProductService(
     {
         var store = await _storeRepository.GetStoreById(ObjectId.Parse(id));
         if (store == null)
-            throw new AppException("Store not found.");
+            throw new Exception("Store not found.");
         
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(id));
         if (user == null)
-            throw new AppException("User not found.");
+            throw new Exception("User not found.");
         
         if (!store.Roles.TryGetValue(userId.ToString(), out var role) || role != StoreRole.Owner && role != StoreRole.Manager)
-            throw new AppException("User is not owner or manager.");
+            throw new Exception("User is not owner or manager.");
         if (!await _productRepository.DeleteAsync(ObjectId.Parse(id)))
         {
-            throw new AppException("Product could not be deleted.");
+            throw new Exception("Product could not be deleted.");
         }
     }
 

@@ -26,7 +26,7 @@ public class StoreService(
     private readonly IStoreRepository _storeRepository = storeRepository;
     private readonly IUserRepository _userRepository = userRepository;
 
-    public async Task<bool> CreateRequest(CreateStoreCreateRequestDto dto, string userId, Stream stream,
+    public async Task CreateRequest(CreateStoreCreateRequestDto dto, string userId, Stream stream,
         string fileName)
     {
         using (_logger.BeginScope("CreateStoreCreateRequestService"))
@@ -39,12 +39,12 @@ public class StoreService(
 
             var type = MediaInspector.GetMediaType(stream, fileName);
             if (type == MediaType.Unknown || type == MediaType.Video)
-                return false;
+                throw new Exception("The uploaded file must be an image.");
             var result = await _requestRepository.Create(model);
             if (!result)
             {
                 _logger.LogError("CreateStoreCreateRequestService failed to create store");
-                return false;
+                throw new Exception("Can't create store");
             }
 
             BaseFile file = new();
@@ -55,15 +55,14 @@ public class StoreService(
             if (!result2)
             {
                 _logger.LogError("CreateStoreCreateRequestService failed to add store avatar");
-                return false;
+                throw new  Exception("Can't add store avatar");
             }
 
             _logger.LogInformation("CreateStoreCreateRequestService succeeded");
-            return true;
         }
     }
 
-    public async Task<bool> DeleteRequest(string requestId)
+    public async Task DeleteRequest(string requestId)
     {
         using (_logger.BeginScope("DeleteStoreCreateRequestService"))
         {
@@ -79,15 +78,14 @@ public class StoreService(
             if (!result)
             {
                 _logger.LogError("DeleteStoreCreateRequestService failed to delete store request");
-                return false;
+                throw new  Exception("Can't delete store request");
             }
 
             _logger.LogInformation("DeleteStoreCreateRequestService succeeded");
-            return true;
         }
     }
 
-    public async Task<bool> UpdateRequest(UpdateStoreCreateRequestDto dto)
+    public async Task UpdateRequest(UpdateStoreCreateRequestDto dto)
     {
         using (_logger.BeginScope("UpdateRequest"))
         {
@@ -96,7 +94,7 @@ public class StoreService(
             if (request == null)
             {
                 _logger.LogError("UpdateRequest can't find store request with Id={id}", dto.Id);
-                return false;
+                throw new Exception("Store not found");
             }
 
             _logger.LogInformation("Fetched store request with Id={id}", dto.Id);
@@ -106,11 +104,10 @@ public class StoreService(
             if (!updatedResult)
             {
                 _logger.LogError("UpdateRequest failed to update store request");
-                return false;
+                throw new Exception("Can't update store request");
             }
 
             _logger.LogInformation("UpdateRequest succeeded");
-            return true;
         }
     }
 
@@ -134,7 +131,7 @@ public class StoreService(
             if (result == null)
             {
                 _logger.LogError("GetRequestById failed to get store request");
-                return null;
+                throw new Exception("Can't get store request");
             }
 
             _logger.LogInformation("GetRequestById succeeded");
@@ -151,7 +148,7 @@ public class StoreService(
             if (result == null)
             {
                 _logger.LogError("GetRequestByUserId failed to get store request");
-                return null;
+                throw new Exception("Store not found");
             }
 
             _logger.LogInformation("GetRequestByUserId succeeded");
@@ -183,7 +180,7 @@ public class StoreService(
         }
     }
 
-    public async Task<bool> ApproveRequest(string requestId, string adminId)
+    public async Task ApproveRequest(string requestId, string adminId)
     {
         using (_logger.BeginScope("ApproveRequest"))
         {
@@ -193,19 +190,18 @@ public class StoreService(
             if (request == null)
             {
                 _logger.LogError("ApproveRequest can't find request with Id={requestId}", requestId);
-                return false;
+                throw new Exception("Request not found");
             }
 
             if (request.ApprovedByAdminId != null)
             {
                 _logger.LogWarning("Already approved");
-                return false;
+                throw new Exception("Already approved");
             }
 
             if (request.RejectedByAdminId != null)
             {
-                _logger.LogWarning("Already rejected");
-                return false;
+                request.RejectedByAdminId = null;
             }
 
             request.ApprovedByAdminId = ObjectId.Parse(adminId);
@@ -213,7 +209,7 @@ public class StoreService(
             if (!result)
             {
                 _logger.LogError("ApproveRequest failed to update request");
-                return false;
+                throw new Exception("Can't update request");
             }
 
             var store = new Store(request.Name, request.Avatar,
@@ -223,11 +219,10 @@ public class StoreService(
             _logger.LogInformation("Approved successfully for RequestId={requestId} by AdminId={adminId}", requestId,
                 adminId);
             _logger.LogInformation("ApproveRequest succeeded");
-            return true;
         }
     }
 
-    public async Task<bool> RejectRequest(string requestId, string adminId)
+    public async Task RejectRequest(string requestId, string adminId)
     {
         using (_logger.BeginScope("RejectRequest"))
         {
@@ -237,19 +232,19 @@ public class StoreService(
             if (request == null)
             {
                 _logger.LogError("RejectRequest can't find request with Id={requestId}", requestId);
-                return false;
+                throw new Exception("Request not found");
             }
 
             if (request.ApprovedByAdminId != null)
             {
                 _logger.LogWarning("Already approved");
-                return false;
+                throw new Exception("Already approved");
             }
 
             if (request.RejectedByAdminId != null)
             {
                 _logger.LogWarning("Already rejected");
-                return false;
+                throw new Exception("Already rejected");
             }
 
             request.RejectedByAdminId = ObjectId.Parse(adminId);
@@ -257,17 +252,16 @@ public class StoreService(
             if (!result)
             {
                 _logger.LogError("RejectRequest failed to update request");
-                return false;
+                throw new Exception("Can't update request");
             }
 
             _logger.LogInformation("Rejected successfully for RequestId={requestId} by AdminId={adminId}", requestId,
                 adminId);
             _logger.LogInformation("RejectRequest succeeded");
-            return true;
         }
     }
 
-    public async Task<bool> DeleteStore(string storeId, string userId)
+    public async Task DeleteStore(string storeId, string userId)
     {
         using (_logger.BeginScope("DeleteStore"))
         {
@@ -276,31 +270,30 @@ public class StoreService(
             if (user == null)
             {
                 _logger.LogError("DeleteStore can't find user with Id={userId}", userId);
-                return false;
+                throw new Exception("User not found");
             }
 
             var store = await _storeRepository.GetStoreById(ObjectId.Parse(storeId));
             if (store == null)
             {
                 _logger.LogError("DeleteStore can't find request with Id={storeId}", storeId);
-                return false;
+                throw new Exception("Store not found");
             }
 
             if (store.Roles[userId] != StoreRole.Owner && !user.Roles.Contains(RoleNames.Admin))
             {
                 _logger.LogError("You are not the owner! UserId={userId} StoreId={storeId}", userId, storeId);
-                return false;
+                throw new Exception("You are not the owner");
             }
 
             var result = await _storeRepository.DeleteStore(ObjectId.Parse(storeId));
             if (!result)
             {
                 _logger.LogError("DeleteStore failed to delete request with Id={storeId}", storeId);
-                return false;
+                throw new Exception("Can't delete request");
             }
 
             _logger.LogInformation("DeleteStore succeeded");
-            return true;
         }
     }
 
@@ -326,37 +319,38 @@ public class StoreService(
         }
     }
 
-    public async Task<bool> AddMemberToStoreAsync(string userId, string memberId, StoreRole role)
+    public async Task AddMemberToStoreAsync(string userId, string memberId, StoreRole role)
     {
         using (_logger.BeginScope("AddMemberToStoreAsync"))
         {
             _logger.LogInformation("AddMemberToStoreAsync called");
             if (memberId == userId)
             {
-                return false;
+                _logger.LogWarning("You cannot add yourself");
+                throw new Exception("You cannot add yourself");
             }
             var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
             if (user == null)
             {
                 _logger.LogError("AddMemberToStoreAsync can't find user with Id={userId}", userId);
-                return false;
+                throw new Exception("User not found");
             }
             var store = await _storeRepository.GetStoreByUserId(ObjectId.Parse(userId));
             if (store == null)
             {
                 _logger.LogError("Store not found");
-                return false;
+                throw new Exception("Store not found");
             }
             if (!store.Roles.ContainsKey(userId) || store.Roles[userId] != StoreRole.Owner)
             {
                 _logger.LogError("You are not the owner!");
-                return false;
+                throw new Exception("You are not the owner");
             }
             var member = await _userRepository.GetUserByIdAsync(ObjectId.Parse(memberId));
             if (member == null)
             {
                 _logger.LogError("Member not found");
-                return false;
+                throw new Exception("Member not found");
             }
             store.Roles.Remove(memberId);
             store.Roles.Add(member.Id.ToString(), role);
@@ -364,14 +358,13 @@ public class StoreService(
             if (!result)
             {
                 _logger.LogError("AddMemberToStoreAsync failed to update store");
-                return false;
+                throw new Exception("Can't update store");
             }
             _logger.LogInformation("AddMemberToStoreAsync succeeded");
-            return true;
         }
     }
     
-    public async Task<bool> RemoveMemberFromStoreAsync(string userId, string memberId)
+    public async Task RemoveMemberFromStoreAsync(string userId, string memberId)
     {
         using (_logger.BeginScope("RemoveMemberFromStoreAsync"))
         {
@@ -380,23 +373,23 @@ public class StoreService(
             if (user == null)
             {
                 _logger.LogError("RemoveMemberFromStoreAsync can't find user with Id={userId}", userId);
-                return false;
+                throw new Exception("User not found");
             }
             if (user.Id.ToString() == memberId)
             {
                 _logger.LogError("You can't remove yourself");
-                return false;
+                throw new Exception("You can't remove yourself");
             }
             var store = await _storeRepository.GetStoreByUserId(ObjectId.Parse(userId));
             if (store == null)
             {
                 _logger.LogError("Store not found");
-                return false;
+                throw new Exception("Store not found");
             }
             if (!store.Roles.ContainsKey(userId) || store.Roles[userId] != StoreRole.Owner)
             {
                 _logger.LogError("You are not the owner!");
-                return false;
+                throw new Exception("You are not the owner");
             }
             
             store.Roles.Remove(memberId);
@@ -404,10 +397,9 @@ public class StoreService(
             if (!result)
             {
                 _logger.LogError("RemoveMemberFromStoreAsync failed to update store");
-                return false;
+                throw new Exception("Can't update store");
             }
             _logger.LogInformation("RemoveMemberFromStoreAsync succeeded");
-            return true;
         }
     }
 
@@ -422,7 +414,7 @@ public class StoreService(
             if (user == null)
             {
                 _logger.LogError("GetStoreMembers can't find user with Id={userId}", userId);
-                return null;
+                throw new Exception("User not found");
             }
             Store? store = null;
             if (storeId == null) store = await _storeRepository.GetStoreByUserId(user.Id);
@@ -431,13 +423,13 @@ public class StoreService(
             if (store == null)
             {
                 _logger.LogError("Store not found");
-                return null;
+                throw new Exception("Store not found");
             }
             
             if (!store.Roles.ContainsKey(userId) && user.Roles.Contains(RoleNames.Admin))
             {
                 _logger.LogError("You are not the owner!");
-                return null;
+                throw new Exception("You are not the owner");
             }
             
             var result = store.Roles.ToDictionary(

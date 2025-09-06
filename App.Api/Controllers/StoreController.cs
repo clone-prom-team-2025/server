@@ -23,442 +23,544 @@ public class StoreController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult> CreateStore([FromForm] CreateStoreCreateRequestDto dto)
+    public async Task<IActionResult> CreateStore([FromForm] CreateStoreCreateRequestDto dto)
     {
-        using (_logger.BeginScope("CreateStore action"))
+        try
         {
-            _logger.LogInformation("CreateStore called with dto");
-            var userIdClaims = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaims == null)
+            using (_logger.BeginScope("CreateStore action"))
             {
-                _logger.LogError("CreateStore user claim is null");
-                return BadRequest();
-            }
+                _logger.LogInformation("CreateStore called with dto");
+                var userIdClaims = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaims == null)
+                {
+                    _logger.LogError("CreateStore user claim is null");
+                    return BadRequest();
+                }
 
-            var stream = dto.File.OpenReadStream();
-            var result = await _storeService.CreateRequest(dto, userIdClaims.Value, stream, dto.File.FileName);
-            if (!result)
-            {
-                _logger.LogError("CreateStore failed for dto={dto}", dto);
-                return BadRequest();
-            }
+                var stream = dto.File.OpenReadStream();
+                await _storeService.CreateRequest(dto, userIdClaims.Value, stream, dto.File.FileName);
 
-            _logger.LogInformation("Successfully created store request by UserId={userId}", userIdClaims.Value);
-            return Ok();
+                _logger.LogInformation("Successfully created store request by UserId={userId}", userIdClaims.Value);
+                return Ok();
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpDelete]
-    public async Task<ActionResult> DeleteRequest(string id)
+    public async Task<IActionResult> DeleteRequest(string id)
     {
-        using (_logger.BeginScope("DeleteRequest action"))
+        try
         {
-            _logger.LogInformation("DeleteRequest called with id={id}", id);
-            var result = await _storeService.DeleteRequest(id);
-            if (!result)
+            using (_logger.BeginScope("DeleteRequest action"))
             {
-                _logger.LogError("DeleteRequest failed for dto={id}", id);
-                return BadRequest();
-            }
+                _logger.LogInformation("DeleteRequest called with id={id}", id);
+                await _storeService.DeleteRequest(id);
 
-            _logger.LogInformation("Successfully deleted store request by UserId={userId}", id);
-            return Ok();
+                _logger.LogInformation("Successfully deleted store request by UserId={userId}", id);
+                return Ok();
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpPut]
-    public async Task<ActionResult> UpdateRequest(UpdateStoreCreateRequestDto dto)
+    public async Task<IActionResult> UpdateRequest(UpdateStoreCreateRequestDto dto)
     {
-        using (_logger.BeginScope("UpdateRequest action"))
+        try
         {
-            _logger.LogInformation("UpdateRequest called with dto");
-            var result = await _storeService.UpdateRequest(dto);
-            if (!result)
+            using (_logger.BeginScope("UpdateRequest action"))
             {
-                _logger.LogError("UpdateRequest failed for dto={dto}", dto);
-                return BadRequest();
+                _logger.LogInformation("UpdateRequest called with dto");
+                await _storeService.UpdateRequest(dto);
+
+                _logger.LogInformation("Successfully updated store request for Id={id}", dto.Id);
+                return Ok();
             }
-
-            _logger.LogInformation("Successfully updated store request for Id={id}", dto.Id);
-            return Ok();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<StoreCreateRequestDto>>> GetAllRequests()
+    public async Task<IActionResult> GetAllRequests()
     {
-        using (_logger.BeginScope("GetAllRequests action"))
+        try
         {
-            _logger.LogInformation("GetAllRequests called");
-            var result = await _storeService.GetAllRequests();
-            var all = result.ToArray();
-            _logger.LogInformation("Found {Count} store requests", all.Length);
-            if (all.Length == 0)
-                return NotFound();
-
-            return all;
-        }
-    }
-
-    [HttpGet]
-    public async Task<ActionResult<StoreCreateRequestDto>> GetRequestsByUserId(string userId)
-    {
-        using (_logger.BeginScope("GetRequestsByUserId action"))
-        {
-            _logger.LogInformation("GetRequestsByUserId called");
-            var result = await _storeService.GetRequestByUserId(userId);
-            if (result == null)
+            using (_logger.BeginScope("GetAllRequests action"))
             {
-                _logger.LogError("GetRequestByUserId failed for dto={userId}", userId);
-                return NotFound();
-            }
+                _logger.LogInformation("GetAllRequests called");
+                var result = await _storeService.GetAllRequests();
+                var all = result.ToArray();
+                _logger.LogInformation("Found {Count} store requests", all.Length);
+                if (all.Length == 0)
+                    return NotFound();
 
-            _logger.LogInformation("Successfully retrieved requests for UserId={userId}", userId);
-            return result;
+                return Ok(all);
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpGet]
-    public async Task<ActionResult<StoreCreateRequestDto>> GetRequestById(string requestId)
+    public async Task<IActionResult> GetRequestsByUserId(string userId)
     {
-        using (_logger.BeginScope("GetRequestById action"))
+        try
         {
-            _logger.LogInformation("GetRequestById called");
-            var result = await _storeService.GetRequestById(requestId);
-            if (result == null)
+            using (_logger.BeginScope("GetRequestsByUserId action"))
             {
-                _logger.LogError("GetRequestById failed for dto={requestId}", requestId);
-                return NotFound();
+                _logger.LogInformation("GetRequestsByUserId called");
+                var result = await _storeService.GetRequestByUserId(userId);
+                if (result == null)
+                {
+                    _logger.LogError("GetRequestByUserId failed for dto={userId}", userId);
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Successfully retrieved requests for UserId={userId}", userId);
+                return Ok(result);
             }
-
-            _logger.LogInformation("Successfully retrieved request for Id={requestId}", requestId);
-            return result;
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<StoreCreateRequestDto>>> GetRequestApprovedByAdminId(string adminId)
+    public async Task<IActionResult> GetRequestById(string requestId)
     {
-        using (_logger.BeginScope("GetRequestApprovedByAdminId action"))
+        try
         {
-            _logger.LogInformation("GetRequestApprovedByAdminId called");
-            var result = await _storeService.GetRequestApprovedByAdminId(adminId);
-            var all = result.ToArray();
-            _logger.LogInformation("Found {Count} store requests for AdminId={adminId}", all.Length, adminId);
-            if (all.Length == 0) return NotFound();
-            return all;
-        }
-    }
-
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<StoreCreateRequestDto>>> GetRequestRejectedByAdminId(string adminId)
-    {
-        using (_logger.BeginScope("GetRequestRejectedByAdminId action"))
-        {
-            _logger.LogInformation("GetRequestRejectedByAdminId called");
-            var result = await _storeService.GetRequestRejectedByAdminId(adminId);
-            var all = result.ToArray();
-            _logger.LogInformation("Found {Count} store requests for AdminId={adminId}", all.Length, adminId);
-            if (all.Length == 0) return NotFound();
-            return all;
-        }
-    }
-
-    [HttpGet]
-    public async Task<ActionResult<StoreCreateRequestDto>> GetRequestByMyId()
-    {
-        using (_logger.BeginScope("GetRequestByMyId action"))
-        {
-            _logger.LogInformation("GetRequestByMyId called");
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null)
+            using (_logger.BeginScope("GetRequestById action"))
             {
-                _logger.LogWarning("UserId claim is missing for current user");
-                return BadRequest();
-            }
+                _logger.LogInformation("GetRequestById called");
+                var result = await _storeService.GetRequestById(requestId);
+                if (result == null)
+                {
+                    _logger.LogError("GetRequestById failed for dto={requestId}", requestId);
+                    return NotFound();
+                }
 
-            _logger.LogInformation("Fetching store requests for current UserId={UserId}", userIdClaim.Value);
-            var result = await _storeService.GetRequestByUserId(userIdClaim.Value);
-            if (result == null)
-            {
-                _logger.LogError("GetRequestByUserId failed for dto={userId}", userIdClaim.Value);
-                return NotFound();
+                _logger.LogInformation("Successfully retrieved request for Id={requestId}", requestId);
+                return Ok(result);
             }
-
-            _logger.LogInformation("Successfully retrieved request for UserId={UserId}", userIdClaim.Value);
-            return result;
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<StoreCreateRequestDto>>> GetRequestApprovedByMyId()
+    public async Task<IActionResult> GetRequestApprovedByAdminId(string adminId)
     {
-        using (_logger.BeginScope("GetRequestApprovedByAdminId action"))
+        try
         {
-            _logger.LogInformation("GetRequestApprovedByAdminId called");
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null)
+            using (_logger.BeginScope("GetRequestApprovedByAdminId action"))
             {
-                _logger.LogWarning("UserId claim is missing for current user");
-                return BadRequest();
+                _logger.LogInformation("GetRequestApprovedByAdminId called");
+                var result = await _storeService.GetRequestApprovedByAdminId(adminId);
+                var all = result.ToArray();
+                _logger.LogInformation("Found {Count} store requests for AdminId={adminId}", all.Length, adminId);
+                if (all.Length == 0) return NotFound();
+                return Ok(all);
             }
-
-            _logger.LogInformation("Fetching store requests for current UserId={userId}", userIdClaim.Value);
-            var result = await _storeService.GetRequestApprovedByAdminId(userIdClaim.Value);
-            var all = result.ToArray();
-            _logger.LogInformation("Found {Count} store requests for AdminId={adminId}", all.Length, userIdClaim.Value);
-            if (all.Length == 0) return NotFound();
-            return all;
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<StoreCreateRequestDto>>> GetRequestRejectedByMyId()
+    public async Task<IActionResult> GetRequestRejectedByAdminId(string adminId)
     {
-        using (_logger.BeginScope("GetRequestRejectedByAdminId action"))
+        try
         {
-            _logger.LogInformation("GetRequestRejectedByAdminId called");
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null)
+            using (_logger.BeginScope("GetRequestRejectedByAdminId action"))
             {
-                _logger.LogWarning("UserId claim is missing for current user");
-                return BadRequest();
+                _logger.LogInformation("GetRequestRejectedByAdminId called");
+                var result = await _storeService.GetRequestRejectedByAdminId(adminId);
+                var all = result.ToArray();
+                _logger.LogInformation("Found {Count} store requests for AdminId={adminId}", all.Length, adminId);
+                if (all.Length == 0) return NotFound();
+                return Ok(all);
             }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
 
-            _logger.LogInformation("Fetching store requests for current UserId={userId}", userIdClaim.Value);
-            var result = await _storeService.GetRequestRejectedByAdminId(userIdClaim.Value);
-            var all = result.ToArray();
-            _logger.LogInformation("Found {Count} store requests for AdminId={adminId}", all.Length, userIdClaim.Value);
-            if (all.Length == 0) return NotFound();
-            return all;
+    [HttpGet]
+    public async Task<IActionResult> GetRequestByMyId()
+    {
+        try
+        {
+            using (_logger.BeginScope("GetRequestByMyId action"))
+            {
+                _logger.LogInformation("GetRequestByMyId called");
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                {
+                    _logger.LogWarning("UserId claim is missing for current user");
+                    return BadRequest();
+                }
+
+                _logger.LogInformation("Fetching store requests for current UserId={UserId}", userIdClaim.Value);
+                var result = await _storeService.GetRequestByUserId(userIdClaim.Value);
+                if (result == null)
+                {
+                    _logger.LogError("GetRequestByUserId failed for dto={userId}", userIdClaim.Value);
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Successfully retrieved request for UserId={UserId}", userIdClaim.Value);
+                return Ok(result);
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetRequestApprovedByMyId()
+    {
+        try
+        {
+            using (_logger.BeginScope("GetRequestApprovedByAdminId action"))
+            {
+                _logger.LogInformation("GetRequestApprovedByAdminId called");
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                {
+                    _logger.LogWarning("UserId claim is missing for current user");
+                    return BadRequest();
+                }
+
+                _logger.LogInformation("Fetching store requests for current UserId={userId}", userIdClaim.Value);
+                var result = await _storeService.GetRequestApprovedByAdminId(userIdClaim.Value);
+                var all = result.ToArray();
+                _logger.LogInformation("Found {Count} store requests for AdminId={adminId}", all.Length, userIdClaim.Value);
+                if (all.Length == 0) return NotFound();
+                return Ok(all);
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetRequestRejectedByMyId()
+    {
+        try
+        {
+            using (_logger.BeginScope("GetRequestRejectedByAdminId action"))
+            {
+                _logger.LogInformation("GetRequestRejectedByAdminId called");
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                {
+                    _logger.LogWarning("UserId claim is missing for current user");
+                    return BadRequest();
+                }
+
+                _logger.LogInformation("Fetching store requests for current UserId={userId}", userIdClaim.Value);
+                var result = await _storeService.GetRequestRejectedByAdminId(userIdClaim.Value);
+                var all = result.ToArray();
+                _logger.LogInformation("Found {Count} store requests for AdminId={adminId}", all.Length, userIdClaim.Value);
+                if (all.Length == 0) return NotFound();
+                return Ok(all);
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpPost]
     [Authorize(Roles = RoleNames.Admin)]
-    public async Task<ActionResult> ApproveRequest(string requestId)
+    public async Task<IActionResult> ApproveRequest(string requestId)
     {
-        using (_logger.BeginScope("ApproveRequest action"))
+        try
         {
-            _logger.LogInformation("ApproveRequest called");
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null)
+            using (_logger.BeginScope("ApproveRequest action"))
             {
-                _logger.LogWarning("UserId claim is missing for current user");
-                return BadRequest();
-            }
+                _logger.LogInformation("ApproveRequest called");
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                {
+                    _logger.LogWarning("UserId claim is missing for current user");
+                    return BadRequest();
+                }
 
-            _logger.LogInformation("Fetching store request by Id={id}", requestId);
-            var storeRequest = await _storeService.GetRequestById(requestId);
-            if (storeRequest == null)
-            {
-                _logger.LogError("Request not found for Id={id}", requestId);
-                return NotFound();
-            }
+                _logger.LogInformation("Fetching store request by Id={id}", requestId);
+                var storeRequest = await _storeService.GetRequestById(requestId);
+                if (storeRequest == null)
+                {
+                    _logger.LogError("Request not found for Id={id}", requestId);
+                    return NotFound();
+                }
 
-            var result = await _storeService.ApproveRequest(requestId, userIdClaim.Value);
-            if (!result)
-            {
-                _logger.LogError("Failed to approve request for Id={id}", requestId);
-                return BadRequest();
-            }
+                await _storeService.ApproveRequest(requestId, userIdClaim.Value);
 
-            _logger.LogInformation("Successfully approved request for Id={id}", requestId);
-            return NoContent();
+                _logger.LogInformation("Successfully approved request for Id={id}", requestId);
+                return NoContent();
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpPost]
     [Authorize(Roles = RoleNames.Admin)]
-    public async Task<ActionResult> RejectRequest(string requestId, string reason)
+    public async Task<IActionResult> RejectRequest(string requestId, string reason)
     {
-        using (_logger.BeginScope("RejectRequest action"))
+        try
         {
-            _logger.LogInformation("RejectRequest called");
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null)
+            using (_logger.BeginScope("RejectRequest action"))
             {
-                _logger.LogWarning("UserId claim is missing for current user");
-                return BadRequest();
-            }
+                _logger.LogInformation("RejectRequest called");
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                {
+                    _logger.LogWarning("UserId claim is missing for current user");
+                    return BadRequest();
+                }
 
-            _logger.LogInformation("Fetching store request by Id={id}", requestId);
-            var storeRequest = await _storeService.GetRequestById(requestId);
-            if (storeRequest == null)
-            {
-                _logger.LogError("Request not found for Id={id}", requestId);
-                return NotFound();
-            }
+                _logger.LogInformation("Fetching store request by Id={id}", requestId);
+                var storeRequest = await _storeService.GetRequestById(requestId);
+                if (storeRequest == null)
+                {
+                    _logger.LogError("Request not found for Id={id}", requestId);
+                    return NotFound();
+                }
 
-            var result = await _storeService.RejectRequest(requestId, userIdClaim.Value);
-            if (!result)
-            {
-                _logger.LogError("Failed to reject request for Id={id}", requestId);
-                return BadRequest();
-            }
+                await _storeService.RejectRequest(requestId, userIdClaim.Value);
 
-            _logger.LogInformation("Successfully rejected request for Id={id}", requestId);
-            return NoContent();
+                _logger.LogInformation("Successfully rejected request for Id={id}", requestId);
+                return NoContent();
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpDelete]
-    public async Task<ActionResult> DeleteStore(string storeId)
+    public async Task<IActionResult> DeleteStore(string storeId)
     {
-        using (_logger.BeginScope("DeleteStore action"))
+        try
         {
-            _logger.LogInformation("DeleteStore called");
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null)
+            using (_logger.BeginScope("DeleteStore action"))
             {
-                _logger.LogWarning("UserId claim is missing for current user");
-                return BadRequest();
-            }
+                _logger.LogInformation("DeleteStore called");
+                var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                {
+                    _logger.LogWarning("UserId claim is missing for current user");
+                    return BadRequest();
+                }
 
-            var result = await _storeService.DeleteStore(storeId, userIdClaim);
-            if (!result)
-            {
-                _logger.LogError("Failed to delete store with Id={storeId}", storeId);
-                return BadRequest();
-            }
+                await _storeService.DeleteStore(storeId, userIdClaim);
 
-            _logger.LogInformation("Successfully deleted store with Id={storeId}", storeId);
-            return NoContent();
+                _logger.LogInformation("Successfully deleted store with Id={storeId}", storeId);
+                return NoContent();
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpGet]
     [AllowAnonymous]
-    public async Task<ActionResult<StoreDto>> GetStoreById(string storeId)
+    public async Task<IActionResult> GetStoreById(string storeId)
     {
-        using (_logger.BeginScope("GetStoreById action"))
+        try
         {
-            _logger.LogInformation("GetStoreById called");
-            var result = await _storeService.GetStoreById(storeId);
-            if (result == null)
+            using (_logger.BeginScope("GetStoreById action"))
             {
-                _logger.LogError("GetStoreById returned null");
-                return NotFound();
-            }
+                _logger.LogInformation("GetStoreById called");
+                var result = await _storeService.GetStoreById(storeId);
+                if (result == null)
+                {
+                    _logger.LogError("GetStoreById returned null");
+                    return NotFound();
+                }
 
-            return result;
+                return Ok(result);
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpGet]
     [AllowAnonymous]
-    public async Task<ActionResult<IEnumerable<StoreDto>>> GetStores()
+    public async Task<IActionResult> GetStores()
     {
-        using (_logger.BeginScope("GetStores"))
+        try
         {
-            _logger.LogInformation("GetStores called");
-            var result = await _storeService.GetStores();
-            if (result == null)
+            using (_logger.BeginScope("GetStores"))
             {
-                _logger.LogError("GetStores returned null");
-                return NotFound();
-            }
+                _logger.LogInformation("GetStores called");
+                var result = await _storeService.GetStores();
+                if (result == null)
+                {
+                    _logger.LogError("GetStores returned null");
+                    return NotFound();
+                }
 
-            var all = result.ToArray();
-            _logger.LogInformation("Found {Count} stores", all.Length);
-            if (all.Length == 0) return NotFound();
-            return all;
+                var all = result.ToArray();
+                _logger.LogInformation("Found {Count} stores", all.Length);
+                if (all.Length == 0) return NotFound();
+                return Ok(all);
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpPut]
     [Authorize]
-    public async Task<ActionResult> AddMemberToStore(string memberId, StoreRole role)
+    public async Task<IActionResult> AddMemberToStore(string memberId, StoreRole role)
     {
-        using (_logger.BeginScope("AddMemberToStore action"))
+        try
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
+            using (_logger.BeginScope("AddMemberToStore action"))
             {
-                _logger.LogWarning("UserId claim is missing for current user");
-                return BadRequest();
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    _logger.LogWarning("UserId claim is missing for current user");
+                    return BadRequest();
+                }
+                _logger.LogInformation("AddMemberToStore called");
+                await _storeService.AddMemberToStoreAsync(userId, memberId, role);
+                
+                _logger.LogInformation("Successfully added member to store");
+                return NoContent();
             }
-            _logger.LogInformation("AddMemberToStore called");
-            var result = await _storeService.AddMemberToStoreAsync(userId, memberId, role);
-            if (!result)
-            {
-                _logger.LogError("Failed to add member to store");
-                return BadRequest();
-            }
-            _logger.LogInformation("Successfully added member to store");
-            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
     
     [HttpDelete]
     [Authorize]
-    public async Task<ActionResult> RemoveMemberFromStore(string memberId)
+    public async Task<IActionResult> RemoveMemberFromStore(string memberId)
     {
-        using (_logger.BeginScope("RemoveMemberFromStore action"))
+        try
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
+            using (_logger.BeginScope("RemoveMemberFromStore action"))
             {
-                _logger.LogWarning("UserId claim is missing for current user");
-                return BadRequest();
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    _logger.LogWarning("UserId claim is missing for current user");
+                    return BadRequest();
+                }
+                _logger.LogInformation("RemoveMemberFromStore called");
+                await _storeService.RemoveMemberFromStoreAsync(userId, memberId);
+                
+                _logger.LogInformation("Successfully removed member from store");
+                return NoContent();
             }
-            _logger.LogInformation("RemoveMemberFromStore called");
-            var result = await _storeService.RemoveMemberFromStoreAsync(userId, memberId);
-            if (!result)
-            {
-                _logger.LogError("Failed to remove member from store");
-                return BadRequest();
-            }
-            _logger.LogInformation("Successfully removed member from store");
-            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpGet]
     [Authorize]
-    public async Task<ActionResult<Dictionary<string, string>>> GetStoreMembersByMyId()
+    public async Task<IActionResult> GetStoreMembersByMyId()
     {
-        using (_logger.BeginScope("GetStoreMembers action"))
+        try
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
+            using (_logger.BeginScope("GetStoreMembers action"))
             {
-                _logger.LogWarning("UserId claim is missing for current user");
-                return BadRequest();
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    _logger.LogWarning("UserId claim is missing for current user");
+                    return BadRequest();
+                }
+                _logger.LogInformation("GetStoreMembers called");
+                var result = await _storeService.GetStoreMembers(userId, null);
+                if (result == null)
+                {
+                    _logger.LogError("GetStoreMembers returned null");
+                    return NotFound();
+                }
+                _logger.LogInformation("Found {Count} store members", result.ToArray().Length);
+                return Ok(result);
             }
-            _logger.LogInformation("GetStoreMembers called");
-            var result = await _storeService.GetStoreMembers(userId, null);
-            if (result == null)
-            {
-                _logger.LogError("GetStoreMembers returned null");
-                return NotFound();
-            }
-            _logger.LogInformation("Found {Count} store members", result.ToArray().Length);
-            return result;
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
     
     [HttpGet]
     [Authorize(Roles = RoleNames.Admin)]
-    public async Task<ActionResult<Dictionary<string, string>>> GetStoreMembers(string storeId)
+    public async Task<IActionResult> GetStoreMembers(string storeId)
     {
-        using (_logger.BeginScope("GetStoreMembers action"))
+        try
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
+            using (_logger.BeginScope("GetStoreMembers action"))
             {
-                _logger.LogWarning("UserId claim is missing for current user");
-                return BadRequest();
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    _logger.LogWarning("UserId claim is missing for current user");
+                    return BadRequest();
+                }
+                _logger.LogInformation("GetStoreMembers called");
+                var result = await _storeService.GetStoreMembers(userId, storeId);
+                if (result == null)
+                {
+                    _logger.LogError("GetStoreMembers returned null");
+                    return NotFound();
+                }
+                _logger.LogInformation("Found {Count} store members", result.ToArray().Length);
+                return Ok(result);
             }
-            _logger.LogInformation("GetStoreMembers called");
-            var result = await _storeService.GetStoreMembers(userId, storeId);
-            if (result == null)
-            {
-                _logger.LogError("GetStoreMembers returned null");
-                return NotFound();
-            }
-            _logger.LogInformation("Found {Count} store members", result.ToArray().Length);
-            return result;
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 }

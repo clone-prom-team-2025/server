@@ -76,7 +76,7 @@ public class UserService(
             if (user == null)
             {
                 _logger.LogWarning("User with ID {UserId} not found", userId);
-                return null;
+                throw new Exception("User not found");
             }
 
             _logger.LogInformation("Fetched user with ID {UserId}", userId);
@@ -93,7 +93,8 @@ public class UserService(
             if (user == null)
             {
                 _logger.LogWarning("User with username {Username} not found", username);
-                return null;
+                throw new Exception("User not found");
+
             }
 
             _logger.LogInformation("Fetched user with username {Username}", username);
@@ -137,18 +138,19 @@ public class UserService(
         }
     }
 
-    public async Task<bool> DeleteUserAsync(string userId, string code)
+    public async Task DeleteUserAsync(string userId, string code)
     {
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
         if (user == null)
         {
             _logger.LogWarning("User with ID {UserId} not found", userId);
-            return false;
+            throw new Exception("User not found");
         }
 
         var cacheKey = $"delete-account:{userId}";
 
         if (_cache.TryGetValue(cacheKey, out string? stored))
+        {
             if (string.Equals(stored, code, StringComparison.OrdinalIgnoreCase))
             {
                 _cache.Remove(cacheKey);
@@ -158,26 +160,29 @@ public class UserService(
                 if (!result)
                 {
                     _logger.LogWarning("User with ID {UserId} not found", user.Id);
-                    return false;
+                    throw new Exception("User not found");
                 }
 
                 if (sessions != null)
                     foreach (var session in sessions)
                         await _userSessionRepository.RevokeSessionAsync(session.Id);
                 _logger.LogInformation("User with ID {UserId} successfully deleted", user.Id);
-                return true;
             }
-
-        return false;
+            else
+            {
+                _logger.LogWarning("Invalid code");
+            }
+        }
+        throw new Exception("Invalid code");
     }
 
-    public async Task<bool> SendDeleteAccountCodeAsync(string userId)
+    public async Task SendDeleteAccountCodeAsync(string userId)
     {
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
         if (user == null)
         {
             _logger.LogWarning("User with ID {UserId} not found", userId);
-            return false;
+            throw new Exception("User not found");
         }
 
         var assembly = Assembly.GetExecutingAssembly();
@@ -202,25 +207,30 @@ public class UserService(
         };
 
         await _emailService.SendEmailAsync(mail);
-        return true;
     }
 
-    public async Task<bool> BanUser(UserBanCreateDto userBlockInfo, string adminId)
+    public async Task BanUser(UserBanCreateDto userBlockInfo, string adminId)
     {
-        if (string.IsNullOrWhiteSpace(adminId) || string.IsNullOrWhiteSpace(userBlockInfo?.UserId))
+        if (string.IsNullOrWhiteSpace(userBlockInfo?.UserId))
         {
             _logger.LogWarning("BanUser called with null or empty adminId/UserId");
-            return false;
+            throw new Exception("UserId is required");        
         }
 
         using (_logger.BeginScope("BanUser: AdminId={AdminId}, UserId={UserId}", adminId, userBlockInfo.UserId))
         {
+            var user =  await _userRepository.GetUserByIdAsync(ObjectId.Parse(userBlockInfo.UserId));
+            if (user == null)
+            {
+                _logger.LogWarning("User with ID {UserId} not found", userBlockInfo.UserId);
+                throw new Exception("User not found");
+            }
             _logger.LogInformation("BanUser called");
 
             if (userBlockInfo.UserId == adminId)
             {
                 _logger.LogWarning("Admin tried to ban themselves");
-                return false;
+                throw new Exception("You can't ban yourself");
             }
 
             _logger.LogDebug("Creating ban for UserId={UserId} until {BannedUntil} with reason: {Reason}",
@@ -244,51 +254,39 @@ public class UserService(
 
             var result = await _userBanRepository.CreateAsync(ban);
             _logger.LogInformation("Ban created successfully: {Result}", result);
-
-            return result;
         }
     }
 
-    public async Task<bool> UnbanUserByBanId(string banId, string adminId)
+    public async Task UnbanUserByBanId(string banId, string adminId)
     {
         if (string.IsNullOrWhiteSpace(adminId) || string.IsNullOrWhiteSpace(banId))
         {
             _logger.LogWarning("UnbanUserByBanId called with null or empty adminId/BanId");
-            return false;
+            
         }
 
         using (_logger.BeginScope("UnbanUserByBanId: AdminId={AdminId}, BanId={BanId}", adminId, banId))
         {
-            _logger.LogInformation("UnbanUserByBanId called");
-
             var ban = await _userBanRepository.GetByIdAsync(banId);
             if (ban == null)
             {
                 _logger.LogWarning("Ban not found for BanId={BanId}", banId);
-                return false;
+                throw new Exception("Ban not found");
             }
 
             if (ban.UserId.ToString() == adminId)
             {
                 _logger.LogWarning("Admin tried to unban themselves");
-                return false;
+                throw new Exception("You can't unban yourself");
             }
 
             var result = await _userBanRepository.DeleteByIdAsync(ObjectId.Parse(banId));
             _logger.LogInformation("Unban result for BanId={BanId}: {Result}", banId, result);
-
-            return result;
         }
     }
 
     public async Task<IEnumerable<UserBanDto>> GetUserBansByUserId(string userId)
     {
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            _logger.LogWarning("GetUserBansByUserId called with null or empty UserId");
-            return Enumerable.Empty<UserBanDto>();
-        }
-
         using (_logger.BeginScope("GetUserBansByUserId: UserId={UserId}", userId))
         {
             _logger.LogInformation("GetUserBansByUserId called");
@@ -302,7 +300,7 @@ public class UserService(
         }
     }
 
-    public async Task<bool> UpdateUser(string userId, UpdateUserDto dto)
+    public async Task UpdateUser(string userId, UpdateUserDto dto)
     {
         using (_logger.BeginScope("UpdateUser: UserId={userId}, Dto", userId))
         {
@@ -312,7 +310,7 @@ public class UserService(
             if (user == null)
             {
                 _logger.LogWarning("User not found");
-                return false;
+                throw new Exception("User not found");
             }
 
             if (dto.Username != null) user.Username = dto.Username;
@@ -334,11 +332,10 @@ public class UserService(
             if (!result)
             {
                 _logger.LogWarning("Failed to update user");
-                return false;
+                throw new Exception("Failed to update user");
             }
 
             _logger.LogInformation("User successfully updated");
-            return true;
         }
     }
 
@@ -351,7 +348,7 @@ public class UserService(
             if (user == null)
             {
                 _logger.LogWarning("User with email {Email} not found", email);
-                return null;
+                throw new Exception("User not found");
             }
 
             _logger.LogInformation("Fetched user with email {Email}", email);
@@ -367,35 +364,10 @@ public class UserService(
             if (!result)
             {
                 _logger.LogWarning("User with ID {UserId} not found", user.Id);
-                return false;
+                throw new Exception("Can't update user");
             }
 
             _logger.LogInformation("Updated user by Id={id}", user.Id);
-            return result;
-        }
-    }
-
-    public async Task<bool> SetUserPhoneNumberConfirmedAsync(string userId, string phoneNumber)
-    {
-        using (_logger.BeginScope("SetUserPhoneNumberConfirmedAsync(UserId={userId})", userId))
-        {
-            _logger.LogInformation("Fetching users with pagination");
-            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
-            if (user == null)
-            {
-                _logger.LogInformation("User not found");
-                return false;
-            }
-
-            user.PhoneNumberConfirmed = true;
-            var result = await _userRepository.UpdateUserAsync(_mapper.Map<User>(user));
-            if (!result)
-            {
-                _logger.LogWarning("User with ID {UserId} not found", user.Id);
-                return false;
-            }
-
-            _logger.LogInformation("Updated user with Id={id}", userId);
             return result;
         }
     }

@@ -7,10 +7,10 @@ public interface IAuthService
 {
     Task<string?> LoginAsync(LoginDto model, DeviceInfo deviceInfo);
     Task<string?> RegisterAsync(RegisterDto model, DeviceInfo deviceInfo);
-    Task<bool> LogoutAsync(string sessionId);
-    Task<bool> SendEmailVerificationCodeAsync(string userId);
-    Task<bool> VerifyCode(string userId, string inputCode);
+    Task SendEmailVerificationCodeAsync(string userId);
+    Task LogoutAsync(string sessionId);
+    Task VerifyCode(string userId, string inputCode);
     Task<string?> SendPasswordReset(string login);
     Task<string?> VerifyPasswordCodeAsync(string resetToken, string inputCode);
-    Task<bool> ResetPassword(string password, string accessCode);
+    Task ResetPassword(string password, string accessCode);
 }

@@ -68,7 +68,7 @@ public class StoreCreateRequestRepository(MongoDbContext mongoDbContext, ILogger
         }
     }
 
-    public async Task<List<StoreCreateRequest>> GetAll()
+    public async Task<List<StoreCreateRequest>?> GetAll()
     {
         using (_logger.BeginScope("GetAll"))
         {
@@ -92,7 +92,7 @@ public class StoreCreateRequestRepository(MongoDbContext mongoDbContext, ILogger
         }
     }
 
-    public async Task<StoreCreateRequest> GetByUserId(ObjectId userId)
+    public async Task<StoreCreateRequest?> GetByUserId(ObjectId userId)
     {
         using (_logger.BeginScope("GetByUserId"))
         {
@@ -104,7 +104,7 @@ public class StoreCreateRequestRepository(MongoDbContext mongoDbContext, ILogger
         }
     }
 
-    public async Task<List<StoreCreateRequest>> GetApprovedByAdminId(ObjectId adminId)
+    public async Task<List<StoreCreateRequest>?> GetApprovedByAdminId(ObjectId adminId)
     {
         using (_logger.BeginScope("GetApprovedByAdminId"))
         {
@@ -116,7 +116,7 @@ public class StoreCreateRequestRepository(MongoDbContext mongoDbContext, ILogger
         }
     }
 
-    public async Task<List<StoreCreateRequest>> GetRejectedByAdminId(ObjectId adminId)
+    public async Task<List<StoreCreateRequest>?> GetRejectedByAdminId(ObjectId adminId)
     {
         using (_logger.BeginScope("GetRejectedByAdminId"))
         {

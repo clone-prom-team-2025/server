@@ -22,316 +22,361 @@ public class UserController : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = RoleNames.Admin)]
-    public async Task<ActionResult> BanUser([FromForm] UserBanCreateDto userBlockInfo)
+    public async Task<IActionResult> BanUser([FromForm] UserBanCreateDto userBlockInfo)
     {
-        using (_logger.BeginScope("BanUser action"))
+        try
         {
-            _logger.LogInformation("BanUser called with UserId={UserId}", userBlockInfo.UserId);
-
-            var adminIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (adminIdClaim == null)
+            using (_logger.BeginScope("BanUser action"))
             {
-                _logger.LogError("UserId claim is missing");
-                return BadRequest();
+                _logger.LogInformation("BanUser called with UserId={UserId}", userBlockInfo.UserId);
+
+                var adminIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (adminIdClaim == null)
+                {
+                    _logger.LogError("UserId claim is missing");
+                    return BadRequest();
+                }
+
+                _logger.LogInformation("AdminId: {AdminId}", adminIdClaim.Value);
+
+                await _userService.BanUser(userBlockInfo, adminIdClaim.Value);
+
+                _logger.LogInformation("UserId={UserId} was successfully banned by AdminId={AdminId}",
+                    userBlockInfo.UserId, adminIdClaim.Value);
+
+                return Ok();
             }
-
-            _logger.LogInformation("AdminId: {AdminId}", adminIdClaim.Value);
-
-            var result = await _userService.BanUser(userBlockInfo, adminIdClaim.Value);
-            if (!result)
-            {
-                _logger.LogWarning("BanUser failed for UserId={UserId}", userBlockInfo.UserId);
-                return BadRequest();
-            }
-
-            _logger.LogInformation("UserId={UserId} was successfully banned by AdminId={AdminId}",
-                userBlockInfo.UserId, adminIdClaim.Value);
-
-            return Ok();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpPost]
     [Authorize(Roles = RoleNames.Admin)]
-    public async Task<ActionResult> UnbanUser(string banId)
+    public async Task<IActionResult> UnbanUser(string banId)
     {
-        using (_logger.BeginScope("UnbanUser action"))
+        try
         {
-            _logger.LogInformation("UnbanUser called with BanId={BanId}", banId);
-
-            var adminIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (adminIdClaim == null)
+            using (_logger.BeginScope("UnbanUser action"))
             {
-                _logger.LogError("UserId claim is missing");
-                return BadRequest();
+                _logger.LogInformation("UnbanUser called with BanId={BanId}", banId);
+
+                var adminIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (adminIdClaim == null)
+                {
+                    _logger.LogError("UserId claim is missing");
+                    return BadRequest();
+                }
+
+                _logger.LogInformation("AdminId: {AdminId}", adminIdClaim.Value);
+
+                await _userService.UnbanUserByBanId(banId, adminIdClaim.Value);
+
+                _logger.LogInformation("BanId={BanId} successfully unbanned by AdminId={AdminId}", banId,
+                    adminIdClaim.Value);
+                return Ok();
             }
-
-            _logger.LogInformation("AdminId: {AdminId}", adminIdClaim.Value);
-
-            var result = await _userService.UnbanUserByBanId(banId, adminIdClaim.Value);
-            if (!result)
-            {
-                _logger.LogWarning("UnbanUser failed for BanId={BanId}", banId);
-                return BadRequest();
-            }
-
-            _logger.LogInformation("BanId={BanId} successfully unbanned by AdminId={AdminId}", banId,
-                adminIdClaim.Value);
-            return Ok();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpGet]
     [Authorize]
-    public async Task<ActionResult<IEnumerable<UserBanDto>>> GetAllBansByUserId(string userId)
+    public async Task<IActionResult> GetAllBansByUserId(string userId)
     {
-        using (_logger.BeginScope("GetAllByUserId action"))
+        try
         {
-            _logger.LogInformation("GetAllByUserId called with UserId={UserId}", userId);
-            var bans = await _userService.GetUserBansByUserId(userId);
-            var allByUserId = bans as UserBanDto[] ?? bans.ToArray();
-            _logger.LogInformation("Found {Count} bans for UserId={UserId}", allByUserId.Count(), userId);
-            return allByUserId;
+            using (_logger.BeginScope("GetAllByUserId action"))
+            {
+                _logger.LogInformation("GetAllByUserId called with UserId={UserId}", userId);
+                var bans = await _userService.GetUserBansByUserId(userId);
+                var allByUserId = bans as UserBanDto[] ?? bans.ToArray();
+                _logger.LogInformation("Found {Count} bans for UserId={UserId}", allByUserId.Count(), userId);
+                return Ok(allByUserId);
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [Authorize]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<UserBanDto>>> GetAllBansByMyUserId()
+    public async Task<IActionResult> GetAllBansByMyUserId()
     {
-        using (_logger.BeginScope("GetAllByMyUserId action"))
+        try
         {
-            _logger.LogInformation("GetAllByMyUserId called");
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null)
+            using (_logger.BeginScope("GetAllByMyUserId action"))
             {
-                _logger.LogWarning("UserId claim is missing for current user");
-                return BadRequest();
-            }
+                _logger.LogInformation("GetAllByMyUserId called");
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null)
+                {
+                    _logger.LogWarning("UserId claim is missing for current user");
+                    return BadRequest();
+                }
 
-            _logger.LogInformation("Fetching bans for current UserId={UserId}", userIdClaim.Value);
-            var bans = await _userService.GetUserBansByUserId(userIdClaim.Value);
-            var allByMyUserId = bans as UserBanDto[] ?? bans.ToArray();
-            _logger.LogInformation("Found {Count} bans for current UserId={UserId}", allByMyUserId.Count(),
-                userIdClaim.Value);
-            if (allByMyUserId.Length == 0)
-            {
-                _logger.LogInformation("No bans found for current UserId={UserId}", userIdClaim.Value);
-                return NotFound();
-            }
+                _logger.LogInformation("Fetching bans for current UserId={UserId}", userIdClaim.Value);
+                var bans = await _userService.GetUserBansByUserId(userIdClaim.Value);
+                var allByMyUserId = bans as UserBanDto[] ?? bans.ToArray();
+                _logger.LogInformation("Found {Count} bans for current UserId={UserId}", allByMyUserId.Count(),
+                    userIdClaim.Value);
+                if (allByMyUserId.Length == 0)
+                {
+                    _logger.LogInformation("No bans found for current UserId={UserId}", userIdClaim.Value);
+                }
 
-            return allByMyUserId;
+                return Ok(allByMyUserId);
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpGet]
-    public async Task<ActionResult<UserDto?>> GetUserById(string userId)
+    public async Task<IActionResult> GetUserById(string userId)
     {
-        using (_logger.BeginScope("GetUserById action"))
+        try
         {
-            _logger.LogInformation("GetUserById called with UserId={UserId}", userId);
-            _logger.LogInformation("Fetching user for current UserId={UserId}", userId);
-            var user = await _userService.GetUserByIdAsync(userId);
-            if (user == null)
+            using (_logger.BeginScope("GetUserById action"))
             {
-                _logger.LogWarning("User not found for UserId={UserId}", userId);
-                return NotFound("User not found.");
+                _logger.LogInformation("GetUserById called with UserId={UserId}", userId);
+                _logger.LogInformation("Fetching user for current UserId={UserId}", userId);
+                var user = await _userService.GetUserByIdAsync(userId);
+                _logger.LogInformation("Found user for current UserId={UserId}", userId);
+                return Ok(user);
             }
-
-            _logger.LogInformation("Found user for current UserId={UserId}", userId);
-            return user;
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpGet]
     [Authorize(Roles = RoleNames.Admin)]
-    public async Task<ActionResult<IEnumerable<UserDto>>> GetAllUsers()
+    public async Task<IActionResult> GetAllUsers()
     {
-        using (_logger.BeginScope("GetAllUsers action"))
+        try
         {
-            _logger.LogInformation("GetAllUsers called");
-            var users = await _userService.GetAllUsersAsync();
-            var allUsers = users as UserDto[] ?? users.ToArray();
-            _logger.LogInformation("Found {Count} users", allUsers.Length);
-            return allUsers;
+            using (_logger.BeginScope("GetAllUsers action"))
+            {
+                _logger.LogInformation("GetAllUsers called");
+                var users = await _userService.GetAllUsersAsync();
+                var allUsers = users as UserDto[] ?? users.ToArray();
+                _logger.LogInformation("Found {Count} users", allUsers.Length);
+                return Ok(allUsers);
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [Authorize]
     [HttpGet]
-    public async Task<ActionResult<UserDto?>> GetUserByMyId()
+    public async Task<IActionResult> GetUserByMyId()
     {
-        using (_logger.BeginScope("GetUserById action"))
+        try
         {
-            _logger.LogInformation("GetUserById called");
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (userId == null)
+            using (_logger.BeginScope("GetUserById action"))
             {
-                _logger.LogWarning("UserId claim is missing");
-                return BadRequest();
-            }
+                _logger.LogInformation("GetUserById called");
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    _logger.LogWarning("UserId claim is missing");
+                    return BadRequest();
+                }
 
-            _logger.LogInformation("Fetching user for current UserId={UserId}", userId);
-            var user = await _userService.GetUserByIdAsync(userId.Value);
-            _logger.LogInformation("Found user for current UserId={UserId}", userId);
-            return user;
+                _logger.LogInformation("Fetching user for current UserId={UserId}", userId);
+                var user = await _userService.GetUserByIdAsync(userId.Value);
+                _logger.LogInformation("Found user for current UserId={UserId}", userId);
+                return Ok(user);
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<UserDto>>> GetAllUsersByPages(int pageNumber, int pageSize)
+    public async Task<IActionResult> GetAllUsersByPages(int pageNumber, int pageSize)
     {
-        using (_logger.BeginScope("GetAllUsersByPages action"))
+        try
         {
-            _logger.LogInformation("GetAllUsersByPages called with PageNumber={pageNumber}, PageSize={pageSize}",
-                pageNumber, pageSize);
-            var users = await _userService.GetAllUsersAsync(pageNumber, pageSize);
-            if (users == null)
+            using (_logger.BeginScope("GetAllUsersByPages action"))
             {
-                _logger.LogWarning("No users found");
-                return NotFound();
+                _logger.LogInformation("GetAllUsersByPages called with PageNumber={pageNumber}, PageSize={pageSize}",
+                    pageNumber, pageSize);
+                var users = await _userService.GetAllUsersAsync(pageNumber, pageSize);
+                var any = users.ToArray();
+                _logger.LogInformation("Found {Count} users", any.Length);
+                return Ok(any);
             }
-
-            var any = users.ToArray();
-            _logger.LogInformation("Found {Count} users", any.Length);
-            return any;
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpGet]
-    public async Task<ActionResult<UserDto>> GetUserByUsername(string username)
+    public async Task<IActionResult> GetUserByUsername(string username)
     {
-        using (_logger.BeginScope("GetUserByUsername action"))
+        try
         {
-            _logger.LogInformation("GetUserByUsername called with Username={username}", username);
-            var users = await _userService.GetUserByUsernameAsync(username);
-            if (users == null)
+            using (_logger.BeginScope("GetUserByUsername action"))
             {
-                _logger.LogWarning("User found");
-                return NotFound();
+                _logger.LogInformation("GetUserByUsername called with Username={username}", username);
+                var users = await _userService.GetUserByUsernameAsync(username);
+                _logger.LogInformation("Found user for current Username={username}", username);
+                return Ok(users);
             }
-
-            _logger.LogInformation("Found user for current Username={username}", username);
-            return users;
         }
-    }
-
-    [Authorize(Roles = RoleNames.Admin)]
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<UserDto>>> GetUsersByRole(string role)
-    {
-        using (_logger.BeginScope("GetUsersByRole action"))
+        catch (Exception e)
         {
-            _logger.LogInformation("GetUsersByRole called with Role={role}", role);
-            var users = await _userService.GetUsersByRoleAsync(role);
-            if (users == null)
-            {
-                _logger.LogWarning("No users found");
-                return NotFound();
-            }
-
-            var any = users.ToArray();
-            _logger.LogInformation("Found {Count} users", any.Length);
-            return any;
+            return BadRequest(e.Message);
         }
     }
 
     [Authorize(Roles = RoleNames.Admin)]
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<UserDto>>> GetUsersByRoleByPages(string role, int pageNumber,
+    public async Task<IActionResult> GetUsersByRole(string role)
+    {
+        try
+        {
+            using (_logger.BeginScope("GetUsersByRole action"))
+            {
+                _logger.LogInformation("GetUsersByRole called with Role={role}", role);
+                var users = await _userService.GetUsersByRoleAsync(role);
+                var any = users.ToArray();
+                _logger.LogInformation("Found {Count} users", any.Length);
+                return Ok(any);
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [Authorize(Roles = RoleNames.Admin)]
+    [HttpGet]
+    public async Task<IActionResult> GetUsersByRoleByPages(string role, int pageNumber,
         int pageSize)
     {
-        using (_logger.BeginScope("GetUsersByRoleByPages action"))
+        try
         {
-            _logger.LogInformation("GetUsersByRoleByPages called with Role={role}", role);
-            var users = await _userService.GetUsersByRoleAsync(role, pageNumber, pageSize);
-            if (users == null)
+            using (_logger.BeginScope("GetUsersByRoleByPages action"))
             {
-                _logger.LogWarning("No users found");
-                return NotFound();
+                _logger.LogInformation("GetUsersByRoleByPages called with Role={role}", role);
+                var users = await _userService.GetUsersByRoleAsync(role, pageNumber, pageSize);
+                var any = users.ToArray();
+                _logger.LogInformation("Found {Count} users", any.Length);
+                return Ok(any);
             }
-
-            var any = users.ToArray();
-            _logger.LogInformation("Found {Count} users", any.Length);
-            return any;
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpPost]
     [Authorize]
-    public async Task<ActionResult> SendPasswordResetCode()
+    public async Task<IActionResult> SendPasswordResetCode()
     {
-        using (_logger.BeginScope("SendPasswordResetCode action"))
+        try
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
+            using (_logger.BeginScope("SendPasswordResetCode action"))
             {
-                _logger.LogWarning("UserId claim is missing");
-                return BadRequest();
-            }
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    _logger.LogWarning("UserId claim is missing");
+                    return BadRequest();
+                }
 
-            _logger.LogInformation("SendPasswordResetCode called with UserId={userId}", userId);
-            var result = await _userService.SendDeleteAccountCodeAsync(userId);
-            if (!result)
-            {
-                _logger.LogWarning("SendPasswordResetCode failed");
-                return BadRequest();
-            }
+                _logger.LogInformation("SendPasswordResetCode called with UserId={userId}", userId);
+                
+                await _userService.SendDeleteAccountCodeAsync(userId);
 
-            _logger.LogInformation("SendPasswordResetCode succeeded");
-            return NoContent();
+                _logger.LogInformation("SendPasswordResetCode succeeded");
+                return NoContent();
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpDelete]
     [Authorize]
-    public async Task<ActionResult> DeleteUser(string code)
+    public async Task<IActionResult> DeleteUser(string code)
     {
-        using (_logger.BeginScope("DeleteUser action"))
+        try
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
+            using (_logger.BeginScope("DeleteUser action"))
             {
-                _logger.LogWarning("UserId claim is missing");
-                return BadRequest();
-            }
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    _logger.LogWarning("UserId claim is missing");
+                    return BadRequest();
+                }
 
-            _logger.LogInformation("DeleteUser called with UserId={userId}", userId);
-            var result = await _userService.DeleteUserAsync(userId, code);
-            if (!result)
-            {
-                _logger.LogWarning("DeleteUser failed");
-                return BadRequest();
-            }
+                _logger.LogInformation("DeleteUser called with UserId={userId}", userId);
+                
+                await _userService.DeleteUserAsync(userId, code);
 
-            _logger.LogInformation("DeleteUser succeeded");
-            return NoContent();
+                _logger.LogInformation("DeleteUser succeeded");
+                return NoContent();
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
     [HttpPut]
     [Authorize]
-    public async Task<ActionResult> UpdateUser([FromForm]UpdateUserDto dto)
+    public async Task<IActionResult> UpdateUser([FromForm]UpdateUserDto dto)
     {
-        using (_logger.BeginScope("UpdateUser action"))
+        try
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
+            using (_logger.BeginScope("UpdateUser action"))
             {
-                _logger.LogWarning("UserId claim is missing");
-                return BadRequest();
-            }
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (userId == null)
+                {
+                    _logger.LogWarning("UserId claim is missing");
+                    return BadRequest();
+                }
 
-            _logger.LogInformation("UpdateUser called with UserId={userId}", userId);
-            var result = await _userService.UpdateUser(userId, dto);
-            if (!result)
-            {
-                _logger.LogWarning("UpdateUser failed");
-                return BadRequest();
-            }
+                _logger.LogInformation("UpdateUser called with UserId={userId}", userId);
+                
+                await _userService.UpdateUser(userId, dto);
 
-            _logger.LogInformation("UpdateUser succeeded");
-            return NoContent();
+                _logger.LogInformation("UpdateUser succeeded");
+                return NoContent();
+            }
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 }
