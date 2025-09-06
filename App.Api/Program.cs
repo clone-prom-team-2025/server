@@ -1,5 +1,6 @@
 using System.Net;
 using App.Api.Handlers;
+using App.Api.Hubs;
 using App.Api.Middleware;
 using App.Core.Interfaces;
 using App.Core.Models.Auth;
@@ -75,6 +76,8 @@ builder.Services.AddSingleton<IAvailableFiltersService, AvailableFiltersService>
 builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IStoreService, StoreService>();
 builder.Services.AddSingleton<ICartService, CartService>();
+
+builder.Services.AddSingleton<ISessionHubNotifier, SessionHubNotifier>();
 
 builder.Services.AddMemoryCache();
 
@@ -181,6 +184,8 @@ Log.Logger = loggerConfig.CreateLogger();
 
 builder.Host.UseSerilog();
 
+builder.Services.AddSignalR();
+
 // --- Create app ---
 var app = builder.Build();
 
@@ -196,6 +201,8 @@ app.UseCors();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseStaticFiles();
+
+app.MapHub<SessionHub>("/hubs/session");
 
 // --- Create MongoDB indexes on startup ---
 using (var scope = app.Services.CreateScope())

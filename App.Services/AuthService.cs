@@ -8,6 +8,7 @@ using App.Core.Models.FileStorage;
 using App.Core.Models.User;
 using App.Core.Utils;
 using AutoMapper;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
@@ -24,7 +25,8 @@ public class AuthService(
     IEmailService emailService,
     IMemoryCache memoryCache,
     IUserSessionRepository sessionRepository,
-    IOptions<SessionsOptions> options)
+    IOptions<SessionsOptions> options,
+    ISessionHubNotifier sessionHubNotifier)
     : IAuthService
 {
     private static readonly Random Random = new();
@@ -35,6 +37,7 @@ public class AuthService(
     private readonly SessionsOptions _options = options.Value;
     private readonly IUserSessionRepository _sessionRepository = sessionRepository;
     private readonly IUserRepository _userRepository = userRepository;
+    private readonly ISessionHubNotifier _sessionHubNotifier = sessionHubNotifier;
 
 
     /// <summary>
@@ -120,6 +123,8 @@ public class AuthService(
         var session = await _sessionRepository.GetSessionAsync(ObjectId.Parse(sessionId));
         if (session == null || session.IsRevoked)
             throw new Exception("Session doesn't exist");
+
+        _sessionHubNotifier.ForceLogoutAsync(sessionId);
 
         await _sessionRepository.RevokeSessionAsync(ObjectId.Parse(sessionId));
     }
