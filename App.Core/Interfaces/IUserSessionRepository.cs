@@ -11,4 +11,6 @@ public interface IUserSessionRepository
     Task<UserSession?> GetSessionAsync(ObjectId sessionId);
     Task<List<UserSession>?> GetSessionsAsync(ObjectId userId);
     Task RevokeSessionAsync(ObjectId sessionId);
+    Task DeleteSessionAsync(ObjectId sessionId);
+    Task DeleteSessionsAsync(ObjectId userId);
 }

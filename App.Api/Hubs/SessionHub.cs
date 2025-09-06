@@ -1,11 +1,14 @@
+using System.Security.Claims;
 using App.Core.DTOs.Auth;
 using App.Core.Interfaces;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using MongoDB.Bson;
 
 namespace App.Api.Hubs;
 
+[Authorize]
 public class SessionHub : Hub
 {
     private readonly IUserSessionRepository _sessionRepository;
@@ -18,8 +21,57 @@ public class SessionHub : Hub
         _sessionRepository = sessionRepository;
         _mapper = mapper;
     }
-    
-    public async Task RegisterSession(string sessionId)
+
+    public async Task<UserSessionDto?> RequestSessionData()
+    {
+        var sessionId = GetSessionIdFromClaims();
+        if (sessionId == null) 
+        {
+            await Clients.Caller.SendAsync("Error", "Session not found in token");
+            Context.Abort();
+            return null;
+        }
+
+        if (!ObjectId.TryParse(sessionId, out var objectId))
+        {
+            await Clients.Caller.SendAsync("Error", "Invalid sessionId format");
+            Context.Abort();
+            return null;
+        }
+
+        var session = await _sessionRepository.GetSessionAsync(objectId);
+
+        if (session == null)
+        {
+            await Clients.Caller.SendAsync("Error", "Session does not exist");
+            Context.Abort();
+            return null;
+        }
+
+        if (session.IsRevoked || session.ExpiresAt <= DateTime.UtcNow)
+        {
+            await Clients.Caller.SendAsync("Error", "Session has expired");
+            Context.Abort();
+            return null;
+        }
+
+        return _mapper.Map<UserSessionDto>(session);
+    }
+
+    public async Task ReRegisterSession()
+    {
+        var sessionId = GetSessionIdFromClaims();
+        if (sessionId == null)
+        {
+            await Clients.Caller.SendAsync("Error", "Session not found in token");
+            Context.Abort();
+            return;
+        }
+
+        await HandleSessionRegistration(sessionId);
+    }
+
+    private async Task HandleSessionRegistration(string sessionId)
     {
         if (!ObjectId.TryParse(sessionId, out var objectId))
         {
@@ -29,9 +81,9 @@ public class SessionHub : Hub
         }
 
         var session = await _sessionRepository.GetSessionAsync(objectId);
-        if (session == null || session.IsRevoked)
+        if (session == null || session.IsRevoked || session.ExpiresAt <= DateTime.UtcNow)
         {
-            await Clients.Caller.SendAsync("Error", "Session not found or revoked");
+            await Clients.Caller.SendAsync("Error", "Session invalid or expired");
             Context.Abort();
             return;
         }
@@ -42,15 +94,6 @@ public class SessionHub : Hub
         }
 
         await Clients.Caller.SendAsync("Registered", "Session registered successfully");
-    }
-    
-    public async Task<UserSessionDto?> RequestSessionData(string sessionId)
-    {
-        if (!ObjectId.TryParse(sessionId, out var objectId))
-            return null;
-
-        var session = await _sessionRepository.GetSessionAsync(objectId);
-        return session == null ? null : _mapper.Map<UserSessionDto>(session);
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
@@ -66,6 +109,43 @@ public class SessionHub : Hub
 
         await base.OnDisconnectedAsync(exception);
     }
+    
+    public override async Task OnConnectedAsync()
+    {
+        var sessionId = GetSessionIdFromClaims();
+
+        if (string.IsNullOrEmpty(sessionId))
+        {
+            await Clients.Caller.SendAsync("Error", "Session not found in token");
+            Context.Abort();
+            return;
+        }
+
+        if (!ObjectId.TryParse(sessionId, out var objectId))
+        {
+            await Clients.Caller.SendAsync("Error", "Invalid sessionId format");
+            Context.Abort();
+            return;
+        }
+
+        var session = await _sessionRepository.GetSessionAsync(objectId);
+        if (session == null || session.IsRevoked || session.ExpiresAt <= DateTime.UtcNow)
+        {
+            await Clients.Caller.SendAsync("Error", "Session invalid or expired");
+            Context.Abort();
+            return;
+        }
+
+        lock (SessionConnections)
+        {
+            SessionConnections[sessionId] = Context.ConnectionId;
+        }
+
+        await Clients.Caller.SendAsync("Registered", "Session registered successfully");
+
+        await base.OnConnectedAsync();
+    }
+
 
     public async Task ForceLogoutLocal(string sessionId)
     {
@@ -75,5 +155,10 @@ public class SessionHub : Hub
             await Clients.Caller.SendAsync("ForceLogout", "Your session was terminated");
             Context.Abort();
         }
+    }
+    
+    private string? GetSessionIdFromClaims()
+    {
+        return Context.User?.FindFirst(ClaimTypes.Sid)?.Value;
     }
 }

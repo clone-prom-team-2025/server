@@ -62,4 +62,16 @@ public class UserSessionRepository(MongoDbContext mongoDbContext, IOptions<Sessi
         var update = Builders<UserSession>.Update.Set(s => s.IsRevoked, true);
         await _collection.UpdateOneAsync(filter, update);
     }
+
+    public async Task DeleteSessionAsync(ObjectId sessionId)
+    {
+        var filter = Builders<UserSession>.Filter.Eq(s => s.Id, sessionId);
+        await _collection.DeleteOneAsync(filter);
+    }
+    
+    public async Task DeleteSessionsAsync(ObjectId userId)
+    {
+        var filter = Builders<UserSession>.Filter.Eq(s => s.UserId, userId);
+        await _collection.DeleteManyAsync(filter);
+    }
 }
