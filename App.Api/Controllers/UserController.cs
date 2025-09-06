@@ -2,8 +2,10 @@ using System.Security.Claims;
 using App.Core.Constants;
 using App.Core.DTOs.User;
 using App.Core.Interfaces;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 
 namespace App.Api.Controllers;
 
@@ -13,11 +15,15 @@ public class UserController : ControllerBase
 {
     private readonly ILogger<UserController> _logger;
     private readonly IUserService _userService;
+    private readonly IUserSessionRepository _userSessionRepository;
+    private readonly ISessionHubNotifier _sessionHubNotifier;
 
-    public UserController(IUserService userService, ILogger<UserController> logger)
+    public UserController(IUserService userService, ILogger<UserController> logger, IUserSessionRepository userSessionRepository, ISessionHubNotifier sessionHubNotifier)
     {
         _userService = userService;
         _logger = logger;
+        _userSessionRepository = userSessionRepository;
+        _sessionHubNotifier = sessionHubNotifier;
     }
 
     [HttpPost]
@@ -338,6 +344,12 @@ public class UserController : ControllerBase
                 }
 
                 _logger.LogInformation("DeleteUser called with UserId={userId}", userId);
+                
+                var sessions = await _userSessionRepository.GetSessionsAsync(ObjectId.Parse(userId));
+                if (sessions != null)
+                    foreach (var session in sessions)
+                        await _sessionHubNotifier.ForceLogoutAsync(session.Id.ToString());
+                await _userSessionRepository.DeleteSessionsAsync(ObjectId.Parse(userId));
                 
                 await _userService.DeleteUserAsync(userId, code);
 

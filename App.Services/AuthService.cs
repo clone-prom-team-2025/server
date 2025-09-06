@@ -124,7 +124,23 @@ public class AuthService(
         if (session == null || session.IsRevoked)
             throw new Exception("Session doesn't exist");
 
-        _sessionHubNotifier.ForceLogoutAsync(sessionId);
+        await _sessionHubNotifier.ForceLogoutAsync(sessionId);
+
+        await _sessionRepository.RevokeSessionAsync(ObjectId.Parse(sessionId));
+    }
+    
+    public async Task LogoutAsync(string sessionId, string userId)
+    {
+        var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+        if (user == null)
+            throw new Exception("User doesn't exist");
+        var session = await _sessionRepository.GetSessionAsync(ObjectId.Parse(sessionId));
+        if (session == null || session.IsRevoked)
+            throw new Exception("Session doesn't exist");
+        if (session.UserId.ToString() != userId)
+            throw new Exception("It's not your session");
+
+        await _sessionHubNotifier.ForceLogoutAsync(sessionId);
 
         await _sessionRepository.RevokeSessionAsync(ObjectId.Parse(sessionId));
     }
@@ -314,5 +330,28 @@ public class AuthService(
     {
         public string Code { get; set; } = default!;
         public string UserId { get; set; } = default!;
+    }
+
+    public async Task<IEnumerable<UserSessionDto>?> GetActiveSessions(string userId)
+    {
+        var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+        if (user == null)
+            throw new Exception("User not found");
+
+        var sessions = await _sessionRepository.GetSessionsAsync(ObjectId.Parse(userId));
+        
+        return _mapper.Map<IEnumerable<UserSessionDto>>(sessions);
+    }
+
+    public async Task RevokeAllSessions(string userId)
+    {
+        var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+        if (user == null)
+            throw new Exception("User not found");
+        var sessions = await _sessionRepository.GetSessionsAsync(ObjectId.Parse(userId));
+        foreach (var session in sessions)
+            session.IsRevoked = true;
+        if (!await _userRepository.UpdateUserAsync(user))
+            throw new Exception("User not found");
     }
 }

@@ -74,6 +74,44 @@ public class AuthController : ControllerBase
             return BadRequest(e.Message);
         }
     }
+    
+    [HttpGet("active-sessions")]
+    [Authorize]
+    public async Task<IActionResult> GetActiveSessions()
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return BadRequest();
+            
+            return Ok(await _authService.GetActiveSessions(userId));
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
+
+    [HttpPost("revoke-session")]
+    [Authorize]
+    public async Task<IActionResult> RevokeSession(string sessionId)
+    {
+        try
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return BadRequest();
+            
+            await _authService.LogoutAsync(sessionId, userId);
+            
+            return NoContent();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
+    }
 
     [Authorize]
     [HttpPost("send-email-verification-code")]

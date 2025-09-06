@@ -1,6 +1,7 @@
 using System.Reflection;
 using App.Core.Constants;
 using App.Core.DTOs.User;
+using App.Core.Enums;
 using App.Core.Interfaces;
 using App.Core.Models.Email;
 using App.Core.Models.FileStorage;
@@ -21,7 +22,8 @@ public class UserService(
     ILogger<UserService> logger,
     IMemoryCache cache,
     IEmailService emailService,
-    IFileService fileService) : IUserService
+    IFileService fileService,
+    ISessionHubNotifier sessionHubNotifier) : IUserService
 {
     private readonly IMemoryCache _cache = cache;
     private readonly IEmailService _emailService = emailService;
@@ -31,6 +33,7 @@ public class UserService(
     private readonly IUserBanRepository _userBanRepository = userBanRepository;
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IUserSessionRepository _userSessionRepository = userSessionRepository;
+    private readonly ISessionHubNotifier _sessionHubNotifier = sessionHubNotifier;
 
     public async Task<IEnumerable<UserDto>?> GetAllUsersAsync()
     {
@@ -249,6 +252,11 @@ public class UserService(
                 Types = userBlockInfo.Types,
                 UserId = parsedUserId
             };
+            
+            var session = await _userSessionRepository.GetSessionAsync(ban.Id);
+            if (userBlockInfo.Types.HasFlag(BanType.Login))
+                if (session != null)
+                    await _sessionHubNotifier.ForceLogoutAsync(session.Id.ToString());
 
             _logger.LogDebug("Ban object to insert: {@Ban}", _mapper.Map<UserBanDto>(ban));
 
