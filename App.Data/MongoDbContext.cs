@@ -2,6 +2,7 @@ using App.Core.Models;
 using App.Core.Models.Auth;
 using App.Core.Models.AvailableFilters;
 using App.Core.Models.Cart;
+using App.Core.Models.Notification;
 using App.Core.Models.Product;
 using App.Core.Models.Product.Review;
 using App.Core.Models.Store;
@@ -71,6 +72,12 @@ public class MongoDbContext
         _database.GetCollection<StoreCreateRequest>("StoreCreateRequests");
 
     public IMongoCollection<Cart> Carts => _database.GetCollection<Cart>("Carts");
+    
+    public IMongoCollection<Notification> Notifications => _database.GetCollection<Notification>("Notifications");
+
+    public IMongoCollection<NotificationSeen> NotificationSees =>
+        _database.GetCollection<NotificationSeen>("NotificationSees");
+    
 
     /// <summary>
     ///     Ensures that the necessary indexes for the <see cref="Category" /> collection are created.
