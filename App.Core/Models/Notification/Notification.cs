@@ -13,7 +13,9 @@ public class Notification
 
     public string Message { get; set; } = null!;
 
-    public string? From { get; set; }
+    public ObjectId? From { get; set; }
+    
+    public ObjectId? To { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     

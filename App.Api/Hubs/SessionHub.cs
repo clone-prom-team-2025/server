@@ -9,18 +9,9 @@ using MongoDB.Bson;
 namespace App.Api.Hubs;
 
 [Authorize]
-public class SessionHub : Hub
+public class SessionHub(IUserSessionRepository sessionRepository, IMapper mapper) : Hub
 {
-    private readonly IUserSessionRepository _sessionRepository;
-    private readonly IMapper _mapper;
-
     public static readonly Dictionary<string, string> SessionConnections = new();
-
-    public SessionHub(IUserSessionRepository sessionRepository, IMapper mapper)
-    {
-        _sessionRepository = sessionRepository;
-        _mapper = mapper;
-    }
 
     public async Task<UserSessionDto?> RequestSessionData()
     {
@@ -39,7 +30,7 @@ public class SessionHub : Hub
             return null;
         }
 
-        var session = await _sessionRepository.GetSessionAsync(objectId);
+        var session = await sessionRepository.GetSessionAsync(objectId);
 
         if (session == null)
         {
@@ -55,7 +46,7 @@ public class SessionHub : Hub
             return null;
         }
 
-        return _mapper.Map<UserSessionDto>(session);
+        return mapper.Map<UserSessionDto>(session);
     }
 
     public async Task ReRegisterSession()
@@ -80,7 +71,7 @@ public class SessionHub : Hub
             return;
         }
 
-        var session = await _sessionRepository.GetSessionAsync(objectId);
+        var session = await sessionRepository.GetSessionAsync(objectId);
         if (session == null || session.IsRevoked || session.ExpiresAt <= DateTime.UtcNow)
         {
             await Clients.Caller.SendAsync("Error", "Session invalid or expired");
@@ -128,7 +119,7 @@ public class SessionHub : Hub
             return;
         }
 
-        var session = await _sessionRepository.GetSessionAsync(objectId);
+        var session = await sessionRepository.GetSessionAsync(objectId);
         if (session == null || session.IsRevoked || session.ExpiresAt <= DateTime.UtcNow)
         {
             await Clients.Caller.SendAsync("Error", "Session invalid or expired");

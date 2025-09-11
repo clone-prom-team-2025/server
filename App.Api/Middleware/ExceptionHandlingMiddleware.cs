@@ -33,6 +33,14 @@ public class ExceptionHandlingMiddleware
             var duplicateField = GetDuplicateFieldFromMessage(ex.Message) ?? "UnknownField";
             await HandleErrorAsync(context, $"{duplicateField} must be unique.", 400);
         }
+        catch (KeyNotFoundException ex)
+        {
+            await HandleErrorAsync(context, ex.Message, 404);
+        }
+        catch (InvalidOperationException ex)
+        {
+            await HandleErrorAsync(context, ex.Message, 400);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception");
