@@ -64,7 +64,7 @@ public class NotificationService(INotificationRepository notificationRepository,
         }
     }
 
-    public async Task<IEnumerable<NotificationDto>> GetSeenNotificationsByUserIdAsync(string userId)
+    public async Task<IEnumerable<NotificationDto>> GetUnSeenNotificationsAsync(string userId)
     {
         using (_logger.BeginScope("GetSeenNotificationsByUserIdAsync: UserId={userId}", userId))
         {
@@ -194,7 +194,7 @@ public class NotificationService(INotificationRepository notificationRepository,
             if (notification == null) throw new KeyNotFoundException("Notification not found");
             var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
             if (user == null) throw new KeyNotFoundException("User not found");
-            if (await _notificationRepository.HasSeenNotificationAsync(user.Id, notification.Id))
+            if (!(await _notificationRepository.HasSeenNotificationAsync(user.Id, notification.Id)))
                 throw new InvalidOperationException("Notification already seen");
             var seen = new NotificationSeen()
             {

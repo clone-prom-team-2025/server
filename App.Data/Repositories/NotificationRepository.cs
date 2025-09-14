@@ -113,11 +113,18 @@ public class NotificationRepository(MongoDbContext context) : INotificationRepos
 
     public async Task<bool> HasSeenNotificationAsync(ObjectId userId, ObjectId notificationId)
     {
-        var filter = Builders<Notification>.Filter.And(
-            Builders<Notification>.Filter.Eq(n => n.To, userId),
-            Builders<Notification>.Filter.Eq(n => n.Id, notificationId)
-        );
-        return await _notifications.Find(filter).AnyAsync();
+        var pipeline = _notifications.Aggregate()
+            .Lookup<Notification, NotificationSeen, NotificationWithSeen>(
+                _seenNotifications,
+                n => n.Id,
+                s => s.NotificationId,
+                r => r.SeenInfo
+            )
+            .Match(n => n.Id == notificationId && n.SeenInfo.All(s => s.UserId != userId));
+
+        var exists = await pipeline.AnyAsync();
+
+        return exists;
     }
 
     private class NotificationWithSeen : Notification
