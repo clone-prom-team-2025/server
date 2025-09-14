@@ -12,7 +12,7 @@ public class AuthProfile : Profile
         CreateMap<UserSession, UserSessionDto>()
             .ForMember(d => d.UserId, o => o.MapFrom(s => s.UserId.ToString()))
             .ForMember(d => d.Id, o => o.MapFrom(s => s.Id.ToString()));
-        
+
         CreateMap<UserSessionDto, UserSession>()
             .ForMember(d => d.UserId, o => o.MapFrom(s => ObjectId.Parse(s.UserId)))
             .ForMember(d => d.Id, o => o.MapFrom(s => ObjectId.Parse(s.Id)));

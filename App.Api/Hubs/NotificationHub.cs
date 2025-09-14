@@ -64,7 +64,6 @@ public class NotificationHub : Hub
         lock (UserConnections)
         {
             foreach (var kvp in UserConnections)
-            {
                 if (kvp.Value.Contains(Context.ConnectionId))
                 {
                     kvp.Value.Remove(Context.ConnectionId);
@@ -72,7 +71,6 @@ public class NotificationHub : Hub
                         UserConnections.Remove(kvp.Key);
                     break;
                 }
-            }
         }
 
         await base.OnDisconnectedAsync(exception);
@@ -93,14 +91,13 @@ public class NotificationHub : Hub
                     _logger.LogDebug("User {To} not connected, notification skipped", notification.To);
                     return;
                 }
+
                 // копіюємо поточні connectionId, щоб не працювати з HashSet поза lock
                 connectionsCopy = connections.ToList();
             }
 
             foreach (var connectionId in connectionsCopy)
-            {
                 if (!string.IsNullOrEmpty(connectionId))
-                {
                     try
                     {
                         _logger.LogInformation("Sending notification to {connectionId}", connectionId);
@@ -110,10 +107,9 @@ public class NotificationHub : Hub
                     catch (Exception ex)
                     {
                         _logger.LogDebug("Connections: {conn}", UserConnections.ToJson());
-                        _logger.LogWarning(ex, "Failed to send notification to connection {connectionId}", connectionId);
+                        _logger.LogWarning(ex, "Failed to send notification to connection {connectionId}",
+                            connectionId);
                     }
-                }
-            }
         }
         else
         {
@@ -123,5 +119,7 @@ public class NotificationHub : Hub
     }
 
     private string? GetSessionIdFromClaims()
-        => Context.User?.FindFirst(ClaimTypes.Sid)?.Value;
+    {
+        return Context.User?.FindFirst(ClaimTypes.Sid)?.Value;
+    }
 }

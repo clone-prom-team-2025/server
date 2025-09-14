@@ -89,7 +89,7 @@ public class CategoryService(ICategoryRepository categoryRepository, IMapper map
     {
         var category = _mapper.Map<Category>(categoryUpdateDto);
         var result = await _categoryRepository.UpdateAsync(category);
-        if (!result) throw new Exception("Could not update category");
+        if (!result) throw new InvalidOperationException("Could not update category");
         var updatedCategory = await _categoryRepository.GetByIdAsync(category.Id.ToString());
     }
 

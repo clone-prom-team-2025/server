@@ -1,6 +1,7 @@
 using System.Reflection;
 using App.Core.Constants;
 using App.Core.DTOs.Auth;
+using App.Core.Exceptions;
 using App.Core.Interfaces;
 using App.Core.Models.Auth;
 using App.Core.Models.Email;
@@ -9,7 +10,6 @@ using App.Core.Models.FileStorage;
 using App.Core.Models.User;
 using App.Core.Utils;
 using AutoMapper;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
@@ -35,14 +35,14 @@ public class AuthService(
     private static readonly Random Random = new();
     private readonly IMemoryCache _cache = memoryCache;
     private readonly IEmailService _emailService = emailService;
+    private readonly IFavoriteProductRepository _favoriteProductRepository = favoriteProductRepository;
+    private readonly IFavoriteSellerRepository _favoriteSellerRepository = favoriteSellerRepository;
     private readonly IFileService _fileService = fileService;
     private readonly IMapper _mapper = mapper;
     private readonly SessionsOptions _options = options.Value;
+    private readonly ISessionHubNotifier _sessionHubNotifier = sessionHubNotifier;
     private readonly IUserSessionRepository _sessionRepository = sessionRepository;
     private readonly IUserRepository _userRepository = userRepository;
-    private readonly ISessionHubNotifier _sessionHubNotifier = sessionHubNotifier;
-    private readonly IFavoriteSellerRepository _favoriteSellerRepository = favoriteSellerRepository;
-    private readonly IFavoriteProductRepository _favoriteProductRepository = favoriteProductRepository;
 
     /// <summary>
     ///     Logs in a user using email or username and returns a session token.
@@ -104,7 +104,7 @@ public class AuthService(
             BaseFile file = new();
             var id = ObjectId.GenerateNewId();
             (file.SourceUrl, file.CompressedFileName, file.SourceFileName, file.CompressedFileName) =
-                await _fileService.SaveImageAsync(image, id.ToString() + "-avatar", "user-avatars");
+                await _fileService.SaveImageAsync(image, id + "-avatar", "user-avatars");
             var user = new User(username, model.Password, normalizedEmail,
                 file, [RoleNames.User], model.FullName)
             {
@@ -112,8 +112,10 @@ public class AuthService(
             };
 
             await _userRepository.CreateUserAsync(user);
-            await _favoriteSellerRepository.CreateAsync(new FavoriteSeller(id, DefaultFavoriteNames.DefaultSellerCollectionName));
-            await _favoriteSellerRepository.CreateAsync(new FavoriteSeller(id, DefaultFavoriteNames.DefaultSellerCollectionName));
+            await _favoriteSellerRepository.CreateAsync(new FavoriteSeller(id,
+                DefaultFavoriteNames.DefaultSellerCollectionName));
+            await _favoriteSellerRepository.CreateAsync(new FavoriteSeller(id,
+                DefaultFavoriteNames.DefaultSellerCollectionName));
         }
 
         return await LoginAsync(new LoginDto { Login = model.Email, Password = model.Password }, deviceInfo);
@@ -134,7 +136,7 @@ public class AuthService(
 
         await _sessionRepository.RevokeSessionAsync(ObjectId.Parse(sessionId));
     }
-    
+
     public async Task LogoutAsync(string sessionId, string userId)
     {
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
@@ -144,7 +146,7 @@ public class AuthService(
         if (session == null || session.IsRevoked)
             throw new KeyNotFoundException("Session not found");
         if (session.UserId.ToString() != userId)
-            throw new InvalidOperationException("It's not your session");
+            throw new AccessDeniedException("It's not your session");
 
         await _sessionHubNotifier.ForceLogoutAsync(sessionId);
 
@@ -237,8 +239,8 @@ public class AuthService(
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
         if (user == null)
             throw new KeyNotFoundException("User not found");
-        
-        if (user.EmailConfirmed == true)
+
+        if (user.EmailConfirmed)
             throw new InvalidOperationException("Email is already confirmed");
 
         var assembly = Assembly.GetExecutingAssembly();
@@ -248,7 +250,7 @@ public class AuthService(
 
         var code = GenerateCode(6);
         var readyHtml = html.Replace("__CODE__", code).Replace("__TIME__", "15");
-        
+
         SaveVerificationCode(user.Email, code, 15);
 
         var mail = new EmailMessage
@@ -285,6 +287,29 @@ public class AuthService(
             }
 
         throw new InvalidOperationException("Invalid code");
+    }
+
+    public async Task<IEnumerable<UserSessionDto>?> GetActiveSessions(string userId)
+    {
+        var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+        if (user == null)
+            throw new KeyNotFoundException("User not found");
+
+        var sessions = await _sessionRepository.GetSessionsAsync(ObjectId.Parse(userId));
+
+        return _mapper.Map<IEnumerable<UserSessionDto>>(sessions);
+    }
+
+    public async Task RevokeAllSessions(string userId)
+    {
+        var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+        if (user == null)
+            throw new KeyNotFoundException("User not found");
+        var sessions = await _sessionRepository.GetSessionsAsync(ObjectId.Parse(userId));
+        foreach (var session in sessions)
+            session.IsRevoked = true;
+        if (!await _userRepository.UpdateUserAsync(user))
+            throw new KeyNotFoundException("User not found");
     }
 
     /// <summary>
@@ -336,28 +361,5 @@ public class AuthService(
     {
         public string Code { get; set; } = default!;
         public string UserId { get; set; } = default!;
-    }
-
-    public async Task<IEnumerable<UserSessionDto>?> GetActiveSessions(string userId)
-    {
-        var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
-        if (user == null)
-            throw new KeyNotFoundException("User not found");
-
-        var sessions = await _sessionRepository.GetSessionsAsync(ObjectId.Parse(userId));
-        
-        return _mapper.Map<IEnumerable<UserSessionDto>>(sessions);
-    }
-
-    public async Task RevokeAllSessions(string userId)
-    {
-        var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
-        if (user == null)
-            throw new KeyNotFoundException("User not found");
-        var sessions = await _sessionRepository.GetSessionsAsync(ObjectId.Parse(userId));
-        foreach (var session in sessions)
-            session.IsRevoked = true;
-        if (!await _userRepository.UpdateUserAsync(user))
-            throw new KeyNotFoundException("User not found");
     }
 }

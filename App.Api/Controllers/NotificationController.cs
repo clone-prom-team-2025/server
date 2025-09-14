@@ -12,9 +12,9 @@ namespace App.Api.Controllers;
 [Route("[controller]/[action]")]
 public class NotificationController : ControllerBase
 {
-    private readonly INotificationService _notificationService;
     private readonly ILogger<NotificationController> _logger;
-    
+    private readonly INotificationService _notificationService;
+
     public NotificationController(INotificationService notificationService, ILogger<NotificationController> logger)
     {
         _notificationService = notificationService;
@@ -58,7 +58,7 @@ public class NotificationController : ControllerBase
             return Ok(result);
         }
     }
-    
+
     [HttpGet]
     public async Task<IActionResult> GetAllNotificationsByMyId()
     {
@@ -88,7 +88,7 @@ public class NotificationController : ControllerBase
             return Ok(result);
         }
     }
-    
+
     [HttpGet]
     public async Task<IActionResult> GetUnSeenNotificationsAsync()
     {
@@ -103,7 +103,7 @@ public class NotificationController : ControllerBase
             return Ok(result);
         }
     }
-    
+
     [HttpPost]
     public async Task<IActionResult> SendNotification([FromForm] NotificationCreateDto notification)
     {
@@ -124,7 +124,8 @@ public class NotificationController : ControllerBase
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null)
                 return BadRequest();
-            _logger.LogInformation("SeeNotification called with Id={notificationId}, UserId={userId}", notificationId, userId);
+            _logger.LogInformation("SeeNotification called with Id={notificationId}, UserId={userId}", notificationId,
+                userId);
             await _notificationService.SeeNotificationAsync(notificationId, userId);
             _logger.LogInformation("SeeNotification completed");
             return NoContent();

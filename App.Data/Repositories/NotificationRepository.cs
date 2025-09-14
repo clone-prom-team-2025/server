@@ -59,10 +59,10 @@ public class NotificationRepository(MongoDbContext context) : INotificationRepos
     {
         await _notifications.InsertOneAsync(notification);
     }
-    
+
     public async Task<bool> DeleteNotificationAsync(ObjectId id)
     {
-        var filter =  Builders<Notification>.Filter.Eq(n => n.Id, id);
+        var filter = Builders<Notification>.Filter.Eq(n => n.Id, id);
         return (await _notifications.DeleteOneAsync(filter)).DeletedCount != 0;
     }
 
@@ -129,6 +129,6 @@ public class NotificationRepository(MongoDbContext context) : INotificationRepos
 
     private class NotificationWithSeen : Notification
     {
-        public List<NotificationSeen> SeenInfo { get; set; } = new();
+        public List<NotificationSeen> SeenInfo { get; } = new();
     }
 }

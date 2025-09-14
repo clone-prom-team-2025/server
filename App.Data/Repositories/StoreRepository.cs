@@ -33,7 +33,7 @@ public class StoreRepository(MongoDbContext context) : IStoreRepository
         var filter = Builders<Store>.Filter.Eq(s => s.Id, storeId);
         return await _storeCollection.Find(filter).FirstOrDefaultAsync();
     }
-    
+
     public async Task<Store?> GetStoreByUserId(ObjectId userId)
     {
         var filter = Builders<Store>.Filter.Exists($"Roles.{userId}");

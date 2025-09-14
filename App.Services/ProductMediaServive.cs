@@ -36,7 +36,7 @@ public class ProductMediaService(
     ///     Repository interface for accessing product media data from the database.
     /// </summary>
     private readonly IProductMediaRepository _repository = repository;
-    
+
     /// <summary>
     ///     Retrieves all product media from the database.
     /// </summary>
@@ -55,13 +55,10 @@ public class ProductMediaService(
     /// <param name="stream">Stream of the uploaded file.</param>
     /// <param name="fileName">Name of the uploaded file.</param>
     /// <param name="order">Ordering position of the media among other media for the same product.</param>
-    /// <returns>The saved <see cref="ProductMediaDto" />.</returns>
-    /// <exception cref="InvalidOperationException">If file is not safe.</exception>
-    /// <exception cref="ArgumentException">If media type is unsupported.</exception>
     public async Task<ProductMediaDto> PushMediaAsync(string productId, Stream stream, string fileName, int order)
     {
         if (!MediaInspector.IsSafeMedia(stream, fileName))
-            throw new Exception("Invalid or potentially harmful file");
+            throw new InvalidOperationException("Invalid or potentially harmful file");
 
         var type = MediaInspector.GetMediaType(stream, fileName);
 
@@ -74,7 +71,7 @@ public class ProductMediaService(
             (file.SourceUrl, file.SourceFileName) =
                 await _fileService.SaveVideoAsync(stream, fileName, _productMediaKeys.Video);
         else
-            throw new Exception("Unsupported media type");
+            throw new InvalidOperationException("Unsupported media type");
 
         var medias = await _repository.GetByProductIdAsync(productId);
         if (medias == null || medias.Count == 0)
@@ -110,11 +107,9 @@ public class ProductMediaService(
         string productId)
     {
         foreach (var file in files)
-        {
             if (!MediaInspector.IsSafeMedia(file.Stream, file.FileName))
-                throw new Exception("Invalid or potentially harmful file");
-        }
-        
+                throw new InvalidOperationException("Invalid or potentially harmful file");
+
         var existing = await _repository.GetByProductIdAsync(productId);
         if (existing is { Count: > 0 })
             foreach (var media in existing)
@@ -153,13 +148,13 @@ public class ProductMediaService(
     public async Task DeleteAsync(string id)
     {
         var media = await _repository.GetByIdAsync(id);
-        if (media == null) throw new Exception("Media not found");
+        if (media == null) throw new KeyNotFoundException("Media not found");
 
         await _fileService.DeleteFileAsync(_productMediaKeys.Image, media.Files.SourceFileName);
         if (media.Files.CompressedUrl != null && media.Files.CompressedFileName != null)
             await _fileService.DeleteFileAsync(_productMediaKeys.Image, media.Files.CompressedFileName);
         if (!await _repository.RemoveAsync(id))
-            throw new Exception("Can't delete media");
+            throw new InvalidOperationException("Can't delete media");
     }
 
     /// <summary>
@@ -187,7 +182,7 @@ public class ProductMediaService(
             }
 
         if (!await _repository.RemoveByProdutIdAsync(productId))
-            throw new Exception("Can't delete media");
+            throw new InvalidOperationException("Can't delete media");
     }
 
     /// <summary>

@@ -1,6 +1,5 @@
 using App.Core.Enums;
 using App.Core.Models.User;
-using MongoDB.Bson;
 
 namespace App.Core.DTOs.Auth;
 

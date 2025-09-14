@@ -5,8 +5,7 @@ namespace App.Core.Models.Notification;
 
 public class NotificationSeen
 {
-    [BsonId]
-    public ObjectId Id { get; set; }
+    [BsonId] public ObjectId Id { get; set; }
 
     public ObjectId NotificationId { get; set; }
 

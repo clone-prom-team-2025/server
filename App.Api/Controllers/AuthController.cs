@@ -53,7 +53,7 @@ public class AuthController : ControllerBase
 
         return NoContent();
     }
-    
+
     [HttpGet("active-sessions")]
     [Authorize]
     public async Task<IActionResult> GetActiveSessions()
@@ -61,7 +61,7 @@ public class AuthController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
             return BadRequest();
-        
+
         return Ok(await _authService.GetActiveSessions(userId));
     }
 
@@ -72,9 +72,9 @@ public class AuthController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
             return BadRequest();
-        
+
         await _authService.LogoutAsync(sessionId, userId);
-        
+
         return NoContent();
     }
 

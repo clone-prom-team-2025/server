@@ -2,19 +2,23 @@ using App.Core.DTOs.Notification;
 using App.Core.Interfaces;
 using App.Core.Models.Notification;
 using AutoMapper;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 
 namespace App.Services;
 
-public class NotificationService(INotificationRepository notificationRepository, IMapper mapper, ILogger<NotificationService> logger, IUserRepository userRepository, INotificationHubNotifier notificationHubNotifier) : INotificationService
+public class NotificationService(
+    INotificationRepository notificationRepository,
+    IMapper mapper,
+    ILogger<NotificationService> logger,
+    IUserRepository userRepository,
+    INotificationHubNotifier notificationHubNotifier) : INotificationService
 {
-    private readonly INotificationRepository _notificationRepository = notificationRepository;
-    private readonly IMapper _mapper = mapper;
     private readonly ILogger<NotificationService> _logger = logger;
-    private readonly IUserRepository _userRepository = userRepository;
+    private readonly IMapper _mapper = mapper;
     private readonly INotificationHubNotifier _notificationHubNotifier = notificationHubNotifier;
+    private readonly INotificationRepository _notificationRepository = notificationRepository;
+    private readonly IUserRepository _userRepository = userRepository;
 
     public async Task<IEnumerable<NotificationDto>> GetAllNotificationsAsync()
     {
@@ -34,7 +38,7 @@ public class NotificationService(INotificationRepository notificationRepository,
         {
             _logger.LogInformation("GetNotificationAsync called with Id={id}", id);
             var result = await _notificationRepository.GetNotificationByIdAsync(ObjectId.Parse(id));
-            if (result ==  null) throw new KeyNotFoundException("Notification not found");
+            if (result == null) throw new KeyNotFoundException("Notification not found");
             _logger.LogInformation("GetNotificationAsync completed");
             return _mapper.Map<NotificationDto>(result);
         }
@@ -86,8 +90,7 @@ public class NotificationService(INotificationRepository notificationRepository,
             notification.CreatedAt = DateTime.UtcNow;
             await _notificationRepository.CreateNotificationAsync(notification);
             _logger.LogInformation("CreateNotificationAsync completed");
-            var notificationDto = _mapper.Map<NotificationDto>(notification)
-                                  ?? throw new Exception("Mapper returned null");
+            var notificationDto = _mapper.Map<NotificationDto>(notification);
             await _notificationHubNotifier.SendNotificationAsync(notificationDto);
             _logger.LogInformation("CreateNotificationAsync notification sent");
         }
@@ -99,7 +102,7 @@ public class NotificationService(INotificationRepository notificationRepository,
         {
             _logger.LogInformation("DeleteNotificationAsync called with Id={id}", id);
             var result = await _notificationRepository.DeleteNotificationAsync(ObjectId.Parse(id));
-            if (!result) throw new Exception("Notification not found");
+            if (!result) throw new KeyNotFoundException("Notification not found");
             _logger.LogInformation("DeleteNotificationAsync completed");
         }
     }
@@ -110,7 +113,7 @@ public class NotificationService(INotificationRepository notificationRepository,
         {
             _logger.LogInformation("DeleteAllNotificationsAsync called with UserId={userId}");
             var result = await _notificationRepository.DeleteAllNotificationsAsync();
-            if (!result) throw new Exception("No notifications found");
+            if (!result) throw new KeyNotFoundException("No notifications found");
             _logger.LogInformation("DeleteAllNotificationsAsync completed");
         }
     }
@@ -121,7 +124,7 @@ public class NotificationService(INotificationRepository notificationRepository,
         {
             _logger.LogInformation("DeleteAllNotificationsByUserIdAsync called with UserId={userId}", userId);
             var result = await _notificationRepository.DeleteAllNotificationsByUserIdAsync(ObjectId.Parse(userId));
-            if (!result) throw new Exception("No notifications found");
+            if (!result) throw new KeyNotFoundException("No notifications found");
             _logger.LogInformation("DeleteAllNotificationsByUserIdAsync completed");
         }
     }
@@ -144,7 +147,7 @@ public class NotificationService(INotificationRepository notificationRepository,
         using (_logger.BeginScope("DeleteSeenNotificationAsync: id={id}", id))
         {
             _logger.LogInformation("DeleteSeenNotificationAsync called with Id={id}");
-            var  result = await _notificationRepository.DeleteSeenNotificationAsync(ObjectId.Parse(id));
+            var result = await _notificationRepository.DeleteSeenNotificationAsync(ObjectId.Parse(id));
             if (!result) throw new KeyNotFoundException("Notification not found");
             _logger.LogInformation("DeleteSeenNotificationAsync completed");
         }
@@ -179,7 +182,9 @@ public class NotificationService(INotificationRepository notificationRepository,
                    notificationId))
         {
             _logger.LogInformation("DeleteAllSeenNotificationsByNotificationIdAsync called");
-            var result = await _notificationRepository.DeleteAllSeenNotificationsByNotificationIdAsync(ObjectId.Parse(notificationId));
+            var result =
+                await _notificationRepository.DeleteAllSeenNotificationsByNotificationIdAsync(
+                    ObjectId.Parse(notificationId));
             if (!result) throw new KeyNotFoundException("No notifications found");
             _logger.LogInformation("DeleteAllSeenNotificationsByNotificationIdAsync completed");
         }
@@ -194,9 +199,9 @@ public class NotificationService(INotificationRepository notificationRepository,
             if (notification == null) throw new KeyNotFoundException("Notification not found");
             var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
             if (user == null) throw new KeyNotFoundException("User not found");
-            if (!(await _notificationRepository.HasSeenNotificationAsync(user.Id, notification.Id)))
+            if (!await _notificationRepository.HasSeenNotificationAsync(user.Id, notification.Id))
                 throw new InvalidOperationException("Notification already seen");
-            var seen = new NotificationSeen()
+            var seen = new NotificationSeen
             {
                 Id = ObjectId.GenerateNewId(),
                 NotificationId = notification.Id,

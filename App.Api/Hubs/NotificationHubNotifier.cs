@@ -24,7 +24,8 @@ public class NotificationHubNotifier : INotificationHubNotifier
             List<string> connectionsCopy;
             lock (NotificationHub.UserConnections)
             {
-                if (!NotificationHub.UserConnections.TryGetValue(notification.To, out var connections) || connections.Count == 0)
+                if (!NotificationHub.UserConnections.TryGetValue(notification.To, out var connections) ||
+                    connections.Count == 0)
                     return;
 
                 connectionsCopy = connections.ToList(); // копіюємо щоб не працювати з HashSet поза lock
