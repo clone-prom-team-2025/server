@@ -31,7 +31,7 @@ public class ProductProfile : Profile
             .ForMember(dest => dest.CategoryPath, opt => opt.Ignore())
             .ForMember(dest => dest.Features, opt => opt.MapFrom(dto => dto.Features))
             .ForMember(dest => dest.Name, opt => opt.MapFrom(dto => dto.Name));
-        
+
         CreateMap<Product, ProductDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
             .ForMember(dest => dest.SellerId, opt => opt.MapFrom(src => src.SellerId.ToString()))

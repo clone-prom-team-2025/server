@@ -15,9 +15,7 @@ public class SessionHubNotifier : ISessionHubNotifier
     public async Task ForceLogoutAsync(string sessionId)
     {
         if (SessionHub.SessionConnections.TryGetValue(sessionId, out var connectionId))
-        {
             await _hubContext.Clients.Client(connectionId)
                 .SendAsync("ForceLogout", "Your session was terminated");
-        }
     }
 }

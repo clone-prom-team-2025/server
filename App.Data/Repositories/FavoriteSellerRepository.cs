@@ -7,11 +7,11 @@ namespace App.Data.Repositories;
 
 public class FavoriteSellerRepository(MongoDbContext mongoDbContext) : IFavoriteSellerRepository
 {
-    private readonly IMongoCollection<FavoriteSeller> _favoriteSellers =  mongoDbContext.FavoriteSellers;
-    
+    private readonly IMongoCollection<FavoriteSeller> _favoriteSellers = mongoDbContext.FavoriteSellers;
+
     public async Task CreateAsync(FavoriteSeller favoriteSeller)
     {
-        await  _favoriteSellers.InsertOneAsync(favoriteSeller);
+        await _favoriteSellers.InsertOneAsync(favoriteSeller);
     }
 
     public async Task<bool> DeleteAsync(ObjectId id)
@@ -51,7 +51,7 @@ public class FavoriteSellerRepository(MongoDbContext mongoDbContext) : IFavorite
 
     public async Task<bool> DeleteAllByUserIdAsync(ObjectId userId)
     {
-        var filter  = Builders<FavoriteSeller>.Filter.Eq(x => x.UserId, userId);
+        var filter = Builders<FavoriteSeller>.Filter.Eq(x => x.UserId, userId);
         return (await _favoriteSellers.DeleteOneAsync(filter)).DeletedCount > 0;
     }
 }

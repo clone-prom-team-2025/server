@@ -10,7 +10,7 @@ public class NotificationCreateDto
 
     public string? From { get; set; }
     public string? To { get; set; }
-    
+
     public string? MetadataUrl { get; set; }
 
     public bool IsHighPriority { get; set; } = false;

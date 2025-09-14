@@ -7,7 +7,6 @@ using MailKit.Search;
 using MailKit.Security;
 using Microsoft.Extensions.Configuration;
 using MimeKit;
-using MongoDB.Driver;
 
 namespace App.Services;
 

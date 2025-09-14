@@ -1,4 +1,5 @@
 using App.Core.DTOs.Cart;
+using App.Core.Exceptions;
 using App.Core.Interfaces;
 using App.Core.Models.Cart;
 using AutoMapper;
@@ -31,7 +32,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
             if (!result)
             {
                 _logger.LogError("AddAsync: Failed to create cart");
-                throw new Exception("Failed to create cart");
+                throw new InvalidOperationException("Failed to create cart");
             }
 
             _logger.LogInformation("AddAsync: Successfully created cart");
@@ -47,7 +48,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
             if (!result)
             {
                 _logger.LogError("RemoveAsync: Failed to delete cart");
-                throw new Exception("Failed to delete cart");
+                throw new InvalidOperationException("Failed to delete cart");
             }
 
             _logger.LogInformation("RemoveAsync: Successfully deleted cart");
@@ -63,7 +64,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
             if (!result)
             {
                 _logger.LogError("RemoveAsync: Failed to delete carts");
-                throw new Exception("Failed to delete carts");
+                throw new InvalidOperationException("Failed to delete carts");
             }
 
             _logger.LogInformation("RemoveAsync: Successfully deleted carts");
@@ -79,13 +80,13 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
             if (cart == null)
             {
                 _logger.LogError("ChangePcsAsync: Failed to find cart. Cart not found");
-                throw new Exception("Cart not found");
+                throw new KeyNotFoundException("Cart not found");
             }
 
             if (cart.UserId.ToString() != userId)
             {
                 _logger.LogError("ChangePcsAsync: Failed to find cart. It's not your cart!");
-                throw new Exception("It's not your cart");
+                throw new AccessDeniedException("It's not your cart");
             }
 
             if (pcs <= 0)
@@ -95,7 +96,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
                 if (!resultDelete)
                 {
                     _logger.LogError("ChangePcsAsync: Failed to update cart");
-                    throw new Exception("Failed to update cart");
+                    throw new InvalidOperationException("Failed to update cart");
                 }
 
                 _logger.LogInformation("ChangePcsAsync: Successfully updated cart(Removed)");
@@ -106,7 +107,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
             if (!result)
             {
                 _logger.LogError("ChangePcsAsync: Failed to update cart");
-                throw new Exception("Failed to update cart");
+                throw new InvalidOperationException("Failed to update cart");
             }
 
             _logger.LogInformation("ChangePcsAsync: Successfully updated cart");

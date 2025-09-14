@@ -73,16 +73,18 @@ public class MongoDbContext
         _database.GetCollection<StoreCreateRequest>("StoreCreateRequests");
 
     public IMongoCollection<Cart> Carts => _database.GetCollection<Cart>("Carts");
-    
+
     public IMongoCollection<Notification> Notifications => _database.GetCollection<Notification>("Notifications");
 
     public IMongoCollection<NotificationSeen> NotificationSees =>
         _database.GetCollection<NotificationSeen>("NotificationSees");
 
-    public IMongoCollection<FavoriteProduct> FavoriteProducts => _database.GetCollection<FavoriteProduct>("FavoriteProducts");
-    
-    public IMongoCollection<FavoriteSeller> FavoriteSellers => _database.GetCollection<FavoriteSeller>("FavoriteSellers");
-    
+    public IMongoCollection<FavoriteProduct> FavoriteProducts =>
+        _database.GetCollection<FavoriteProduct>("FavoriteProducts");
+
+    public IMongoCollection<FavoriteSeller> FavoriteSellers =>
+        _database.GetCollection<FavoriteSeller>("FavoriteSellers");
+
 
     /// <summary>
     ///     Ensures that the necessary indexes for the <see cref="Category" /> collection are created.

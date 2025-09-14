@@ -9,7 +9,6 @@ public class FavoriteProductRepository(MongoDbContext mongoDbContext) : IFavorit
 {
     private readonly IMongoCollection<FavoriteProduct> _favorites = mongoDbContext.FavoriteProducts;
 
-
     public async Task CreateAsync(FavoriteProduct favoriteProduct)
     {
         await _favorites.InsertOneAsync(favoriteProduct);

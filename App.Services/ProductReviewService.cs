@@ -22,7 +22,7 @@ public class ProductReviewService(
     {
         var product = await _productRepository.GetByIdAsync(ObjectId.Parse(productId));
         if (product == null)
-            throw new Exception("Product not found");
+            throw new KeyNotFoundException("Product not found");
         var review = await _repository.GetByProductId(product.Id);
         if (review == null)
         {
@@ -31,7 +31,7 @@ public class ProductReviewService(
         }
 
         if (review.Comments.Any(c => c.UserId == ObjectId.Parse(comment.UserId)))
-           throw new Exception("Comment already exists");
+            throw new InvalidOperationException("Comment already exists");
 
         review.Comments.Add(_mapper.Map<ProductReviewComment>(comment));
 
@@ -42,12 +42,12 @@ public class ProductReviewService(
     {
         var review = await _repository.GetByProductId(ObjectId.Parse(productId));
         if (review == null)
-            throw new Exception("Review not found");
+            throw new KeyNotFoundException("Review not found");
 
         var removedCount = review.Comments.RemoveAll(c => c.UserId == ObjectId.Parse(productId));
 
         if (removedCount == 0)
-            throw new Exception("Comment doesn't exist");
+            throw new InvalidOperationException("Comment doesn't exist");
 
         await _repository.UpdateReview(review);
     }
@@ -56,7 +56,7 @@ public class ProductReviewService(
     {
         var review = await _repository.GetByProductId(ObjectId.Parse(productId));
         if (review == null)
-            throw new Exception("Product not found");
+            throw new KeyNotFoundException("Product not found");
 
         var dto = _mapper.Map<ProductReviewDto>(review);
 
@@ -83,7 +83,7 @@ public class ProductReviewService(
     {
         var review = await _repository.GetReviewById(ObjectId.Parse(reviewId));
         if (review == null)
-            throw new Exception("Review not found");
+            throw new KeyNotFoundException("Review not found");
 
         var dto = _mapper.Map<ProductReviewDto>(review);
 
@@ -109,7 +109,7 @@ public class ProductReviewService(
     {
         var deleteResult = await _repository.DeleteReview(ObjectId.Parse(productId));
         if (!deleteResult)
-            throw new Exception("Can't delete review");
+            throw new InvalidOperationException("Can't delete review");
         var createResult = await _repository.CreateReview(new ProductReview(ObjectId.Parse(productId)));
     }
 
@@ -118,11 +118,11 @@ public class ProductReviewService(
     {
         var review = await _repository.GetByProductId(ObjectId.Parse(productId));
         if (review == null)
-            throw new Exception("Review not found");
+            throw new KeyNotFoundException("Review not found");
 
         var comment = review.Comments.FirstOrDefault(c => c.UserId == ObjectId.Parse(commentUserId));
         if (comment == null)
-            throw new Exception("Comment not found");
+            throw new KeyNotFoundException("Comment not found");
 
         comment.Reactions[reactionUserId] = reaction;
 
@@ -133,14 +133,14 @@ public class ProductReviewService(
     {
         var review = await _repository.GetByProductId(ObjectId.Parse(productId));
         if (review == null)
-            throw new Exception("Review not found");
+            throw new KeyNotFoundException("Review not found");
 
         var comment = review.Comments.FirstOrDefault(c => c.UserId == ObjectId.Parse(commentUserId));
         if (comment == null)
-            throw new Exception("Comment not found");
+            throw new KeyNotFoundException("Comment not found");
 
         if (!comment.Reactions.ContainsKey(reactionUserId))
-            throw new Exception("Invalid reaction");
+            throw new InvalidOperationException("Invalid reaction");
 
         comment.Reactions.Remove(reactionUserId);
 
@@ -151,7 +151,7 @@ public class ProductReviewService(
     {
         var review = await _repository.GetByProductId(ObjectId.Parse(productId));
         if (review == null || !review.Comments.Any())
-            throw new Exception("Review not found");
+            throw new KeyNotFoundException("Review not found");
 
         var commentDtos = _mapper.Map<IEnumerable<ProductReviewCommentDto>>(review.Comments);
 

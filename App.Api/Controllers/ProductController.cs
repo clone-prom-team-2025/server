@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using App.Core.Constants;
 using App.Core.DTOs.Product;
 using App.Core.Interfaces;
 using App.Core.Models.Product;
@@ -22,129 +21,70 @@ public class ProductController : ControllerBase
     [HttpPost("get-all")]
     public async Task<IActionResult> GetAllAsync(ProductFilterRequestDto filter)
     {
-        try
-        {
-            var products = await _productService.GetAllAsync(filter);
-            if (products == null || products.Products.Count == 0)
-                return NoContent();
+        var products = await _productService.GetAllAsync(filter);
+        if (products == null || products.Products.Count == 0)
+            return NoContent();
 
-            return Ok(products);
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        return Ok(products);
     }
 
     [HttpGet("get-by-id/{id}")]
     public async Task<ActionResult<ProductDto?>> GetByIdAsync(string id)
     {
-        try
-        {
-            var product = await _productService.GetByIdAsync(id);
-            return product == null ? NotFound() : Ok(product);
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        var product = await _productService.GetByIdAsync(id);
+        return product == null ? NotFound() : Ok(product);
     }
 
     [HttpPost("get-by-name/{name}")]
     public async Task<ActionResult<ProductFilterResponseDto?>> GetByNameAsync(string name,
         ProductFilterRequestDto filter)
     {
-        try
-        {
-            var products = await _productService.GetByNameAsync(name, filter);
-            if (products == null || products.Products.Count == 0)
-                return NotFound();
-            return Ok(products);
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        var products = await _productService.GetByNameAsync(name, filter);
+        if (products == null || products.Products.Count == 0)
+            return NotFound();
+        return Ok(products);
     }
 
     [HttpPost("get-by-seller-id/{sellerId}")]
     public async Task<IActionResult> GetBySellerIdAsync(string sellerId,
         ProductFilterRequestDto filter)
     {
-        try
-        {
-            var products = await _productService.GetBySellerIdAsync(sellerId, filter);
-            if (products == null || products.Products.Count == 0)
-                return NotFound();
-            return Ok(products);
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
-        
+        var products = await _productService.GetBySellerIdAsync(sellerId, filter);
+        if (products == null || products.Products.Count == 0)
+            return NotFound();
+        return Ok(products);
     }
 
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> CreateAsync([FromBody] ProductCreateDto productDto)
     {
-        try
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
-            {
-                return BadRequest();
-            }
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return BadRequest();
 
-            await _productService.CreateAsync(productDto, userId);
-            return NoContent();
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        await _productService.CreateAsync(productDto, userId);
+        return NoContent();
     }
 
     [HttpPut]
     [Authorize]
     public async Task<ActionResult<ProductDto?>> UpdateAsync(UpdateProductDto productDto)
     {
-        try
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
-            {
-                return BadRequest();
-            }
-            await _productService.UpdateAsync(productDto, userId);
-            return NoContent();
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return BadRequest();
+        await _productService.UpdateAsync(productDto, userId);
+        return NoContent();
     }
 
     [HttpDelete]
     [Authorize]
     public async Task<ActionResult> DeleteAsync(string id)
     {
-        try
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
-            {
-                return BadRequest();
-            }
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return BadRequest();
 
-            await _productService.DeleteAsync(id, userId);
-            return NoContent();
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        await _productService.DeleteAsync(id, userId);
+        return NoContent();
     }
 
     [HttpGet("search")]

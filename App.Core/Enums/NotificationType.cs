@@ -8,5 +8,5 @@ public enum NotificationType
     Security,
     SecurityAlert,
     Marketing,
-    Other 
+    Other
 }

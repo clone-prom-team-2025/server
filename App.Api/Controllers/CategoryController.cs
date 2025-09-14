@@ -1,7 +1,6 @@
 ﻿using App.Core.Constants;
 using App.Core.DTOs.Categoty;
 using App.Core.Interfaces;
-using App.Core.Models;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -28,18 +27,11 @@ public class CategoryController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        try
-        {
-            var categories = await _categoryService.GetAllAsync();
-            if (categories == null || categories.Count == 0)
-                return NoContent();
+        var categories = await _categoryService.GetAllAsync();
+        if (categories == null || categories.Count == 0)
+            return NoContent();
 
-            return Ok(categories);
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        return Ok(categories);
     }
 
     /// <summary>
@@ -50,18 +42,11 @@ public class CategoryController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(string id)
     {
-        try
-        {
-            var category = await _categoryService.GetByIdAsync(id);
-            if (category == null)
-                return NotFound();
+        var category = await _categoryService.GetByIdAsync(id);
+        if (category == null)
+            return NotFound();
 
-            return Ok(category);
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        return Ok(category);
     }
 
     /// <summary>
@@ -72,18 +57,11 @@ public class CategoryController : ControllerBase
     [HttpGet("children/{parentId}")]
     public async Task<IActionResult> GetByParentId(string parentId)
     {
-        try
-        {
-            var children = await _categoryService.GetByParentIdAsync(parentId);
-            if (children == null || children.Count == 0)
-                return NoContent();
+        var children = await _categoryService.GetByParentIdAsync(parentId);
+        if (children == null || children.Count == 0)
+            return NoContent();
 
-            return Ok(children);
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        return Ok(children);
     }
 
     /// <summary>
@@ -95,16 +73,8 @@ public class CategoryController : ControllerBase
     [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Create([FromBody] CategoryCreateDto categoryDto)
     {
-        try
-        {
-            await _categoryService.CreateAsync(categoryDto);
-            return NoContent();
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
-        
+        await _categoryService.CreateAsync(categoryDto);
+        return NoContent();
     }
 
     /// <summary>
@@ -117,15 +87,8 @@ public class CategoryController : ControllerBase
     [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Update([FromBody] CategoryDto categoryDto)
     {
-        try
-        {
-            await _categoryService.UpdateAsync(categoryDto);
-            return NoContent();
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        await _categoryService.UpdateAsync(categoryDto);
+        return NoContent();
     }
 
     /// <summary>
@@ -137,15 +100,8 @@ public class CategoryController : ControllerBase
     [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Delete(string id)
     {
-        try
-        {
-            await _categoryService.DeleteAsync(id);
-            return NoContent();
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        await _categoryService.DeleteAsync(id);
+        return NoContent();
     }
 
     /// <summary>
@@ -157,18 +113,11 @@ public class CategoryController : ControllerBase
     [HttpGet("search")]
     public async Task<IActionResult> Search(string name)
     {
-        try
-        {
-            var results = await _categoryService.SearchAsync(name);
-            if (results == null || results.Count == 0)
-                return NoContent();
+        var results = await _categoryService.SearchAsync(name);
+        if (results == null || results.Count == 0)
+            return NoContent();
 
-            return Ok(results);
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        return Ok(results);
     }
 
     /// <summary>
@@ -179,18 +128,11 @@ public class CategoryController : ControllerBase
     [HttpGet("full-tree")]
     public async Task<IActionResult> GetFullTree()
     {
-        try
-        {
-            var tree = await _categoryService.GetFullTreeAsync();
-            if (tree == null)
-                return NotFound();
+        var tree = await _categoryService.GetFullTreeAsync();
+        if (tree == null)
+            return NotFound();
 
-            return Ok(tree);
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        return Ok(tree);
     }
 
     /// <summary>
@@ -201,18 +143,11 @@ public class CategoryController : ControllerBase
     [HttpGet("category-tree/{parentId}")]
     public async Task<IActionResult> GetCategoryTree(string parentId)
     {
-        try
-        {
-            var tree = await _categoryService.GetCategoryTreeAsync(parentId);
-            if (tree == null)
-                return NotFound();
+        var tree = await _categoryService.GetCategoryTreeAsync(parentId);
+        if (tree == null)
+            return NotFound();
 
-            return Ok(tree);
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        return Ok(tree);
     }
 
     /// <summary>
@@ -223,28 +158,14 @@ public class CategoryController : ControllerBase
     [HttpGet("children-nodes/{parentId}")]
     public async Task<IActionResult> GetChildrenNodes(string parentId)
     {
-        try
-        {
-            var children = await _categoryService.GetChildrenAsync(parentId);
-            return Ok(children);
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        var children = await _categoryService.GetChildrenAsync(parentId);
+        return Ok(children);
     }
 
     [HttpPost("many")]
     public async Task<IActionResult> CreateMany([FromBody] List<CategoryCreateDto> categoryList)
     {
-        try
-        {
-            await _categoryService.CreateManyAsync(categoryList);
-            return NoContent();
-        }
-        catch (Exception e)
-        {
-            return BadRequest(e.Message);
-        }
+        await _categoryService.CreateManyAsync(categoryList);
+        return NoContent();
     }
 }

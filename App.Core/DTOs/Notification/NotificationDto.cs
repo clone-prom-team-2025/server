@@ -14,7 +14,7 @@ public class NotificationDto
     public string? To { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    
+
     public string? MetadataUrl { get; set; }
 
     public bool IsHighPriority { get; set; } = false;

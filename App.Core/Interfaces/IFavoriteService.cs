@@ -14,8 +14,8 @@ public interface IFavoriteService
     Task CreateEmptyFavoriteProductCollection(string name, string userId);
     Task CreateDefaultFavoriteProductCollectionIfNotExist(string userId);
     Task DeleteFavoriteProductCollection(string id, string userId);
-    
-    
+
+
     Task CreateFavoriteSellerCollection(FavoriteSellerCreateDto dto);
     Task<IEnumerable<FavoriteSellerDto>?> GetFavoriteSellerAllByUserIdAsync(string userId);
     Task UpdateFavoriteSellerCollectionName(string id, string name, string userId);

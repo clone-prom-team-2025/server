@@ -28,13 +28,13 @@ public class AvailableFiltersService(IAvailableFiltersRepository repository, IMa
     public async Task RemoveCollectionByCategoryIdAsync(string categoryId)
     {
         if (!await _repository.RemoveCollectionByCategoryIdAsync(categoryId))
-            throw new Exception("Could not remove collection");
+            throw new InvalidOperationException("Could not remove collection");
     }
 
     public async Task RemoveCollectionByIdAsync(string id)
     {
         if (!await _repository.RemoveCollectionByIdAsync(id))
-            throw new Exception("Could not remove collection");
+            throw new InvalidOperationException("Could not remove collection");
     }
 
     public async Task AddFilterToCollectionAsync(string categoryId, List<AvailableFiltersItemDto> filtersDto)
@@ -45,18 +45,18 @@ public class AvailableFiltersService(IAvailableFiltersRepository repository, IMa
     public async Task RemoveFilterFromCollectionAsync(string categoryId, List<string> values)
     {
         if (!await _repository.RemoveFilterFromCollectionAsync(categoryId, values))
-            throw new Exception("Could not remove filter");
+            throw new InvalidOperationException("Could not remove filter");
     }
 
     public async Task UpdateFilterCollectionAsync(string id, List<AvailableFiltersItemDto> filters)
     {
         if (!await _repository.UpdateFilterCollectionAsync(id, _mapper.Map<List<AvailableFiltersItem>>(filters)))
-            throw new Exception("Could not update filter");
+            throw new InvalidOperationException("Could not update filter");
     }
 
     public async Task UpdateFilterCollectionAsync(AvailableFiltersDto updatedFilters)
     {
         if (!await _repository.UpdateFilterCollectionAsync(_mapper.Map<AvailableFilters>(updatedFilters)))
-            throw new Exception("Could not update filter");
+            throw new InvalidOperationException("Could not update filter");
     }
 }

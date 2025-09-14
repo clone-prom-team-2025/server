@@ -16,7 +16,7 @@ public class SessionHub(IUserSessionRepository sessionRepository, IMapper mapper
     public async Task<UserSessionDto?> RequestSessionData()
     {
         var sessionId = GetSessionIdFromClaims();
-        if (sessionId == null) 
+        if (sessionId == null)
         {
             await Clients.Caller.SendAsync("Error", "Session not found in token");
             Context.Abort();
@@ -92,15 +92,12 @@ public class SessionHub(IUserSessionRepository sessionRepository, IMapper mapper
         lock (SessionConnections)
         {
             var item = SessionConnections.FirstOrDefault(x => x.Value == Context.ConnectionId);
-            if (!string.IsNullOrEmpty(item.Key))
-            {
-                SessionConnections.Remove(item.Key);
-            }
+            if (!string.IsNullOrEmpty(item.Key)) SessionConnections.Remove(item.Key);
         }
 
         await base.OnDisconnectedAsync(exception);
     }
-    
+
     public override async Task OnConnectedAsync()
     {
         var sessionId = GetSessionIdFromClaims();
@@ -140,14 +137,14 @@ public class SessionHub(IUserSessionRepository sessionRepository, IMapper mapper
 
     public async Task ForceLogoutLocal(string sessionId)
     {
-        if (SessionConnections.TryGetValue(sessionId, out var connectionId) 
+        if (SessionConnections.TryGetValue(sessionId, out var connectionId)
             && connectionId == Context.ConnectionId)
         {
             await Clients.Caller.SendAsync("ForceLogout", "Your session was terminated");
             Context.Abort();
         }
     }
-    
+
     private string? GetSessionIdFromClaims()
     {
         return Context.User?.FindFirst(ClaimTypes.Sid)?.Value;
