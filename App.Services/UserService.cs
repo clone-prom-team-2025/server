@@ -7,7 +7,9 @@ using App.Core.Models.Email;
 using App.Core.Models.FileStorage;
 using App.Core.Models.User;
 using App.Core.Utils;
+using App.Data.Repositories;
 using AutoMapper;
+using MailKit;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
@@ -23,7 +25,10 @@ public class UserService(
     IMemoryCache cache,
     IEmailService emailService,
     IFileService fileService,
-    ISessionHubNotifier sessionHubNotifier) : IUserService
+    ISessionHubNotifier sessionHubNotifier,
+    IFavoriteSellerRepository favoriteSellerRepository,
+    IFavoriteProductRepository favoriteProductRepository,
+    ICartRepository cartRepository) : IUserService
 {
     private readonly IMemoryCache _cache = cache;
     private readonly IEmailService _emailService = emailService;
@@ -34,6 +39,9 @@ public class UserService(
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IUserSessionRepository _userSessionRepository = userSessionRepository;
     private readonly ISessionHubNotifier _sessionHubNotifier = sessionHubNotifier;
+    private readonly IFavoriteSellerRepository _favoriteSellerRepository = favoriteSellerRepository;
+    private readonly IFavoriteProductRepository _favoriteProductRepository = favoriteProductRepository;
+    private readonly ICartRepository _cartRepository = cartRepository;
 
     public async Task<IEnumerable<UserDto>?> GetAllUsersAsync()
     {
@@ -157,8 +165,12 @@ public class UserService(
             if (string.Equals(stored, code, StringComparison.OrdinalIgnoreCase))
             {
                 _cache.Remove(cacheKey);
-
-                var sessions = await _userSessionRepository.GetSessionsAsync(ObjectId.Parse(userId));
+                
+                await _favoriteSellerRepository.DeleteAllByUserIdAsync(user.Id);
+                await _favoriteProductRepository.DeleteAllByUserIdAsync(user.Id);
+                await _cartRepository.DeleteByUserIdAsync(user.Id);
+                await _userSessionRepository.DeleteAllSessionsAsync(user.Id);
+                
                 var result = await _userRepository.DeleteUserAsync(user.Id);
                 if (!result)
                 {
@@ -166,9 +178,7 @@ public class UserService(
                     throw new Exception("User not found");
                 }
 
-                if (sessions != null)
-                    foreach (var session in sessions)
-                        await _userSessionRepository.RevokeSessionAsync(session.Id);
+               
                 _logger.LogInformation("User with ID {UserId} successfully deleted", user.Id);
             }
             else

@@ -2,6 +2,7 @@ using App.Core.Models;
 using App.Core.Models.Auth;
 using App.Core.Models.AvailableFilters;
 using App.Core.Models.Cart;
+using App.Core.Models.Favorite;
 using App.Core.Models.Notification;
 using App.Core.Models.Product;
 using App.Core.Models.Product.Review;
@@ -77,6 +78,10 @@ public class MongoDbContext
 
     public IMongoCollection<NotificationSeen> NotificationSees =>
         _database.GetCollection<NotificationSeen>("NotificationSees");
+
+    public IMongoCollection<FavoriteProduct> FavoriteProducts => _database.GetCollection<FavoriteProduct>("FavoriteProducts");
+    
+    public IMongoCollection<FavoriteSeller> FavoriteSellers => _database.GetCollection<FavoriteSeller>("FavoriteSellers");
     
 
     /// <summary>

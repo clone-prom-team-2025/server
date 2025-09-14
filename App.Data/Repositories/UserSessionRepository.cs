@@ -74,4 +74,10 @@ public class UserSessionRepository(MongoDbContext mongoDbContext, IOptions<Sessi
         var filter = Builders<UserSession>.Filter.Eq(s => s.UserId, userId);
         await _collection.DeleteManyAsync(filter);
     }
+
+    public async Task<bool> DeleteAllSessionsAsync(ObjectId userId)
+    {
+        var filter = Builders<UserSession>.Filter.Eq(s => s.UserId, userId);
+        return (await _collection.DeleteManyAsync(filter)).DeletedCount > 0;
+    }
 }

@@ -4,6 +4,7 @@ using App.Core.DTOs.Auth;
 using App.Core.Interfaces;
 using App.Core.Models.Auth;
 using App.Core.Models.Email;
+using App.Core.Models.Favorite;
 using App.Core.Models.FileStorage;
 using App.Core.Models.User;
 using App.Core.Utils;
@@ -26,7 +27,9 @@ public class AuthService(
     IMemoryCache memoryCache,
     IUserSessionRepository sessionRepository,
     IOptions<SessionsOptions> options,
-    ISessionHubNotifier sessionHubNotifier)
+    ISessionHubNotifier sessionHubNotifier,
+    IFavoriteSellerRepository favoriteSellerRepository,
+    IFavoriteProductRepository favoriteProductRepository)
     : IAuthService
 {
     private static readonly Random Random = new();
@@ -38,7 +41,8 @@ public class AuthService(
     private readonly IUserSessionRepository _sessionRepository = sessionRepository;
     private readonly IUserRepository _userRepository = userRepository;
     private readonly ISessionHubNotifier _sessionHubNotifier = sessionHubNotifier;
-
+    private readonly IFavoriteSellerRepository _favoriteSellerRepository = favoriteSellerRepository;
+    private readonly IFavoriteProductRepository _favoriteProductRepository = favoriteProductRepository;
 
     /// <summary>
     ///     Logs in a user using email or username and returns a session token.
@@ -108,6 +112,8 @@ public class AuthService(
             };
 
             await _userRepository.CreateUserAsync(user);
+            await _favoriteSellerRepository.CreateAsync(new FavoriteSeller(id, DefaultFavoriteNames.DefaultSellerCollectionName));
+            await _favoriteSellerRepository.CreateAsync(new FavoriteSeller(id, DefaultFavoriteNames.DefaultSellerCollectionName));
         }
 
         return await LoginAsync(new LoginDto { Login = model.Email, Password = model.Password }, deviceInfo);
