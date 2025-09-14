@@ -122,7 +122,7 @@ public class AuthService(
     {
         var session = await _sessionRepository.GetSessionAsync(ObjectId.Parse(sessionId));
         if (session == null || session.IsRevoked)
-            throw new Exception("Session doesn't exist");
+            throw new KeyNotFoundException("Session not found");
 
         await _sessionHubNotifier.ForceLogoutAsync(sessionId);
 
@@ -133,12 +133,12 @@ public class AuthService(
     {
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
         if (user == null)
-            throw new Exception("User doesn't exist");
+            throw new KeyNotFoundException("User not found");
         var session = await _sessionRepository.GetSessionAsync(ObjectId.Parse(sessionId));
         if (session == null || session.IsRevoked)
-            throw new Exception("Session doesn't exist");
+            throw new KeyNotFoundException("Session not found");
         if (session.UserId.ToString() != userId)
-            throw new Exception("It's not your session");
+            throw new InvalidOperationException("It's not your session");
 
         await _sessionHubNotifier.ForceLogoutAsync(sessionId);
 
@@ -211,14 +211,14 @@ public class AuthService(
         {
             var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
             if (user == null)
-                throw new Exception("User not found");
+                throw new KeyNotFoundException("User not found");
 
             _cache.Remove(cacheKey);
             user.PasswordHash = PasswordHasher.HashPassword(password);
             await _userRepository.UpdateUserAsync(user);
         }
 
-        throw new Exception("Invalid code");
+        throw new InvalidOperationException("Invalid code");
     }
 
     /// <summary>
@@ -230,19 +230,19 @@ public class AuthService(
     {
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
         if (user == null)
-            throw new Exception("User not found");
+            throw new KeyNotFoundException("User not found");
         
         if (user.EmailConfirmed == true)
-            throw new Exception("Email is already confirmed");
+            throw new InvalidOperationException("Email is already confirmed");
 
         var assembly = Assembly.GetExecutingAssembly();
-        using var stream = assembly.GetManifestResourceStream("App.Services.EmailTemplates.ConfirmEmail.html");
+        await using var stream = assembly.GetManifestResourceStream("App.Services.EmailTemplates.ConfirmEmail.html");
         using var reader = new StreamReader(stream!);
         var html = await reader.ReadToEndAsync();
 
         var code = GenerateCode(6);
         var readyHtml = html.Replace("__CODE__", code).Replace("__TIME__", "15");
-
+        
         SaveVerificationCode(user.Email, code, 15);
 
         var mail = new EmailMessage
@@ -266,7 +266,7 @@ public class AuthService(
     public async Task VerifyCode(string userId, string inputCode)
     {
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
-        if (user == null) throw new Exception("User not found");
+        if (user == null) throw new KeyNotFoundException("User not found");
 
         var cacheKey = $"verify:{user.Email}";
 
@@ -278,7 +278,7 @@ public class AuthService(
                 await _userRepository.UpdateUserAsync(user);
             }
 
-        throw new Exception("Invalid code");
+        throw new InvalidOperationException("Invalid code");
     }
 
     /// <summary>
@@ -336,7 +336,7 @@ public class AuthService(
     {
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
         if (user == null)
-            throw new Exception("User not found");
+            throw new KeyNotFoundException("User not found");
 
         var sessions = await _sessionRepository.GetSessionsAsync(ObjectId.Parse(userId));
         
@@ -347,11 +347,11 @@ public class AuthService(
     {
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
         if (user == null)
-            throw new Exception("User not found");
+            throw new KeyNotFoundException("User not found");
         var sessions = await _sessionRepository.GetSessionsAsync(ObjectId.Parse(userId));
         foreach (var session in sessions)
             session.IsRevoked = true;
         if (!await _userRepository.UpdateUserAsync(user))
-            throw new Exception("User not found");
+            throw new KeyNotFoundException("User not found");
     }
 }

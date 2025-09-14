@@ -35,6 +35,18 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy
+            .SetIsOriginAllowed(_ => true) // дозволяємо будь-який origin
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials(); // потрібне для SignalR
+    });
+});
+
 // --- MongoDB settings ---
 builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDb"));
 
@@ -63,6 +75,7 @@ builder.Services.AddSingleton<IUserSessionRepository, UserSessionRepository>();
 builder.Services.AddSingleton<IStoreCreateRequestRepository, StoreCreateRequestRepository>();
 builder.Services.AddSingleton<ICartRepository, CartRepository>();
 builder.Services.AddSingleton<IStoreRepository, StoreRepository>();
+builder.Services.AddSingleton<INotificationRepository, NotificationRepository>();
 
 // --- Services ---
 builder.Services.AddSingleton<ICategoryService, CategoryService>();
@@ -76,8 +89,11 @@ builder.Services.AddSingleton<IAvailableFiltersService, AvailableFiltersService>
 builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IStoreService, StoreService>();
 builder.Services.AddSingleton<ICartService, CartService>();
+builder.Services.AddSingleton<INotificationService, NotificationService>();
 
 builder.Services.AddSingleton<ISessionHubNotifier, SessionHubNotifier>();
+builder.Services.AddSingleton<INotificationHubNotifier, NotificationHubNotifier>();
+
 
 builder.Services.AddMemoryCache();
 
@@ -196,13 +212,14 @@ var app = builder.Build();
 // });
 app.UseForwardedHeaders();
 
-app.UseCors();
+app.UseCors("AllowAll");
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseStaticFiles();
 
 app.MapHub<SessionHub>("/hubs/session");
+app.MapHub<NotificationHub>("/hubs/notification");
 
 // --- Create MongoDB indexes on startup ---
 using (var scope = app.Services.CreateScope())

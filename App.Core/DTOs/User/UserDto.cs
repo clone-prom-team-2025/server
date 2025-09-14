@@ -17,7 +17,7 @@ public class UserDto
     public string? Gender { get; set; }
 
     public DateTime? DateOfBirth { get; set; }
-    public string? Email { get; set; }
+    public string Email { get; set; }
 
     public bool EmailConfirmed { get; set; }
 
