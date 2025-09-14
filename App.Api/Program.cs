@@ -76,6 +76,8 @@ builder.Services.AddSingleton<IStoreCreateRequestRepository, StoreCreateRequestR
 builder.Services.AddSingleton<ICartRepository, CartRepository>();
 builder.Services.AddSingleton<IStoreRepository, StoreRepository>();
 builder.Services.AddSingleton<INotificationRepository, NotificationRepository>();
+builder.Services.AddSingleton<IFavoriteSellerRepository, FavoriteSellerRepository>();
+builder.Services.AddSingleton<IFavoriteProductRepository, FavoriteProductRepository>();
 
 // --- Services ---
 builder.Services.AddSingleton<ICategoryService, CategoryService>();
@@ -90,6 +92,7 @@ builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IStoreService, StoreService>();
 builder.Services.AddSingleton<ICartService, CartService>();
 builder.Services.AddSingleton<INotificationService, NotificationService>();
+builder.Services.AddSingleton<IFavoriteService, FavoriteService>();
 
 builder.Services.AddSingleton<ISessionHubNotifier, SessionHubNotifier>();
 builder.Services.AddSingleton<INotificationHubNotifier, NotificationHubNotifier>();
@@ -212,6 +215,7 @@ var app = builder.Build();
 // });
 app.UseForwardedHeaders();
 
+// app.UseCors("AllowAll");
 app.UseCors("AllowAll");
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();

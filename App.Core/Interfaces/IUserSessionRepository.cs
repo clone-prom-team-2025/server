@@ -13,4 +13,5 @@ public interface IUserSessionRepository
     Task RevokeSessionAsync(ObjectId sessionId);
     Task DeleteSessionAsync(ObjectId sessionId);
     Task DeleteSessionsAsync(ObjectId userId);
+    Task<bool> DeleteAllSessionsAsync(ObjectId userId);
 }

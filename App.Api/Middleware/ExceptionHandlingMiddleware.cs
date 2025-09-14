@@ -1,3 +1,4 @@
+using App.Core.Exceptions;
 using MongoDB.Driver;
 
 namespace App.Api.Middleware;
@@ -40,6 +41,10 @@ public class ExceptionHandlingMiddleware
         catch (InvalidOperationException ex)
         {
             await HandleErrorAsync(context, ex.Message, 400);
+        }
+        catch (AccessDeniedException ex)
+        {
+            await HandleErrorAsync(context, ex.Message, 403);
         }
         catch (Exception ex)
         {
