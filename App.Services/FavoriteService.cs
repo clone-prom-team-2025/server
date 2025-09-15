@@ -45,6 +45,16 @@ public class FavoriteService(
                 await _favoriteProductRepository.GetAllByUserIdAsync(ObjectId.Parse(userId)));
         }
     }
+    
+    public async Task<IEnumerable<FavoriteProductDto>?> GetFavoriteProductAllByIdAsync(string id)
+    {
+        using (_logger.BeginScope("GetFavoriteProductAllByIdAsync"))
+        {
+            _logger.LogInformation("GetFavoriteProductAllByIdAsync called");
+            return _mapper.Map<IEnumerable<FavoriteProductDto>?>(
+                await _favoriteProductRepository.GetAsync(ObjectId.Parse(id)));
+        }
+    }
 
     public async Task UpdateFavoriteProductCollectionName(string id, string name, string userId)
     {
@@ -54,6 +64,7 @@ public class FavoriteService(
             _logger.LogInformation(
                 "UpdateFavoriteProductCollectionName called with Id={id}, Name={name}, UserId={userId}", id, name,
                 userId);
+            
             var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
             if (user == null)
             {
@@ -66,6 +77,12 @@ public class FavoriteService(
             {
                 _logger.LogInformation("Favorite product not found");
                 throw new KeyNotFoundException("Favorite product not found");
+            }
+
+            if (favorite.IsDefault)
+            {
+                _logger.LogInformation("You cannot update default favorite product");
+                throw new KeyNotFoundException("You cannot update default favorite product");
             }
 
             if (favorite.UserId.ToString() != userId)
@@ -211,7 +228,7 @@ public class FavoriteService(
                 await _favoriteProductRepository.GetByNameAsync(DefaultFavoriteNames.DefaultProductCollectionName);
             if (favorites == null || favorites.FirstOrDefault(fav => fav.UserId.ToString() == userId) == null)
                 await _favoriteProductRepository.CreateAsync(new FavoriteProduct(ObjectId.Parse(userId),
-                    DefaultFavoriteNames.DefaultProductCollectionName));
+                    DefaultFavoriteNames.DefaultProductCollectionName){ IsDefault = true });
             favorites = await _favoriteProductRepository.GetByNameAsync(DefaultFavoriteNames
                 .DefaultProductCollectionName);
             if (favorites == null)
@@ -356,7 +373,7 @@ public class FavoriteService(
                 _logger.LogInformation("Favorite product collection already exist");
 
             await _favoriteProductRepository.CreateAsync(new FavoriteProduct(parsedUserId,
-                DefaultFavoriteNames.DefaultProductCollectionName));
+                DefaultFavoriteNames.DefaultProductCollectionName){ IsDefault = true });
             _logger.LogInformation("Create favorite product collection successfully");
         }
     }
@@ -373,7 +390,7 @@ public class FavoriteService(
                 throw new KeyNotFoundException("Favorite product not found");
             }
 
-            if (favorite.Name == DefaultFavoriteNames.DefaultProductCollectionName)
+            if (favorite.IsDefault)
             {
                 _logger.LogInformation("You can't delete default collection");
                 throw new AccessDeniedException("You can't delete default collection");
@@ -445,6 +462,12 @@ public class FavoriteService(
                 _logger.LogInformation("Favorite seller not found");
                 throw new KeyNotFoundException("Favorite seller not found");
             }
+            
+            if (favorite.IsDefault)
+            {
+                _logger.LogInformation("You cannot update default favorite seller");
+                throw new KeyNotFoundException("You cannot update default favorite seller");
+            }
 
             if (favorite.UserId.ToString() != userId)
             {
@@ -461,6 +484,16 @@ public class FavoriteService(
             }
 
             _logger.LogInformation("Update favorite seller successfully");
+        }
+    }
+
+    public async Task<IEnumerable<FavoriteSellerDto>?> GetFavoriteSellerAllByIdAsync(string id)
+    {
+        using (_logger.BeginScope("GetFavoriteSellerAllByIdAsync"))
+        {
+            _logger.LogInformation("GetFavoriteSellerAllByIdAsync called");
+            return _mapper.Map<IEnumerable<FavoriteSellerDto>?>(
+                await _favoriteSellerRepository.GetAsync(ObjectId.Parse(id)));
         }
     }
 
@@ -515,7 +548,7 @@ public class FavoriteService(
         }
     }
 
-    public async Task AddToFavoriteSellerCollectionByName(string name, string userId, string sellerId)
+    public async Task AddToFavoriteSellerCollectionByName(string name, string userId, string productSellerIdtId)
     {
         using (_logger.BeginScope("AddToFavoriteSellerCollectionByName"))
         {
@@ -541,7 +574,7 @@ public class FavoriteService(
                 throw new KeyNotFoundException("Favorite seller not found");
             }
 
-            var seller = await _storeRepository.GetStoreById(ObjectId.Parse(sellerId));
+            var seller = await _storeRepository.GetStoreById(ObjectId.Parse(productSellerIdtId));
             if (seller == null)
             {
                 _logger.LogInformation("Seller not found");
@@ -554,13 +587,13 @@ public class FavoriteService(
                 throw new AccessDeniedException("It's not your favorite seller collection");
             }
 
-            if (favorite.Sellers.Contains(ObjectId.Parse(sellerId)))
+            if (favorite.Sellers.Contains(ObjectId.Parse(productSellerIdtId)))
             {
                 _logger.LogInformation("Seller already in this favorite seller collection");
                 throw new InvalidOperationException("Seller already in this favorite seller collection");
             }
 
-            favorite.Sellers.Add(ObjectId.Parse(sellerId));
+            favorite.Sellers.Add(ObjectId.Parse(productSellerIdtId));
 
             var result = await _favoriteSellerRepository.UpdateAsync(favorite);
             if (!result)
@@ -589,7 +622,7 @@ public class FavoriteService(
                 await _favoriteSellerRepository.GetByNameAsync(DefaultFavoriteNames.DefaultSellerCollectionName);
             if (favorites == null || favorites.FirstOrDefault(fav => fav.UserId.ToString() == userId) == null)
                 await _favoriteSellerRepository.CreateAsync(new FavoriteSeller(ObjectId.Parse(userId),
-                    DefaultFavoriteNames.DefaultSellerCollectionName));
+                    DefaultFavoriteNames.DefaultSellerCollectionName){ IsDefault = true });
             favorites = await _favoriteSellerRepository.GetByNameAsync(DefaultFavoriteNames
                 .DefaultSellerCollectionName);
             if (favorites == null)
@@ -734,7 +767,7 @@ public class FavoriteService(
                 _logger.LogInformation("Favorite seller collection already exist");
 
             await _favoriteSellerRepository.CreateAsync(new FavoriteSeller(parsedUserId,
-                DefaultFavoriteNames.DefaultSellerCollectionName));
+                DefaultFavoriteNames.DefaultSellerCollectionName){ IsDefault = true });
             _logger.LogInformation("Create favorite seller collection successfully");
         }
     }
@@ -764,10 +797,10 @@ public class FavoriteService(
                 throw new KeyNotFoundException("User not found");
             }
 
-            if (favorite.UserId.ToString() != userId)
+            if (favorite.IsDefault)
             {
-                _logger.LogInformation("It's not your favorite seller collection");
-                throw new AccessDeniedException("It's not your favorite seller collection");
+                _logger.LogInformation("You cannot delete default favorite seller");
+                throw new KeyNotFoundException("You cannot delete default favorite seller");
             }
 
             var result = await _favoriteSellerRepository.DeleteAsync(favorite.Id);

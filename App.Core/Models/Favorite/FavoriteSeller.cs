@@ -19,4 +19,5 @@ public class FavoriteSeller
     public ObjectId UserId { get; set; } = ObjectId.Empty;
     public string Name { get; set; } = null!;
     public List<ObjectId> Sellers { get; set; } = [];
+    public bool IsDefault { get; set; } = false;
 }
