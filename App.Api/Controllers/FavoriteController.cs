@@ -70,7 +70,7 @@ public class FavoriteController : ControllerBase
             if (userId == null)
                 return BadRequest();
             _logger.LogInformation("UpdateFavoriteProductCollectionName");
-            await _favoriteService.UpdateFavoriteProductCollectionName(id, userId, name);
+            await _favoriteService.UpdateFavoriteProductCollectionName(id, name, userId);
             _logger.LogInformation("UpdateFavoriteProductCollectionName successfully");
             return NoContent();
         }
