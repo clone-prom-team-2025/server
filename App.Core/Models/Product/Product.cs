@@ -1,4 +1,5 @@
 using App.Core.Enums;
+using App.Core.Models.Sell;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -15,21 +16,6 @@ public class Product
     /// </summary>
     public Product()
     {
-    }
-
-    public Product(Product product)
-    {
-        Id = product.Id;
-        Name = product.Name;
-        CategoryPath = new List<ObjectId>(product.CategoryPath);
-        Features = new List<ProductFeature>(product.Features);
-        SellerId = product.SellerId;
-        Price = product.Price;
-        DiscountPrice = product.DiscountPrice;
-        Quantity = product.Quantity;
-        QuantityStatus = product.QuantityStatus;
-        PriceType = product.PriceType;
-        PaymentOptions = product.PaymentOptions;
     }
 
     /// <summary>
@@ -52,6 +38,7 @@ public class Product
         decimal price,
         PriceType priceType,
         PaymentOptions paymentOptions,
+        ProductDimensions productDimensions,
         decimal? discountPrice = null)
     {
         Name = name;
@@ -64,6 +51,7 @@ public class Product
         DiscountPrice = discountPrice;
         PriceType = priceType;
         PaymentOptions = paymentOptions;
+        ProductDimensions = productDimensions;
     }
 
     /// <summary>
@@ -112,4 +100,8 @@ public class Product
     public int Quantity { get; set; }
 
     public ProductDeliveryType DeliveryType { get; set; }
+    
+    public ProductDimensions ProductDimensions { get; set; } = new ProductDimensions();
+    
+    public DeliveryInfo DeliveryFrom { get; set; } 
 }
