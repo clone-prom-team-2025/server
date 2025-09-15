@@ -1,3 +1,4 @@
+using App.Core.Constants;
 using App.Core.DTOs.User;
 
 namespace App.Core.Interfaces;
@@ -17,5 +18,7 @@ public interface IUserService
     Task<IEnumerable<UserBanDto>> GetUserBansByUserId(string userId);
 
     Task UpdateUser(string userId, UpdateUserDto dto);
-    Task<bool> CreateAdminAsync(string email, string password, string fullName);
+    Task SetUserRoleAsync(string userId, string role);
+    Task DeleteUserRoleAsync(string userId, string role);
+    Task<bool> CreateAdminAsync(string email, string password, string fullName, string? username, Stream? file, string? fileName);
 }

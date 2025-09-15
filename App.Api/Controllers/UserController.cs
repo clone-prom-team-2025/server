@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Xml;
 using App.Core.Constants;
 using App.Core.DTOs.User;
 using App.Core.Interfaces;
@@ -226,6 +227,7 @@ public class UserController : ControllerBase
     {
         using (_logger.BeginScope("SendPasswordResetCode action"))
         {
+            _logger.LogInformation("SendPasswordResetCode called");
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null)
             {
@@ -248,6 +250,7 @@ public class UserController : ControllerBase
     {
         using (_logger.BeginScope("DeleteUser action"))
         {
+            _logger.LogInformation("DeleteUser called with Code={code}", code);
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null)
             {
@@ -288,6 +291,54 @@ public class UserController : ControllerBase
             await _userService.UpdateUser(userId, dto);
 
             _logger.LogInformation("UpdateUser succeeded");
+            return NoContent();
+        }
+    }
+
+    [HttpPost]
+    [Authorize(Roles = RoleNames.Admin)]
+    public async Task<IActionResult> CreateAdmin([FromForm] UserCreateAdminDto dto)
+    {
+        using (_logger.BeginScope("CreateAdmin action"))
+        {
+            await using var stream = dto.Avatar?.OpenReadStream();
+
+            await _userService.CreateAdminAsync(
+                dto.Email,
+                dto.Password,
+                dto.FullNmae,
+                dto.Username,
+                stream,
+                dto.Avatar?.FileName
+            );
+
+            _logger.LogInformation("CreateAdmin succeeded");
+            return NoContent();
+        }
+    }
+
+    [HttpPut]
+    [Authorize(Roles = RoleNames.Admin)]
+    public async Task<IActionResult> SetUserRole(string userId, string role)
+    {
+        using (_logger.BeginScope("SetUserRole action"))
+        {
+            _logger.LogInformation("SetUserRole called with UserId={userId}", userId);
+            await _userService.SetUserRoleAsync(userId, role);
+            _logger.LogInformation("SetUserRole succeeded");
+            return NoContent();
+        }
+    }
+    
+    [HttpDelete]
+    [Authorize(Roles = RoleNames.Admin)]
+    public async Task<IActionResult> DeleteUserRole(string userId, string role)
+    {
+        using (_logger.BeginScope("DeleteUserRole action"))
+        {
+            _logger.LogInformation("DeleteUserRole called with UserId={userId}", userId);
+            await _userService.DeleteUserRoleAsync(userId, role);
+            _logger.LogInformation("DeleteUserRole succeeded");
             return NoContent();
         }
     }

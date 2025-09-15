@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Reflection;
 using App.Core.Constants;
 using App.Core.DTOs.User;
@@ -353,7 +354,7 @@ public class UserService(
         }
     }
 
-    public async Task<bool> CreateAdminAsync(string email, string password, string fullName)
+    public async Task<bool> CreateAdminAsync(string email, string password, string fullName, string? username, Stream? file, string? fileName)
     {
         using (_logger.BeginScope("CreateAdminAsync"))
         {
@@ -366,24 +367,33 @@ public class UserService(
             }
 
             var index = email.IndexOf('@');
-            var username = email.Substring(0, index);
+            username ??= email.Substring(0, index);
 
             var normalizedEmail = email.ToLower();
+            
+            var id = ObjectId.GenerateNewId();
+            BaseFile avatar = new();
 
-            await using (var image = AvatarGenerator.ByteToStream(AvatarGenerator.CreateAvatar(fullName)))
+            if (file == null && fileName == null)
             {
-                BaseFile file = new();
-                var id = ObjectId.GenerateNewId();
-                (file.SourceUrl, file.CompressedFileName, file.SourceFileName, file.CompressedFileName) =
+                await using var image = AvatarGenerator.ByteToStream(AvatarGenerator.CreateAvatar(fullName));
+                (avatar.SourceUrl, avatar.CompressedUrl, avatar.SourceFileName, avatar.CompressedFileName) =
                     await _fileService.SaveImageAsync(image, id + "-avatar", "user-avatars");
-                var admin = new User(username, password, normalizedEmail,
-                    file, [RoleNames.User, RoleNames.Admin], fullName)
-                {
-                    Id = id
-                };
-
-                await _userRepository.CreateUserAsync(admin);
             }
+            else if (file != null && fileName != null)
+            {
+                (avatar.SourceUrl, avatar.CompressedUrl, avatar.SourceFileName, avatar.CompressedFileName) =
+                    await _fileService.SaveImageAsync(file, fileName, "user-avatars");
+            }
+            var admin = new User(username, password, normalizedEmail,
+                avatar, [RoleNames.User, RoleNames.Admin], fullName)
+            {
+                Id = id
+            };
+            
+            Console.WriteLine(avatar.ToJson());
+
+            await _userRepository.CreateUserAsync(admin);
 
             return true;
         }
@@ -419,6 +429,119 @@ public class UserService(
 
             _logger.LogInformation("Updated user by Id={id}", user.Id);
             return result;
+        }
+    }
+
+    public async Task SetUserRoleAsync(string userId, string role)
+    {
+        using (_logger.BeginScope("SetAdminAsync"))
+        {
+            _logger.LogInformation("SetAdminAsync called");
+            if (role != RoleNames.Admin && role != RoleNames.User)
+            {
+                _logger.LogWarning("Role doesn't exist");    
+                throw new InvalidOperationException("Role doesn't exist");
+            }
+
+            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+            if (user == null)
+            {
+                _logger.LogWarning("User with ID {UserId} not found", userId);
+                throw new KeyNotFoundException("User not found");
+            }
+
+            if (user.Roles.Contains(role))
+            {
+                _logger.LogInformation("User with ID {UserId} already {role}", user.Id, role);
+                throw new InvalidAsynchronousStateException($"User already {role}");
+            }
+            
+            user.Roles.Add(role);
+            var result = await _userRepository.UpdateUserAsync(user);
+            if (!result)
+            {
+                _logger.LogWarning("Failed to update user");
+                throw new InvalidOperationException("Failed to update user");
+            }
+            
+            var sessions = await _userSessionRepository.GetSessionsAsync(user.Id);
+            if (sessions != null)
+            {
+                foreach (var session in sessions) session.Roles.Add(role);
+                await _userSessionRepository.ReplaceSessionsAsync(user.Id, sessions);            
+            }
+                
+            
+            _logger.LogInformation("User with ID {UserId} updated", user.Id);
+        }
+    }
+    
+    public async Task DeleteUserRoleAsync(string userId, string role)
+    {
+        using (_logger.BeginScope("DeleteUserRoleAsync"))
+        {
+            _logger.LogInformation("DeleteUserRoleAsync called");
+            if (role != RoleNames.Admin && role != RoleNames.User)
+            {
+                _logger.LogWarning("Role doesn't exist");    
+                throw new InvalidOperationException("Role doesn't exist");
+            }
+
+            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+            if (user == null)
+            {
+                _logger.LogWarning("User with ID {UserId} not found", userId);
+                throw new KeyNotFoundException("User not found");
+            }
+
+            if (!user.Roles.Contains(role))
+            {
+                _logger.LogInformation("User with ID {UserId} doesn't have role {role}", user.Id, role);
+                throw new InvalidAsynchronousStateException($"User doesn't have role {role}");
+            }
+            
+            user.Roles.Remove(role);
+            var result = await _userRepository.UpdateUserAsync(user);
+            if (!result)
+            {
+                _logger.LogWarning("Failed to update user");
+                throw new InvalidOperationException("Failed to update user");
+            }
+            
+            var sessions = await _userSessionRepository.GetSessionsAsync(user.Id);
+            if (sessions != null)
+            {
+                foreach (var session in sessions) session.Roles.Add(role);
+                await _userSessionRepository.ReplaceSessionsAsync(user.Id, sessions);            
+            }
+                
+            
+            _logger.LogInformation("User with ID {UserId} updated", user.Id);
+        }
+    }
+
+    public async Task DeleteAdminAsync(string userId)
+    {
+        using (_logger.BeginScope("DeleteAdminAsync"))
+        {
+            _logger.LogInformation("DeleteAdminAsync called");
+            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+            if (user == null)
+            {
+                _logger.LogWarning("User with ID {UserId} not found", userId);
+                throw new KeyNotFoundException("User not found");
+            }
+
+            if (!user.Roles.Contains(RoleNames.Admin))
+            {
+                _logger.LogWarning("User is not admin");
+                throw new InvalidOperationException("User is not admin");
+            }
+            await _userSessionRepository.DeleteSessionsAsync(user.Id);
+            await _fileService.DeleteFileAsync("user-avatars", user.Avatar.SourceFileName);
+            if (user.Avatar.CompressedFileName != null) await _fileService.DeleteFileAsync("user-avatars", user.Avatar.CompressedFileName);
+            await _userRepository.DeleteUserAsync(user.Id);
+            _logger.LogInformation("User with ID {UserId} deleted", user.Id);
         }
     }
 }
