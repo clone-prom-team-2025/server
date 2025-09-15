@@ -50,7 +50,7 @@ public class ProductProfile : Profile
 
         CreateMap<ProductCreateDto, Product>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
-            .ForMember(dest => dest.SellerId, opt => opt.MapFrom(dto => ObjectId.Parse(dto.SellerId)))
+            .ForMember(dest => dest.SellerId, opt => opt.Ignore())
             .ForMember(dest => dest.CategoryPath, opt => opt.Ignore())
             .ForMember(dest => dest.Features, opt => opt.MapFrom(dto => dto.Features))
             .ForMember(dest => dest.Name, opt => opt.MapFrom(dto => dto.Name));

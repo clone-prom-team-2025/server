@@ -80,7 +80,7 @@ public class ProductService(
     /// <returns>The created product DTO.</returns>
     public async Task CreateAsync(ProductCreateDto productDto, string userId)
     {
-        var store = await _storeRepository.GetStoreById(ObjectId.Parse(productDto.SellerId));
+        var store = await _storeRepository.GetStoreByUserId(ObjectId.Parse(userId));
         if (store == null)
             throw new KeyNotFoundException("Store not found.");
 
@@ -102,6 +102,7 @@ public class ProductService(
 
         product.Id = ObjectId.GenerateNewId();
         product.CategoryPath = [..categories];
+        product.SellerId = store.Id;
 
         await _productRepository.CreateAsync(product);
     }

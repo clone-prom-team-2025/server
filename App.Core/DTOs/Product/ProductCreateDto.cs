@@ -4,14 +4,12 @@ namespace App.Core.DTOs.Product;
 
 public class ProductCreateDto
 {
-    public ProductCreateDto(string name, string category, List<ProductFeatureDto> features,
-        string sellerId, int quantity, QuantityStatus quantityStatus, decimal price, PriceType priceType,
+    public ProductCreateDto(string name, string category, List<ProductFeatureDto> features, int quantity, QuantityStatus quantityStatus, decimal price, PriceType priceType,
         PaymentOptions paymentOptions, ProductDeliveryType deliveryType, decimal? discountPrice = null)
     {
         Name = name;
         Category = category;
         Features = [..features];
-        SellerId = sellerId;
         Price = price;
         DiscountPrice = discountPrice;
         QuantityStatus = quantityStatus;
@@ -38,9 +36,7 @@ public class ProductCreateDto
     public PaymentOptions PaymentOptions { get; set; }
 
     public decimal? DiscountPrice { get; set; }
-
-    public string SellerId { get; set; }
-
+    
     public QuantityStatus QuantityStatus { get; set; }
 
     public int Quantity { get; set; }

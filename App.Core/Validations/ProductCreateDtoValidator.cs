@@ -14,9 +14,5 @@ public class ProductCreateDtoValidator : AbstractValidator<ProductCreateDto>
         RuleFor(x => x.Category)
             .NotEmpty()
             .Matches("^[a-fA-F0-9]{24}$").WithMessage("Category must be a 24-character hex string");
-
-        RuleFor(x => x.SellerId)
-            .NotEmpty()
-            .Matches("^[a-fA-F0-9]{24}$").WithMessage("SellerId must be a 24-character hex string");
     }
 }
