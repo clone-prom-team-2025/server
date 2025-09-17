@@ -102,6 +102,4 @@ public class Product
     public ProductDeliveryType DeliveryType { get; set; }
     
     public ProductDimensions ProductDimensions { get; set; } = new ProductDimensions();
-    
-    public DeliveryInfo DeliveryFrom { get; set; } 
 }

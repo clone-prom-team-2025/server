@@ -14,7 +14,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 
-namespace App.Services;
+namespace App.Services.Services;
 
 /// <summary>
 ///     Service for handling authentication and user sessions.

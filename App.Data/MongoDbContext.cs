@@ -6,6 +6,7 @@ using App.Core.Models.Favorite;
 using App.Core.Models.Notification;
 using App.Core.Models.Product;
 using App.Core.Models.Product.Review;
+using App.Core.Models.Sell;
 using App.Core.Models.Store;
 using App.Core.Models.User;
 using Microsoft.Extensions.Options;
@@ -84,6 +85,8 @@ public class MongoDbContext
 
     public IMongoCollection<FavoriteSeller> FavoriteSellers =>
         _database.GetCollection<FavoriteSeller>("FavoriteSellers");
+    
+    public IMongoCollection<BuyInfo> DeliveryInfos => _database.GetCollection<BuyInfo>("DeliveryInfos");
 
 
     /// <summary>
@@ -103,7 +106,7 @@ public class MongoDbContext
         if (!nameIndexExists)
         {
             var indexKeys = Builders<Category>.IndexKeys.Ascending(c => c.Name);
-            var indexOptions = new CreateIndexOptions { Unique = true };
+            var indexOptions = new CreateIndexOptions { Unique = false };
             var indexModel = new CreateIndexModel<Category>(indexKeys, indexOptions);
 
             await collection.Indexes.CreateOneAsync(indexModel);

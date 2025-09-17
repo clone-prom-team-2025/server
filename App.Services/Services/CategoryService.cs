@@ -5,7 +5,7 @@ using App.Data.Repositories;
 using AutoMapper;
 using MongoDB.Bson;
 
-namespace App.Services;
+namespace App.Services.Services;
 
 /// <summary>
 ///     Service class responsible for handling business logic related to categories.

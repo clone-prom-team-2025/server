@@ -28,7 +28,7 @@ public class UserSessionRepository(MongoDbContext mongoDbContext, IOptions<Sessi
             UserId = userId,
             IsRevoked = false,
             Roles = [..user.Roles],
-            Banned = BanType.None,
+            Banned = BanType.Comments,
             BannedUntil = null
         };
         await _collection.InsertOneAsync(session);

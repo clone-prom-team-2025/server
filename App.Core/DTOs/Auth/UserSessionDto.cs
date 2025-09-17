@@ -11,7 +11,7 @@ public class UserSessionDto
     public DateTime ExpiresAt { get; set; }
     public DeviceInfo DeviceInfo { get; set; }
     public List<string> Roles { get; set; }
-    public BanType Banned { get; set; } = BanType.None;
+    public BanType Banned { get; set; } = BanType.Comments;
     public DateTime? BannedUntil { get; set; } = null;
     public bool IsRevoked { get; set; }
 }

@@ -59,5 +59,5 @@ public class ProductDto
     
     public ProductDimensions ProductDimensions { get; set; } = new ProductDimensions();
     
-    public DeliveryInfo DeliveryFrom { get; set; } 
+    public BuyInfo BuyFrom { get; set; } 
 }

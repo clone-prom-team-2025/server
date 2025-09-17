@@ -8,7 +8,7 @@ using AutoMapper;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 
-namespace App.Services;
+namespace App.Services.Services;
 
 /// <summary>
 ///     Service responsible for handling operations related to product media (images and videos).
@@ -57,8 +57,8 @@ public class ProductMediaService(
     /// <param name="order">Ordering position of the media among other media for the same product.</param>
     public async Task<ProductMediaDto> PushMediaAsync(string productId, Stream stream, string fileName, int order)
     {
-        if (!MediaInspector.IsSafeMedia(stream, fileName))
-            throw new InvalidOperationException("Invalid or potentially harmful file");
+        // if (!MediaInspector.IsSafeMedia(stream, fileName))
+        //     throw new InvalidOperationException("Invalid or potentially harmful file");
 
         var type = MediaInspector.GetMediaType(stream, fileName);
 
@@ -106,9 +106,9 @@ public class ProductMediaService(
     public async Task<List<ProductMediaDto>?> SyncMediaFromTempFilesAsync(List<FileArrayItemDto> files,
         string productId)
     {
-        foreach (var file in files)
-            if (!MediaInspector.IsSafeMedia(file.Stream, file.FileName))
-                throw new InvalidOperationException("Invalid or potentially harmful file");
+        // foreach (var file in files)
+        //     if (!MediaInspector.IsSafeMedia(file.Stream, file.FileName))
+        //         throw new InvalidOperationException("Invalid or potentially harmful file");
 
         var existing = await _repository.GetByProductIdAsync(productId);
         if (existing is { Count: > 0 })

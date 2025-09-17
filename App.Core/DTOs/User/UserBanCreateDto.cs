@@ -10,5 +10,5 @@ public class UserBanCreateDto
 
     public DateTime? BannedUntil { get; set; }
 
-    public BanType Types { get; set; } = BanType.None;
+    public BanType Types { get; set; } = BanType.Comments;
 }

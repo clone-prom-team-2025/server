@@ -4,6 +4,6 @@ namespace App.Core.Enums;
 public enum ProductDeliveryType
 {
     NovaPost = 1 << 0,
-    UkrPost = 1 << 1,
-    MeestExpress = 1 << 2
+    Rozetka = 1 << 1,
+    Self = 1 << 2
 }

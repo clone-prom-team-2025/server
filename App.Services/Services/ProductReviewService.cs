@@ -4,7 +4,7 @@ using App.Core.Models.Product.Review;
 using AutoMapper;
 using MongoDB.Bson;
 
-namespace App.Services;
+namespace App.Services.Services;
 
 /// <summary>
 ///     Provides services for managing product reviews and comments.

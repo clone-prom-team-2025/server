@@ -13,7 +13,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 
-namespace App.Services;
+namespace App.Services.Services;
 
 public class UserService(
     IUserRepository userRepository,

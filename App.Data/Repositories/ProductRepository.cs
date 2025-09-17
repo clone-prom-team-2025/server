@@ -229,6 +229,18 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
             .ToList();
     }
 
+    public async Task<bool> ExistById(ObjectId id)
+    {
+        var filter = Builders<Product>.Filter.Eq(p => p.Id, id);
+        return await _products.Find(filter).Limit(1).AnyAsync();
+    }
+
+    public async Task<bool> ExistBySellerId(ObjectId sellerId)
+    {
+        var filter = Builders<Product>.Filter.Eq(p => p.SellerId, sellerId);
+        return await _products.Find(filter).Limit(1).AnyAsync();
+    }
+
     private List<FilterDefinition<Product>> FormFilter(ProductFilterRequest filter)
     {
         var builder = Builders<Product>.Filter;
