@@ -86,7 +86,7 @@ public class MongoDbContext
     public IMongoCollection<FavoriteSeller> FavoriteSellers =>
         _database.GetCollection<FavoriteSeller>("FavoriteSellers");
     
-    public IMongoCollection<BuyInfo> DeliveryInfos => _database.GetCollection<BuyInfo>("DeliveryInfos");
+    public IMongoCollection<BuyInfo> BuyInfos => _database.GetCollection<BuyInfo>("BuyInfos");
 
 
     /// <summary>

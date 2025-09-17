@@ -79,6 +79,7 @@ builder.Services.AddSingleton<IStoreRepository, StoreRepository>();
 builder.Services.AddSingleton<INotificationRepository, NotificationRepository>();
 builder.Services.AddSingleton<IFavoriteSellerRepository, FavoriteSellerRepository>();
 builder.Services.AddSingleton<IFavoriteProductRepository, FavoriteProductRepository>();
+builder.Services.AddSingleton<IBuyInfoRepository, BuyInfoRepository>();
 
 // --- Services ---
 builder.Services.AddSingleton<ICategoryService, CategoryService>();
@@ -94,6 +95,7 @@ builder.Services.AddSingleton<IStoreService, StoreService>();
 builder.Services.AddSingleton<ICartService, CartService>();
 builder.Services.AddSingleton<INotificationService, NotificationService>();
 builder.Services.AddSingleton<IFavoriteService, FavoriteService>();
+builder.Services.AddSingleton<IBuyService, BuyService>();
 
 builder.Services.AddSingleton<ISessionHubNotifier, SessionHubNotifier>();
 builder.Services.AddSingleton<INotificationHubNotifier, NotificationHubNotifier>();
