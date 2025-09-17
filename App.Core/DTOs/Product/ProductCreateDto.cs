@@ -45,6 +45,4 @@ public class ProductCreateDto
     public ProductDeliveryType DeliveryType { get; set; }
     
     public ProductDimensions ProductDimensions { get; set; } = new ProductDimensions();
-    
-    public BuyInfo BuyFrom { get; set; } 
 }

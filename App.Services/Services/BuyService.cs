@@ -1,14 +1,19 @@
+using App.Core.DTOs.Sell;
 using App.Core.Enums;
+using App.Core.Exceptions;
 using App.Core.Interfaces;
+using App.Core.Models.FileStorage;
 using App.Core.Models.Product;
 using App.Core.Models.Sell;
+using App.Core.Utils;
 using AutoMapper;
+using HeyRed.Mime;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 
 namespace App.Services.Services;
 
-public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService> logger, IMapper mapper, IStoreRepository storeRepository, IUserRepository userRepository, IProductRepository productRepository)
+public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService> logger, IMapper mapper, IStoreRepository storeRepository, IUserRepository userRepository, IProductRepository productRepository, IProductMediaRepository productMediaRepository, IFileService fileService) : IBuyService
 {
     private readonly ILogger<BuyService> _logger = logger;
     private readonly IMapper _mapper =  mapper;
@@ -16,18 +21,19 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
     private readonly IStoreRepository _storeRepository = storeRepository;
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IProductRepository _productRepository = productRepository;
+    private readonly IProductMediaRepository _productMediaRepository = productMediaRepository;
+    private readonly IFileService _fileService = fileService;
 
-    public async Task BuyProductAsync(string productId, string userId, DeliveryPayment deliveryPayment,
-        PointsOfDelivery deliveryTo)
+    public async Task BuyProductAsync(BuyCreateDto dto, string userId)
     {
         using (_logger.BeginScope("BuyProductAsync"))
         {
             _logger.LogInformation("BuyProductAsync called");
             var parsedUserId = ObjectId.Parse(userId);
-            var parsedProductId = ObjectId.Parse(productId);
+            var parsedProductId = ObjectId.Parse(dto.ProductId);
             if (!(await _userRepository.ExistsById(parsedUserId)))
             {
-                _logger.LogInformation("User not found");
+                _logger.LogWarning("User not found");
                 throw new KeyNotFoundException("User not found");
             }
             
@@ -35,55 +41,380 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
 
             if (product == null)
             {
-                _logger.LogInformation("Product not found");
+                _logger.LogWarning("Product not found");
                 throw new KeyNotFoundException("Product not found");
             }
 
             if (!(await _storeRepository.ExistsById(product.SellerId)))
             {
-                _logger.LogInformation("Store not found");
+                _logger.LogWarning("Store not found");
                 throw new KeyNotFoundException("Store not found");
             }
 
             if (product.Quantity <= 0)
             {
-                _logger.LogInformation("Product quantity not set");
+                _logger.LogWarning("Product quantity not set");
                 throw new KeyNotFoundException("Product is out of stock.");
+            }
+            
+            var media = await _productMediaRepository.GetByProductIdAsync(product.Id.ToString());
+            BaseFile? image = null;
+            if (media != null && media.Count > 0)
+            {
+                var stream = await WebpDownloader.GetWebpStreamAsync(media.First().Files.SourceUrl);
+                image = new BaseFile();
+                (image.SourceUrl, image.CompressedUrl, image.SourceFileName, image.CompressedFileName) = await _fileService.SaveImageAsync(stream, media.First().Files.SourceUrl, "buy-product");
             }
 
             var miniInfo = new MiniProductInfo()
             {
-                Image = new(),
+                Image = image ?? new BaseFile(),
                 Price = product.DiscountPrice ?? product.Price,
                 ProductId = product.Id,
                 ProductName = product.Name,
             };
+            
+            var status = dto.DeliveryPayment == DeliveryPayment.Card ? DeliveryStatus.PendingPayment : DeliveryStatus.WaitingForShipment;
+            string? trackingNumber = null;
+            if (status == DeliveryStatus.WaitingForShipment) trackingNumber = Guid.NewGuid().ToString("N");
 
             var buy = new BuyInfo()
             {
                 Id = ObjectId.GenerateNewId(),
                 SellerId = product.SellerId,
-                TrackingNumber = null,
+                TrackingNumber = trackingNumber,
                 UserId = parsedUserId,
-                DeliveryToInfo = deliveryTo,
-                Payment = deliveryPayment,
-                Status = DeliveryStatus.AwaitingConfirmation,
+                DeliveryToInfo = dto.DeliveryTo,
+                Payment = dto.DeliveryPayment,
+                Status = status,
                 MiniProductInfo = miniInfo,
-                Payed = deliveryPayment == DeliveryPayment.Card ?  false : null,
+                Payed = dto.DeliveryPayment == DeliveryPayment.Card ?  false : null,
             };
+            
+            _logger.LogInformation("BuyProduct successes");
             
             await _buyInfoRepository.CreateAsync(buy);
         }
     }
 
-    // public async Task AcceptSell(string buyId, string userId)
-    // {
-    //     using (_logger.BeginScope("AcceptSell"))
-    //     {
-    //         _logger.LogInformation("AcceptSell called");
-    //         var parsedBuyId = ObjectId.Parse(buyId);
-    //         var parsedUserId = ObjectId.Parse(userId);
-    //         
-    //     }
-    // }
+    public async Task AcceptSellAsync(string buyId, string userId)
+    {
+        using (_logger.BeginScope("AcceptSell"))
+        {
+            _logger.LogInformation("AcceptSell called");
+            var parsedBuyId = ObjectId.Parse(buyId);
+            var parsedUserId = ObjectId.Parse(userId);
+            
+            if (!(await _userRepository.ExistsById(parsedUserId)))
+            {
+                _logger.LogWarning("User not found");
+                throw new KeyNotFoundException("User not found");
+            }
+
+            var store = await _storeRepository.GetStoreByUserId(parsedUserId);
+            
+            if (store == null)
+            {
+                _logger.LogWarning("Store not found");
+                throw new KeyNotFoundException("Store not found");
+            }
+
+            if (!store.Roles.ContainsKey(userId))
+            {
+                _logger.LogWarning("It's not your store");
+                throw new AccessDeniedException("It's not your store");
+            }
+            
+            var buyInfo = await _buyInfoRepository.GetByIdAsync(parsedBuyId);
+            if (buyInfo == null)
+            {
+                _logger.LogWarning("BuyInfo not found");
+                throw new KeyNotFoundException("BuyInfo not found");
+            }
+
+            var product = await _productRepository.GetByIdAsync(buyInfo.MiniProductInfo.ProductId);
+            if (product == null)
+            {
+                _logger.LogWarning("Product not found");
+                throw new KeyNotFoundException("Product not found");
+            }
+
+            if (product.Quantity <= 0)
+            {
+                _logger.LogWarning("Product is out of stock.");
+                throw new InvalidOperationException("Product is out of stock.");
+            }
+            
+            product.Quantity -= 1;
+            product.QuantityStatus = product.Quantity switch
+            {
+                > 0 and <= 4 => QuantityStatus.Ending,
+                <= 0 => QuantityStatus.OutOfStock,
+                _ => QuantityStatus.InStock
+            };
+
+            buyInfo.Status = buyInfo.Payment == DeliveryPayment.Card ? DeliveryStatus.PendingPayment : DeliveryStatus.WaitingForShipment;
+            
+            var result = await _productRepository.UpdateAsync(product);
+            if (!result)
+            {
+                _logger.LogWarning("Product failed to update");
+                throw new InvalidOperationException("Product failed to update");
+            }
+            
+            var result1 = await _buyInfoRepository.UpdateAsync(buyInfo);
+            if (!result1)
+            {
+                _logger.LogWarning("Failed to accept");
+                throw new InvalidOperationException("Failed to accept");
+            }
+            
+            _logger.LogInformation("BuyProduct successes");
+        }
+    }
+    
+    //Імітація
+    public async Task PayForProductAsync(string buyId, string userId)
+    {
+        using (_logger.BeginScope("PayForProductAsync"))
+        {
+            _logger.LogInformation("PayForProductAsync called");
+            var parsedBuyId = ObjectId.Parse(buyId);
+            var parsedUserId = ObjectId.Parse(userId);
+            if (!(await _userRepository.ExistsById(parsedUserId)))
+            {
+                _logger.LogInformation("User not found");
+                throw new KeyNotFoundException("User not found");
+            }
+            
+            var buyInfo = await _buyInfoRepository.GetByIdAsync(parsedBuyId);
+            if (buyInfo == null)
+            {
+                _logger.LogInformation("Failed to pay for product. BuyInfo not found");
+                throw new InvalidOperationException("Failed to pay for product");
+            }
+
+            if (buyInfo.Payment != DeliveryPayment.Card)
+            {
+                _logger.LogInformation("Payment upon receipt");
+                throw new InvalidOperationException("Payment upon receipt");
+            }
+
+            if (buyInfo.Payed == true)
+            {
+                _logger.LogInformation("Already payed");
+                throw new InvalidOperationException("Already payed");
+            }
+            
+            // Симуляція оплати
+            var value = Random.Shared.Next(0, 101);
+            if (value <= 98)
+                buyInfo.Payed = true;
+            else
+            {
+                _logger.LogInformation("Failed to pay for product.");
+                throw new InvalidOperationException("Transaction declined by the bank");
+            }
+
+            buyInfo.Status = DeliveryStatus.WaitingForShipment;
+            
+            var result = await _buyInfoRepository.UpdateAsync(buyInfo);
+            if (!result)
+            {
+                _logger.LogWarning("PayForProduct failed");
+                throw new InvalidOperationException("PayForProduct failed");
+            }
+            
+            _logger.LogInformation("PayForProduct successes");
+        }
+    }
+
+    public async Task SendProductAsync(string buyId, string userId)
+    {
+        using (_logger.BeginScope("SendProduct"))
+        {
+            _logger.LogInformation("SendProduct called");
+            var parsedBuyId = ObjectId.Parse(buyId);
+            var parsedUserId = ObjectId.Parse(userId);
+            // імітація отрмання від поштового оператора інформації про відправку товара
+            // ...
+            if (!(await _userRepository.ExistsById(parsedUserId)))
+            {
+                _logger.LogWarning("User not found");
+                throw new KeyNotFoundException("User not found");
+            }
+            
+            var store = await _storeRepository.GetStoreByUserId(parsedUserId);
+            if (store == null)
+            {
+                _logger.LogWarning("Store not found");
+                throw new KeyNotFoundException("Store not found");
+            }
+
+            if (!store.Roles.ContainsKey(userId))
+            {
+                _logger.LogWarning("It's not your store");
+                throw new AccessDeniedException("It's not your store");
+            }
+            
+            var buyInfo = await _buyInfoRepository.GetByIdAsync(parsedBuyId);
+            
+            if (buyInfo == null)
+            {
+                _logger.LogWarning("BuyInfo not found");
+                throw new KeyNotFoundException("BuyInfo not found");
+            }
+
+            if (buyInfo.Status != DeliveryStatus.WaitingForShipment)
+            {
+                _logger.LogInformation("BuyInfo not waiting for shipment");
+                throw new InvalidOperationException("Product not waiting for shipment");
+            }
+            
+            //імітація трекового номера(накладна/експерс накладна)
+            buyInfo.TrackingNumber = Guid.NewGuid().ToString("N");
+            buyInfo.Status = DeliveryStatus.InTransit;
+            
+            var result = await _buyInfoRepository.UpdateAsync(buyInfo);
+            if (!result)
+            {
+                _logger.LogWarning("Failed to send product");
+                throw new InvalidOperationException("Failed to send product");
+            }
+            
+            _logger.LogInformation("SendProduct successes");
+        }
+    }
+
+    public async Task CancelSellAsync(string buyId, string userId)
+    {
+        using (_logger.BeginScope("CancelSellAsync"))
+        {
+            _logger.LogInformation("CancelSellAsync called");
+            var parsedBuyId = ObjectId.Parse(buyId);
+            var parsedUserId = ObjectId.Parse(userId);
+            if (!(await _userRepository.ExistsById(parsedUserId)))
+            {
+                _logger.LogWarning("User not found");
+                throw new KeyNotFoundException("User not found");
+            }
+            var buyInfo = await _buyInfoRepository.GetByIdAsync(parsedBuyId);
+            if (buyInfo == null)
+            {
+                _logger.LogWarning("BuyInfo not found");
+                throw new KeyNotFoundException("BuyInfo not found");
+            }
+
+            if (buyInfo.Status == DeliveryStatus.Canceled 
+                || buyInfo.Status == DeliveryStatus.Received
+                || buyInfo.Status == DeliveryStatus.Declined)
+            {
+                _logger.LogInformation("You cannot cancel your order");
+                throw new InvalidOperationException("You cannot cancel your order");
+            }
+            
+            buyInfo.Status = DeliveryStatus.Canceled;
+            var result = await _buyInfoRepository.UpdateAsync(buyInfo);
+            if (!result)
+            {
+                _logger.LogWarning("Failed to cancel product");
+                throw new InvalidOperationException("Failed to cancel product");
+            }
+
+            if (buyInfo.Payment == DeliveryPayment.Card)
+            {
+                _logger.LogInformation("Імітація повернення коштів");
+            }
+            _logger.LogInformation("CancelSellAsync successes");
+        }
+    }
+
+    public async Task DeclineSellAsync(string buyId, string userId)
+    {
+        using (_logger.BeginScope("DeclinedSellAsync"))
+        {
+            _logger.LogInformation("DeclinedSellAsync called");
+            var parsedBuyId = ObjectId.Parse(buyId);
+            var parsedUserId = ObjectId.Parse(userId);
+
+            if (!(await _userRepository.ExistsById(parsedUserId)))
+            {
+                _logger.LogWarning("User not found");
+                throw new KeyNotFoundException("User not found");
+            }
+            
+            var buyInfo = await _buyInfoRepository.GetByIdAsync(parsedBuyId);
+
+            if (buyInfo == null)
+            {
+                _logger.LogWarning("BuyInfo not found");
+                throw new KeyNotFoundException("BuyInfo not found");
+            }
+            
+            if (!(await _storeRepository.ExistsByUserId(buyInfo.UserId)))
+            {
+                _logger.LogWarning("It's not your store");
+                throw new AccessDeniedException("It's not your store");
+            }
+
+            if (buyInfo.Status != DeliveryStatus.AwaitingConfirmation && buyInfo.Status != DeliveryStatus.WaitingForShipment)
+            {
+                _logger.LogInformation("You cannot cancel this order");
+                throw new InvalidOperationException("You cannot cancel this order");
+            }
+            
+            buyInfo.Status = DeliveryStatus.Declined;
+            
+            var result = await _buyInfoRepository.UpdateAsync(buyInfo);
+            if (!result)
+            {
+                _logger.LogWarning("Failed to cancel product");
+                throw new InvalidOperationException("Failed to cancel product");
+            }
+            
+            _logger.LogInformation("CancelSellAsync successes");
+        }
+    }
+
+    public async Task<BuyInfoDto> GetBuyInfoAsync(string buyId)
+    {
+        using (_logger.BeginScope("GetBuyInfoAsync"))
+        {
+            _logger.LogInformation("GetBuyInfoAsync called");
+            var parsedBuyId = ObjectId.Parse(buyId);
+            var buyInfo = await _buyInfoRepository.GetByIdAsync(parsedBuyId);
+            if (buyInfo == null)
+                _logger.LogWarning("BuyInfo not found");
+            _logger.LogInformation("GetBuyInfoAsync successes");
+            return _mapper.Map<BuyInfoDto>(buyInfo);
+        }
+    }
+
+    public async Task<IEnumerable<BuyInfoDto>> GetBuyInfoByUserIdAsync(string userId)
+    {
+        using (_logger.BeginScope("GetBuyInfoByUserIdAsync"))
+        {
+            _logger.LogInformation("GetBuyInfoByUserIdAsync called");
+            var parsedUserId = ObjectId.Parse(userId);
+            var buyInfo = await _buyInfoRepository.GetByUserIdAsync(parsedUserId);
+            if (buyInfo == null)
+                _logger.LogWarning("BuyInfo not found");
+            _logger.LogInformation("GetBuyInfoByUserIdAsync successes");
+            return _mapper.Map<IEnumerable<BuyInfoDto>>(buyInfo);
+        }
+    }
+
+    public async Task<IEnumerable<BuyInfoDto>> GetBuyInfoBySellerIdAsync(string sellerId)
+    {
+        using (_logger.BeginScope("GetBuyInfoBySellerIdAsync"))
+        {
+            _logger.LogInformation("GetBuyInfoBySellerIdAsync called");
+            var parsedSellerId = ObjectId.Parse(sellerId);
+            var buyInfo = await _buyInfoRepository.GetBySellerId(parsedSellerId);
+            if (buyInfo == null)
+                _logger.LogWarning("BuyInfo not found");
+            _logger.LogInformation("GetBuyInfoBySellerIdAsync successes");
+            return _mapper.Map<IEnumerable<BuyInfoDto>>(buyInfo);
+        }
+    }
 }
