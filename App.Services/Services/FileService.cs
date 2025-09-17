@@ -10,7 +10,7 @@ using Microsoft.Extensions.Options;
 using MyApp.Core.Utils;
 using Xabe.FFmpeg;
 
-namespace App.Services;
+namespace App.Services.Services;
 
 public class FileService : IFileService
 {

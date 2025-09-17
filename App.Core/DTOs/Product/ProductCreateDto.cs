@@ -1,4 +1,5 @@
 using App.Core.Enums;
+using App.Core.Models.Sell;
 
 namespace App.Core.DTOs.Product;
 
@@ -42,4 +43,8 @@ public class ProductCreateDto
     public int Quantity { get; set; }
 
     public ProductDeliveryType DeliveryType { get; set; }
+    
+    public ProductDimensions ProductDimensions { get; set; } = new ProductDimensions();
+    
+    public BuyInfo BuyFrom { get; set; } 
 }

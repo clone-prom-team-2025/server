@@ -5,7 +5,7 @@ using AutoMapper;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 
-namespace App.Services;
+namespace App.Services.Services;
 
 public class NotificationService(
     INotificationRepository notificationRepository,

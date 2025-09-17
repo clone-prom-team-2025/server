@@ -3,7 +3,7 @@ using App.Core.Interfaces;
 using App.Core.Models.AvailableFilters;
 using AutoMapper;
 
-namespace App.Services;
+namespace App.Services.Services;
 
 public class AvailableFiltersService(IAvailableFiltersRepository repository, IMapper mapper) : IAvailableFiltersService
 {

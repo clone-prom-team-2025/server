@@ -153,4 +153,29 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
             .Project(projection)
             .FirstOrDefaultAsync();
     }
+
+    public async Task<bool> ExistsById(ObjectId id)
+    {
+        var filter = Builders<User>.Filter.Eq(u => u.Id, id);
+        return await _users.Find(filter).Limit(1).AnyAsync();
+    }
+
+    public async Task<bool> ExistsByEmail(string email)
+    {
+        var filter = Builders<User>.Filter.Eq(u => u.Email, email);
+        return await _users.Find(filter).Limit(1).AnyAsync();
+    }
+
+    public async Task<bool> ExistsByUsername(string username)
+    {
+        var filter = Builders<User>.Filter.Eq(u => u.Username, username);
+        return await _users.Find(filter).Limit(1).AnyAsync();
+    }
+
+    public async Task<bool> ExistsByPhoneNumber(string phoneNumber)
+    {
+        var filter = Builders<User>.Filter.Eq(u => u.PhoneNumber, phoneNumber);
+        return await _users.Find(filter).Limit(1).AnyAsync();
+    }
+
 }

@@ -6,7 +6,7 @@ using App.Core.Models.Product;
 using AutoMapper;
 using MongoDB.Bson;
 
-namespace App.Services;
+namespace App.Services.Services;
 
 /// <summary>
 ///     Service for managing products, their variations, and media.

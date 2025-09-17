@@ -11,4 +11,6 @@ public interface IStoreRepository
     Task<Store?> GetStoreById(ObjectId storeId);
     Task<List<Store>?> GetStores();
     Task<Store?> GetStoreByUserId(ObjectId userId);
+    Task<bool> ExistsByUserId(ObjectId userId);
+    Task<bool> ExistsById(ObjectId id);
 }

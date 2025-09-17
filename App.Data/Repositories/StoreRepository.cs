@@ -40,6 +40,19 @@ public class StoreRepository(MongoDbContext context) : IStoreRepository
         return await _storeCollection.Find(filter).FirstOrDefaultAsync();
     }
 
+    public async Task<bool> ExistsByUserId(ObjectId userId)
+    {
+        var filter = Builders<Store>.Filter.Exists($"Roles.{userId}");
+        return await _storeCollection.Find(filter).Limit(1).AnyAsync();
+    }
+
+
+    public async Task<bool> ExistsById(ObjectId id)
+    {
+        var filter = Builders<Store>.Filter.Eq(s => s.Id, id);
+        return await _storeCollection.Find(filter).AnyAsync();
+    }
+
 
     public async Task<List<Store>?> GetStores()
     {
