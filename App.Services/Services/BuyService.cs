@@ -1,3 +1,4 @@
+using App.Core.DTOs.Notification;
 using App.Core.DTOs.Sell;
 using App.Core.Enums;
 using App.Core.Exceptions;
@@ -13,7 +14,7 @@ using MongoDB.Bson;
 
 namespace App.Services.Services;
 
-public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService> logger, IMapper mapper, IStoreRepository storeRepository, IUserRepository userRepository, IProductRepository productRepository, IProductMediaRepository productMediaRepository, IFileService fileService) : IBuyService
+public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService> logger, IMapper mapper, IStoreRepository storeRepository, IUserRepository userRepository, IProductRepository productRepository, IProductMediaRepository productMediaRepository, IFileService fileService, INotificationService notificationService) : IBuyService
 {
     private readonly ILogger<BuyService> _logger = logger;
     private readonly IMapper _mapper =  mapper;
@@ -23,6 +24,7 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
     private readonly IProductRepository _productRepository = productRepository;
     private readonly IProductMediaRepository _productMediaRepository = productMediaRepository;
     private readonly IFileService _fileService = fileService;
+    private readonly INotificationService _notificationService = notificationService;
 
     public async Task BuyProductAsync(BuyCreateDto dto, string userId)
     {
@@ -76,7 +78,25 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
             
             var status = dto.DeliveryPayment == DeliveryPayment.Card ? DeliveryStatus.PendingPayment : DeliveryStatus.WaitingForShipment;
             string? trackingNumber = null;
-            if (status == DeliveryStatus.WaitingForShipment) trackingNumber = Guid.NewGuid().ToString("N");
+            if (status == DeliveryStatus.WaitingForShipment)
+            {
+                trackingNumber = Guid.NewGuid().ToString("N");
+                _notificationService.SendNotificationAsync(new NotificationCreateDto()
+                {
+                    From = null, IsHighPriority = false,
+                    Message = $"Дякуємо за покупку, очікуйте відправку від продавця. Номер накладної {trackingNumber}", MetadataUrl = null, To = userId,
+                    Type = NotificationType.Info
+                });
+            }
+            else
+            {
+                _notificationService.SendNotificationAsync(new NotificationCreateDto()
+                {
+                    From = null, IsHighPriority = true,
+                    Message = "Продовжіть покупку, оплатіть замовлення.", MetadataUrl = null, To = userId,
+                    Type = NotificationType.Info
+                });
+            }
 
             var buy = new BuyInfo()
             {
@@ -217,6 +237,7 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
             }
 
             buyInfo.Status = DeliveryStatus.WaitingForShipment;
+            buyInfo.TrackingNumber = Guid.NewGuid().ToString("N");
             
             var result = await _buyInfoRepository.UpdateAsync(buyInfo);
             if (!result)
@@ -224,6 +245,13 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
                 _logger.LogWarning("PayForProduct failed");
                 throw new InvalidOperationException("PayForProduct failed");
             }
+            
+            _notificationService.SendNotificationAsync(new NotificationCreateDto()
+            {
+                From = null, IsHighPriority = false,
+                Message = $"Дякуємо за покупку, очікуйте відправку від продавця. Номер накладної {buyInfo.TrackingNumber}", MetadataUrl = null, To = userId,
+                Type = NotificationType.Info
+            });
             
             _logger.LogInformation("PayForProduct successes");
         }
@@ -282,6 +310,13 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
                 throw new InvalidOperationException("Failed to send product");
             }
             
+            _notificationService.SendNotificationAsync(new NotificationCreateDto()
+            {
+                From = null, IsHighPriority = false,
+                Message = "Продавець відправив товар, очікуйте доставки.", MetadataUrl = null, To = userId,
+                Type = NotificationType.Info
+            });
+            
             _logger.LogInformation("SendProduct successes");
         }
     }
@@ -325,6 +360,14 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
             {
                 _logger.LogInformation("Імітація повернення коштів");
             }
+            
+            _notificationService.SendNotificationAsync(new NotificationCreateDto()
+            {
+                From = null, IsHighPriority = false,
+                Message = "Замовлення скасовано.", MetadataUrl = null, To = userId,
+                Type = NotificationType.Info
+            });
+            
             _logger.LogInformation("CancelSellAsync successes");
         }
     }
@@ -371,6 +414,13 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
                 _logger.LogWarning("Failed to cancel product");
                 throw new InvalidOperationException("Failed to cancel product");
             }
+            
+            _notificationService.SendNotificationAsync(new NotificationCreateDto()
+            {
+                From = null, IsHighPriority = false,
+                Message = "Продавець скасував замовлення.", MetadataUrl = null, To = userId,
+                Type = NotificationType.Info
+            });
             
             _logger.LogInformation("CancelSellAsync successes");
         }
