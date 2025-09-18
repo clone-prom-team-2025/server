@@ -112,8 +112,8 @@ public class AuthService(
             };
 
             await _userRepository.CreateUserAsync(user);
-            await _favoriteSellerRepository.CreateAsync(new FavoriteSeller(id,
-                DefaultFavoriteNames.DefaultSellerCollectionName));
+            await _favoriteProductRepository.CreateAsync(new FavoriteProduct(id,
+                DefaultFavoriteNames.DefaultProductCollectionName));
             await _favoriteSellerRepository.CreateAsync(new FavoriteSeller(id,
                 DefaultFavoriteNames.DefaultSellerCollectionName));
         }
@@ -194,7 +194,7 @@ public class AuthService(
         var mail = new EmailMessage
         {
             From = "no-reply@sellpoint.pp.ua",
-            To = [user.Email!],
+            To = [user.Email],
             Subject = "Reset Password",
             HtmlBody = readyHtml
         };
@@ -303,7 +303,7 @@ public class AuthService(
 
         var cacheKey = $"verify:{user.Email}";
 
-        if (_cache.TryGetValue(cacheKey, out string storedCode))
+        if (_cache.TryGetValue(cacheKey, out string? storedCode))
             if (string.Equals(storedCode, inputCode, StringComparison.OrdinalIgnoreCase))
             {
                 _cache.Remove(cacheKey);
@@ -341,8 +341,7 @@ public class AuthService(
         if (user == null)
             throw new KeyNotFoundException("User not found");
         var sessions = await _sessionRepository.GetSessionsAsync(ObjectId.Parse(userId));
-        foreach (var session in sessions)
-            session.IsRevoked = true;
+        if (sessions != null) foreach (var session in sessions) session.IsRevoked = true;
         if (!await _userRepository.UpdateUserAsync(user))
             throw new KeyNotFoundException("User not found");
     }

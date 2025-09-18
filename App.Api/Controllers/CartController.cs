@@ -39,6 +39,7 @@ public class CartController : ControllerBase
 
             _logger.LogInformation("ProductId={ProdcutId} add to cart UserId={UserId}", dto.ProductId,
                 userIdClaim.Value);
+            _logger.LogInformation("AddToCart success");
             return Ok();
         }
     }
@@ -60,6 +61,7 @@ public class CartController : ControllerBase
             await _cartService.RemoveAsync(id, userIdClaim.Value);
 
             _logger.LogInformation("Cart={Id} deleted cart from by UserId={UserId}", id, userIdClaim.Value);
+            _logger.LogInformation("DeleteFromCart success");
             return Ok();
         }
     }
@@ -81,6 +83,8 @@ public class CartController : ControllerBase
             await _cartService.ClearAsync(userIdClaim.Value);
 
             _logger.LogInformation("Failed to clear cart list with UserId={UserId}", userIdClaim.Value);
+            _logger.LogInformation("ClearCartList success");
+
             return Ok();
         }
     }
@@ -102,6 +106,8 @@ public class CartController : ControllerBase
             await _cartService.ChangePcsAsync(id, pcs, userIdClaim.Value);
 
             _logger.LogInformation("Cart={Id} changed for UserId={UserId}", id, userIdClaim.Value);
+            _logger.LogInformation("ChangeCartPcs success");
+
             return Ok();
         }
     }
@@ -129,6 +135,8 @@ public class CartController : ControllerBase
             }
 
             _logger.LogInformation("GetAllCarts returned {Count}", all.Length);
+            _logger.LogInformation("GetAllCarts success");
+
             return Ok(all);
         }
     }
@@ -148,6 +156,8 @@ public class CartController : ControllerBase
             }
 
             _logger.LogInformation("GetById returned cart with Id={Id}", id);
+            _logger.LogInformation("GetById success");
+
             return Ok(result);
         }
     }
@@ -174,6 +184,8 @@ public class CartController : ControllerBase
             }
 
             _logger.LogInformation("GetByUserId returned {Count}", all.Length);
+            _logger.LogInformation("GetByUserId success");
+
             return Ok(all);
         }
     }
@@ -181,7 +193,7 @@ public class CartController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetByMyId()
     {
-        using (_logger.BeginScope("GetByUserId action"))
+        using (_logger.BeginScope("GetByMyId action"))
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null)
@@ -190,23 +202,25 @@ public class CartController : ControllerBase
                 return BadRequest();
             }
 
-            _logger.LogInformation("GetByUserId called with UserId={UserId}", userIdClaim.Value);
+            _logger.LogInformation("GetByMyId called with UserId={UserId}", userIdClaim.Value);
 
             var result = await _cartService.GetByUserIdAsync(userIdClaim.Value);
             if (result == null)
             {
-                _logger.LogError("GetByUserId returned null");
+                _logger.LogError("GetByMyId returned null");
                 return NotFound();
             }
 
             var all = result.ToArray();
             if (all.Length == 0)
             {
-                _logger.LogInformation("GetByUserId returned empty array");
+                _logger.LogInformation("GetByMyId returned empty array");
                 return NotFound();
             }
 
-            _logger.LogInformation("GetByUserId returned {Count}", all.Length);
+            _logger.LogInformation("GetByMyId returned {Count}", all.Length);
+            _logger.LogInformation("GetByMyId success");
+
             return Ok(all);
         }
     }
@@ -226,7 +240,9 @@ public class CartController : ControllerBase
             _logger.LogInformation("IsProductInCart called with UserId={UserId}", userIdClaim.Value);
 
             var result = await _cartService.IsProductInCartAsync(productId, userIdClaim.Value);
-            _logger.LogInformation("IsProductInCart returned: {result}", result);
+            _logger.LogInformation("IsProductInCart returned: {result}", result);           
+            _logger.LogInformation("IsProductInCart success");
+
             return Ok(result);
         }
     }

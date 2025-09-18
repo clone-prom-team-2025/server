@@ -40,6 +40,7 @@ public class ProductReviewController : ControllerBase
                 new ProductReviewCommentCreateDto(rating, userIdClaim, comment));
 
             _logger.LogInformation("AddCommentByMyId completed for UserId={UserId}", userIdClaim);
+            _logger.LogInformation("AddCommentByMyId success");
             return Ok();
         }
     }
@@ -57,6 +58,7 @@ public class ProductReviewController : ControllerBase
                 new ProductReviewCommentCreateDto(rating, userId, comment));
 
             _logger.LogInformation("AddComment completed for UserId={UserId}", userId);
+            _logger.LogInformation("AddComment success");
             return Ok();
         }
     }
@@ -81,6 +83,7 @@ public class ProductReviewController : ControllerBase
 
             _logger.LogInformation("RemoveCommentByMyId completed for UserId={UserId}, ProductId={productId}",
                 userIdClaim, productId);
+            _logger.LogInformation("RemoveCommentByMyId success");
             return Ok();
         }
     }
@@ -98,6 +101,7 @@ public class ProductReviewController : ControllerBase
 
             _logger.LogInformation("RemoveComment completed for UserId={UserId}, ProductId={productId}", userId,
                 productId);
+            _logger.LogInformation("RemoveComment success");
             return Ok();
         }
     }
@@ -117,6 +121,7 @@ public class ProductReviewController : ControllerBase
             }
 
             _logger.LogInformation("GetAllReviews completed for ProductId={ProductId}", productId);
+            _logger.LogInformation("GetAllReviews success");
             return Ok(reviews);
         }
     }
@@ -136,6 +141,7 @@ public class ProductReviewController : ControllerBase
             }
 
             _logger.LogInformation("GetReview completed for ReviewId={ReviewId}", reviewId);
+            _logger.LogInformation("GetReview success");
             return Ok(review);
         }
     }
@@ -161,6 +167,7 @@ public class ProductReviewController : ControllerBase
 
             _logger.LogInformation("SetReaction completed for ProductId={productId}, ReactionUserId={ReactionUserId}",
                 productId, userIdClaim);
+            _logger.LogInformation("SetReactionByMyId success");
             return Ok();
         }
     }
@@ -188,6 +195,7 @@ public class ProductReviewController : ControllerBase
             _logger.LogInformation(
                 "DeleteReaction completed for ProductId={productId}, ReactionUserId={ReactionUserId}", productId,
                 userIdClaim);
+            _logger.LogInformation("DeleteReactionByMyId success");
             return Ok();
         }
     }
@@ -207,6 +215,7 @@ public class ProductReviewController : ControllerBase
             }
 
             _logger.LogInformation("GetAllComments completed for ProductId={ProductId}", productId);
+            _logger.LogInformation("GetAllComments success");
             return Ok(comments);
         }
     }
@@ -222,6 +231,7 @@ public class ProductReviewController : ControllerBase
             await _productReviewService.ClearAllReviewsByProductId(productId);
 
             _logger.LogInformation("ClearReviews completed for ProductId={ProductId}", productId);
+            _logger.LogInformation("ClearReviews success");
             return Ok();
         }
     }

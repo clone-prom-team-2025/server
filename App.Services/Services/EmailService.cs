@@ -10,10 +10,17 @@ using MimeKit;
 
 namespace App.Services.Services;
 
+/// <summary>
+/// Service class responsible for sending and receiving emails using configured accounts.
+/// </summary>
 public class EmailService : IEmailService
 {
     private readonly Dictionary<string, EmailAccountSettings> _accounts;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="EmailService"/> class.
+    /// </summary>
+    /// <param name="config">The application configuration containing email account settings.</param>
     public EmailService(IConfiguration config)
     {
         _accounts = config
@@ -25,6 +32,10 @@ public class EmailService : IEmailService
             );
     }
 
+    /// <summary>
+    /// Sends an email asynchronously using the configured sender account.
+    /// </summary>
+    /// <param name="message">The email message to be sent.</param>
     public async Task SendEmailAsync(EmailMessage message)
     {
         if (!_accounts.TryGetValue(GetAccountKeyFromEmail(message.From), out var sender))
@@ -44,6 +55,10 @@ public class EmailService : IEmailService
         await client.DisconnectAsync(true);
     }
 
+    /// <summary>
+    /// Retrieves all emails from the inbox of a specified account asynchronously.
+    /// </summary>
+    /// <param name="from">The sender email to identify the account to use.</param>
     public async Task<List<MimeMessage>> GetInboxAsync(string from)
     {
         if (!_accounts.TryGetValue(GetAccountKeyFromEmail(from), out var acc))
@@ -55,7 +70,7 @@ public class EmailService : IEmailService
         await client.Inbox.OpenAsync(FolderAccess.ReadOnly);
 
         var uids = await client.Inbox.SearchAsync(SearchQuery.All);
-        var messages = await client.Inbox.FetchAsync(uids, MessageSummaryItems.Full | MessageSummaryItems.UniqueId);
+        //var messages = await client.Inbox.FetchAsync(uids, MessageSummaryItems.Full | MessageSummaryItems.UniqueId);
 
         var result = new List<MimeMessage>();
         foreach (var uid in uids)
@@ -68,6 +83,10 @@ public class EmailService : IEmailService
         return result;
     }
 
+    /// <summary>
+    /// Retrieves the account key corresponding to the specified email address.
+    /// </summary>
+    /// <param name="email">The email address to look up.</param>
     private string GetAccountKeyFromEmail(string email)
     {
         return _accounts.FirstOrDefault(kvp => kvp.Value.Email == email).Key

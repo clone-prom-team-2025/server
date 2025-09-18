@@ -4,16 +4,17 @@ using App.Core.Enums;
 using App.Core.Exceptions;
 using App.Core.Interfaces;
 using App.Core.Models.FileStorage;
-using App.Core.Models.Product;
 using App.Core.Models.Sell;
 using App.Core.Utils;
 using AutoMapper;
-using HeyRed.Mime;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 
 namespace App.Services.Services;
 
+/// <summary>
+/// Service responsible for handling product purchases, payments, shipping, and order management.
+/// </summary>
 public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService> logger, IMapper mapper, IStoreRepository storeRepository, IUserRepository userRepository, IProductRepository productRepository, IProductMediaRepository productMediaRepository, IFileService fileService, INotificationService notificationService) : IBuyService
 {
     private readonly ILogger<BuyService> _logger = logger;
@@ -26,6 +27,11 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
     private readonly IFileService _fileService = fileService;
     private readonly INotificationService _notificationService = notificationService;
 
+    /// <summary>
+    /// Creates a new purchase for the specified product.
+    /// </summary>
+    /// <param name="dto">The purchase creation data.</param>
+    /// <param name="userId">The ID of the user making the purchase.</param>
     public async Task BuyProductAsync(BuyCreateDto dto, string userId)
     {
         using (_logger.BeginScope("BuyProductAsync"))
@@ -76,12 +82,12 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
                 ProductName = product.Name,
             };
             
-            var status = dto.DeliveryPayment == DeliveryPayment.Card ? DeliveryStatus.PendingPayment : DeliveryStatus.WaitingForShipment;
+            var status = dto.DeliveryPayment == DeliveryPayment.AfterPayment ? DeliveryStatus.WaitingForShipment : DeliveryStatus.PendingPayment;
             string? trackingNumber = null;
             if (status == DeliveryStatus.WaitingForShipment)
             {
                 trackingNumber = Guid.NewGuid().ToString("N");
-                _notificationService.SendNotificationAsync(new NotificationCreateDto()
+                await _notificationService.SendNotificationAsync(new NotificationCreateDto()
                 {
                     From = null, IsHighPriority = false,
                     Message = $"Дякуємо за покупку, очікуйте відправку від продавця. Номер накладної {trackingNumber}", MetadataUrl = null, To = userId,
@@ -90,7 +96,7 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
             }
             else
             {
-                _notificationService.SendNotificationAsync(new NotificationCreateDto()
+                await _notificationService.SendNotificationAsync(new NotificationCreateDto()
                 {
                     From = null, IsHighPriority = true,
                     Message = "Продовжіть покупку, оплатіть замовлення.", MetadataUrl = null, To = userId,
@@ -117,6 +123,11 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
         }
     }
 
+    /// <summary>
+    /// Accepts a pending sell request for a given order.
+    /// </summary>
+    /// <param name="buyId">The ID of the purchase order.</param>
+    /// <param name="userId">The ID of the seller’s user.</param>
     public async Task AcceptSellAsync(string buyId, string userId)
     {
         using (_logger.BeginScope("AcceptSell"))
@@ -193,7 +204,11 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
         }
     }
     
-    //Імітація
+    /// <summary>
+    /// Simulates payment for a product (for card payments).
+    /// </summary>
+    /// <param name="buyId">The ID of the purchase order.</param>
+    /// <param name="userId">The ID of the buyer.</param>
     public async Task PayForProductAsync(string buyId, string userId)
     {
         using (_logger.BeginScope("PayForProductAsync"))
@@ -214,7 +229,7 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
                 throw new InvalidOperationException("Failed to pay for product");
             }
 
-            if (buyInfo.Payment != DeliveryPayment.Card)
+            if (buyInfo.Payment == DeliveryPayment.AfterPayment)
             {
                 _logger.LogInformation("Payment upon receipt");
                 throw new InvalidOperationException("Payment upon receipt");
@@ -246,7 +261,7 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
                 throw new InvalidOperationException("PayForProduct failed");
             }
             
-            _notificationService.SendNotificationAsync(new NotificationCreateDto()
+            await _notificationService.SendNotificationAsync(new NotificationCreateDto()
             {
                 From = null, IsHighPriority = false,
                 Message = $"Дякуємо за покупку, очікуйте відправку від продавця. Номер накладної {buyInfo.TrackingNumber}", MetadataUrl = null, To = userId,
@@ -257,6 +272,11 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
         }
     }
 
+    /// <summary>
+    /// Marks a product as sent by the seller.
+    /// </summary>
+    /// <param name="buyId">The ID of the purchase order.</param>
+    /// <param name="userId">The ID of the seller’s user.</param>
     public async Task SendProductAsync(string buyId, string userId)
     {
         using (_logger.BeginScope("SendProduct"))
@@ -310,7 +330,7 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
                 throw new InvalidOperationException("Failed to send product");
             }
             
-            _notificationService.SendNotificationAsync(new NotificationCreateDto()
+            await _notificationService.SendNotificationAsync(new NotificationCreateDto()
             {
                 From = null, IsHighPriority = false,
                 Message = "Продавець відправив товар, очікуйте доставки.", MetadataUrl = null, To = userId,
@@ -321,6 +341,11 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
         }
     }
 
+    /// <summary>
+    /// Cancels an active purchase by the buyer.
+    /// </summary>
+    /// <param name="buyId">The ID of the purchase order.</param>
+    /// <param name="userId">The ID of the buyer.</param>
     public async Task CancelSellAsync(string buyId, string userId)
     {
         using (_logger.BeginScope("CancelSellAsync"))
@@ -361,7 +386,7 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
                 _logger.LogInformation("Імітація повернення коштів");
             }
             
-            _notificationService.SendNotificationAsync(new NotificationCreateDto()
+            await _notificationService.SendNotificationAsync(new NotificationCreateDto()
             {
                 From = null, IsHighPriority = false,
                 Message = "Замовлення скасовано.", MetadataUrl = null, To = userId,
@@ -372,6 +397,11 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
         }
     }
 
+    /// <summary>
+    /// Declines a purchase request by the seller.
+    /// </summary>
+    /// <param name="buyId">The ID of the purchase order.</param>
+    /// <param name="userId">The ID of the seller’s user.</param>
     public async Task DeclineSellAsync(string buyId, string userId)
     {
         using (_logger.BeginScope("DeclinedSellAsync"))
@@ -415,7 +445,7 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
                 throw new InvalidOperationException("Failed to cancel product");
             }
             
-            _notificationService.SendNotificationAsync(new NotificationCreateDto()
+            await _notificationService.SendNotificationAsync(new NotificationCreateDto()
             {
                 From = null, IsHighPriority = false,
                 Message = "Продавець скасував замовлення.", MetadataUrl = null, To = userId,
@@ -426,6 +456,10 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
         }
     }
 
+    /// <summary>
+    /// Retrieves purchase information by ID.
+    /// </summary>
+    /// <param name="buyId">The ID of the purchase order.</param>
     public async Task<BuyInfoDto> GetBuyInfoAsync(string buyId)
     {
         using (_logger.BeginScope("GetBuyInfoAsync"))
@@ -440,6 +474,10 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
         }
     }
 
+    /// <summary>
+    /// Retrieves all purchases made by a specific user.
+    /// </summary>
+    /// <param name="userId">The ID of the buyer.</param>
     public async Task<IEnumerable<BuyInfoDto>> GetBuyInfoByUserIdAsync(string userId)
     {
         using (_logger.BeginScope("GetBuyInfoByUserIdAsync"))
@@ -454,6 +492,10 @@ public class BuyService(IBuyInfoRepository buyInfoRepository, ILogger<BuyService
         }
     }
 
+    /// <summary>
+    /// Retrieves all purchases related to a specific seller.
+    /// </summary>
+    /// <param name="sellerId">The ID of the seller.</param>
     public async Task<IEnumerable<BuyInfoDto>> GetBuyInfoBySellerIdAsync(string sellerId)
     {
         using (_logger.BeginScope("GetBuyInfoBySellerIdAsync"))

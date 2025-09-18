@@ -29,6 +29,7 @@ public class BuyController : ControllerBase
         {
             _logger.LogInformation("GetBuyId called");
             var result = await _buyService.GetBuyInfoAsync(buyId);
+            _logger.LogInformation("GetBuyId success");
             return Ok(result);
         }
     }
@@ -43,6 +44,7 @@ public class BuyController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("GetByUserId called");
             var result = await _buyService.GetBuyInfoByUserIdAsync(userId);
+            _logger.LogInformation("GetByUserId success");
             return Ok(result);
         }
     }
@@ -54,6 +56,7 @@ public class BuyController : ControllerBase
         {
             _logger.LogInformation("GetBySellerId called");
             var result = await _buyService.GetBuyInfoBySellerIdAsync(sellerId);
+            _logger.LogInformation("GetBySellerId success");
             return Ok(result);
         }
     }
@@ -68,7 +71,7 @@ public class BuyController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("BuyProduct action");
             await _buyService.BuyProductAsync(dto, userId);
-            _logger.LogInformation("BuyProduct action completed");
+            _logger.LogInformation("BuyProduct action success");
             return NoContent();
         }
     }
@@ -83,7 +86,7 @@ public class BuyController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("Accept action");
             await _buyService.AcceptSellAsync(buyId, userId);
-            _logger.LogInformation("Accept action completed");
+            _logger.LogInformation("Accept action success");
             return NoContent();
         }
     }
@@ -98,7 +101,7 @@ public class BuyController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("Pay action");
             await _buyService.PayForProductAsync(buyId, userId);
-            _logger.LogInformation("Pay action completed");
+            _logger.LogInformation("Pay action success");
             return NoContent();
         }
     }
@@ -113,7 +116,7 @@ public class BuyController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("SendProduct action");
             await _buyService.SendProductAsync(buyId, userId);
-            _logger.LogInformation("SendProduct action completed");
+            _logger.LogInformation("SendProduct action success");
             return NoContent();
         }
     }
@@ -128,7 +131,7 @@ public class BuyController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("Cancel action");
             await _buyService.CancelSellAsync(buyId, userId);
-            _logger.LogInformation("Cancel action completed");
+            _logger.LogInformation("Cancel action success");
             return NoContent();
         }
     }
@@ -143,7 +146,7 @@ public class BuyController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("Decline action");
             await _buyService.DeclineSellAsync(buyId, userId);
-            _logger.LogInformation("Decline action completed");
+            _logger.LogInformation("Decline action success");
             return NoContent();
         }
     }
