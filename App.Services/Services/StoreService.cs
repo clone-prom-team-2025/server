@@ -507,7 +507,7 @@ public class StoreService(
                 throw new KeyNotFoundException("Store not found");
             }
 
-            if (!store.Roles.ContainsKey(userId) || user.Roles.Contains(RoleNames.Admin))
+            if (!store.Roles.ContainsKey(userId) && !user.Roles.Contains(RoleNames.Admin))
             {
                 _logger.LogError("You are not the owner!");
                 throw new AccessDeniedException("You are not the owner");
