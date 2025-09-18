@@ -101,12 +101,10 @@ public class NotificationHub : Hub
                     try
                     {
                         _logger.LogInformation("Sending notification to {connectionId}", connectionId);
-                        _logger.LogDebug("Connections: {conn}", UserConnections.ToJson());
-                        await Clients.Client(connectionId)?.SendAsync("ReceiveNotification", notification);
+                        await Clients.Client(connectionId)?.SendAsync("ReceiveNotification", notification)!;
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogDebug("Connections: {conn}", UserConnections.ToJson());
                         _logger.LogWarning(ex, "Failed to send notification to connection {connectionId}",
                             connectionId);
                     }

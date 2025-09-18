@@ -20,6 +20,11 @@ public class ProductReviewService(
     private readonly IProductReviewRepository _repository = repository;
     private readonly ILogger<ProductReviewService> _logger = logger;
 
+    /// <summary>
+    /// Adds a comment to a product review. Creates a review if it does not exist.
+    /// Throws KeyNotFoundException if the product does not exist.
+    /// Throws InvalidOperationException if the comment already exists.
+    /// </summary>
     public async Task AddCommentToReviewByProductId(string productId, ProductReviewCommentCreateDto comment)
     {
         using (_logger.BeginScope("AddCommentToReviewByProductId")){
@@ -49,6 +54,11 @@ public class ProductReviewService(
         }
     }
 
+    /// <summary>
+    /// Removes a comment from a product review by product ID and user ID.
+    /// Throws KeyNotFoundException if the review does not exist.
+    /// Throws InvalidOperationException if the comment does not exist.
+    /// </summary>
     public async Task RemoveCommentFromReviewByProductId(string productId, string userId)
     {
         using (_logger.BeginScope("RemoveCommentFromReviewByProductId")){
@@ -72,6 +82,11 @@ public class ProductReviewService(
         }
     }
 
+    /// <summary>
+    /// Retrieves the review for a specific product by product ID.
+    /// Calculates rating counts and average rating.
+    /// Throws KeyNotFoundException if the product or review does not exist.
+    /// </summary>
     public async Task<ProductReviewDto?> GetReviewByProductId(string productId)
     {
         using (_logger.BeginScope("GetReviewByProductId")) {
@@ -103,6 +118,11 @@ public class ProductReviewService(
         }
     }
 
+    /// <summary>
+    /// Retrieves a review by its review ID.
+    /// Calculates rating counts and average rating.
+    /// Throws KeyNotFoundException if the review does not exist.
+    /// </summary>
     public async Task<ProductReviewDto?> GetReviewById(string reviewId)
     {
         using (_logger.BeginScope("GetReviewById")) {
@@ -133,6 +153,10 @@ public class ProductReviewService(
         }
     }
 
+    /// <summary>
+    /// Clears all reviews for a product and resets the review collection.
+    /// Throws InvalidOperationException if deletion or creation fails.
+    /// </summary>
     public async Task ClearAllReviewsByProductId(string productId)
     {
         using (_logger.BeginScope("ClearAllReviewsByProductId")){
@@ -150,6 +174,11 @@ public class ProductReviewService(
         }
     }
 
+    /// <summary>
+    /// Adds or updates a reaction to a review comment by a specific user.
+    /// Throws KeyNotFoundException if the review or comment does not exist.
+    /// Throws InvalidOperationException if the update fails.
+    /// </summary>
     public async Task SetReactionToReviewComment(string productId, string commentUserId, string reactionUserId,
         bool reaction)
     {
@@ -174,6 +203,11 @@ public class ProductReviewService(
         }
     }
 
+    /// <summary>
+    /// Removes a reaction from a review comment by a specific user.
+    /// Throws KeyNotFoundException if the review or comment does not exist.
+    /// Throws InvalidOperationException if the reaction is invalid or update fails.
+    /// </summary>
     public async Task DeleteReactionToReviewComment(string productId, string commentUserId, string reactionUserId)
     {
         using (_logger.BeginScope("DeleteReactionToReviewComment")){
@@ -201,6 +235,10 @@ public class ProductReviewService(
         }
     }
 
+    /// <summary>
+    /// Retrieves all comments for a specific product.
+    /// Throws KeyNotFoundException if the review or comments do not exist.
+    /// </summary>
     public async Task<IEnumerable<ProductReviewCommentDto>?> GetAllCommentsByProductId(string productId)
     {
         using  (_logger.BeginScope("GetAllCommentsByProductId"))

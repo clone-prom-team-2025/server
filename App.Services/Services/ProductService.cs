@@ -31,7 +31,6 @@ public class ProductService(
     ///     Retrieves all products matching the specified filter.
     /// </summary>
     /// <param name="filter">Filtering options.</param>
-    /// <returns>A list of matching products or null.</returns>
     public async Task<ProductFilterResponseDto?> GetAllAsync(ProductFilterRequestDto filter)
     {
         using (_logger.BeginScope("GetAllAsync")){
@@ -46,7 +45,6 @@ public class ProductService(
     ///     Retrieves a product by its ID.
     /// </summary>
     /// <param name="id">The ID of the product.</param>
-    /// <returns>The matching product or null.</returns>
     public async Task<ProductDto?> GetByIdAsync(string id)
     {
         using (_logger.BeginScope("GetByIdAsync")) {
@@ -62,7 +60,6 @@ public class ProductService(
     /// </summary>
     /// <param name="name">Product name (partial or full).</param>
     /// <param name="filter">Additional filtering options.</param>
-    /// <returns>A list of matching products or null.</returns>
     public async Task<ProductFilterResponseDto?> GetByNameAsync(string name, ProductFilterRequestDto filter)
     {
         using (_logger.BeginScope("GetByNameAsync")) {
@@ -78,7 +75,6 @@ public class ProductService(
     /// </summary>
     /// <param name="sellerId">The seller identifier.</param>
     /// <param name="filter">Filtering options.</param>
-    /// <returns>A list of products by the seller or null.</returns>
     public async Task<ProductFilterResponseDto?> GetBySellerIdAsync(string sellerId, ProductFilterRequestDto filter)
     {
         using  (_logger.BeginScope("GetBySellerIdAsync")) {
@@ -96,7 +92,6 @@ public class ProductService(
     /// </summary>
     /// <param name="productDto">Data to create the product.</param>
     /// <param name="userId">Product creator.</param>
-    /// <returns>The created product DTO.</returns>
     public async Task CreateAsync(ProductCreateDto productDto, string userId)
     {
         using (_logger.BeginScope("CreateAsync")){
@@ -141,7 +136,6 @@ public class ProductService(
     /// </summary>
     /// <param name="productDto">Product data to update.</param>
     /// <param name="userId">Product updater.</param>
-    /// <returns>The updated product or null if update failed.</returns>
     public async Task UpdateAsync(UpdateProductDto productDto, string userId)
     {
         using (_logger.BeginScope("UpdateAsync")){
@@ -181,7 +175,6 @@ public class ProductService(
     /// </summary>
     /// <param name="id">The ID of the product to delete.</param>
     /// <param name="userId">Product deleter</param>
-    /// <returns>True if deleted successfully; otherwise, false.</returns>
     public async Task DeleteAsync(string id, string userId)
     {
         using (_logger.BeginScope("DeleteAsync")) {
@@ -207,8 +200,6 @@ public class ProductService(
     ///     Searches for products by name and language code.
     /// </summary>
     /// <param name="name">Search query.</param>
-    /// <param name="languageCode">Language of the product name. Default is "en".</param>
-    /// <returns>List of search results or null.</returns>
     public async Task<IEnumerable<ProductSearchResultDto>?> SearchByNameAsync(string name)
     {
         using (_logger.BeginScope("SearchByNameAsync")){
@@ -219,6 +210,11 @@ public class ProductService(
         }
     }
 
+    /// <summary>
+    ///     Retrieves all products matching the specified filter.
+    /// </summary>
+    /// <param name="page">Start page.</param>
+    /// <param name="pageSize">Page size.</param>
     public async Task<IEnumerable<ProductDto>> GetRandomProductsAsync(int page, int pageSize)
     {
         using (_logger.BeginScope("GetRandomProductsAsync")){

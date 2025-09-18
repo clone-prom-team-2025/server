@@ -139,8 +139,8 @@ public class UserController : ControllerBase
         {
             _logger.LogInformation("GetAllUsers called");
             var users = await _userService.GetAllUsersAsync();
-            var allUsers = users as UserDto[] ?? users.ToArray();
-            _logger.LogInformation("Found {Count} users", allUsers.Length);
+            var allUsers = users as UserDto[] ?? users?.ToArray();
+            _logger.LogInformation("Found {Count} users", allUsers?.Length);
             return Ok(allUsers);
         }
     }
@@ -174,8 +174,8 @@ public class UserController : ControllerBase
             _logger.LogInformation("GetAllUsersByPages called with PageNumber={pageNumber}, PageSize={pageSize}",
                 pageNumber, pageSize);
             var users = await _userService.GetAllUsersAsync(pageNumber, pageSize);
-            var any = users.ToArray();
-            _logger.LogInformation("Found {Count} users", any.Length);
+            var any = users?.ToArray();
+            _logger.LogInformation("Found {Count} users", any?.Length);
             return Ok(any);
         }
     }
@@ -215,8 +215,8 @@ public class UserController : ControllerBase
         {
             _logger.LogInformation("GetUsersByRoleByPages called with Role={role}", role);
             var users = await _userService.GetUsersByRoleAsync(role, pageNumber, pageSize);
-            var any = users.ToArray();
-            _logger.LogInformation("Found {Count} users", any.Length);
+            var any = users?.ToArray();
+            _logger.LogInformation("Found {Count} users", any?.Length);
             return Ok(any);
         }
     }
