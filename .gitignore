@@ -95,6 +95,8 @@ ipch/
 *.vspx
 *.sap
 
+App.Api/appsettings.Development.json
+
 # TFS 2012 Local Workspace
 /
 
@@ -839,3 +841,4 @@ coverage*[.json, .xml, .info]
 # Ionide (cross platform F# VS Code tools) working folder
 
 # End of https://www.toptal.com/developers/gitignore/api/vs,csharp,aspnetcore,rider,jetbrains
+App.Api/appsettings.Development.json

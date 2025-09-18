@@ -1,0 +1,17 @@
+# Файли та каталоги, які не потрібно копіювати в контейнер
+
+**/bin
+**/obj
+**/.vs
+**/*.user
+**/*.suo
+**/*.cache
+**/*.pdb
+**/*.log
+.vscode/
+docker-compose*.yml
+docker-compose*.override.yml
+.git
+.gitignore
+.env
+.idea/

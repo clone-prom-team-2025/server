@@ -1,0 +1,256 @@
+using System.Net;
+using App.Api.Handlers;
+using App.Api.Hubs;
+using App.Api.Middleware;
+using App.Core.Interfaces;
+using App.Core.Models.Auth;
+using App.Core.Models.FileStorage;
+using App.Core.Validations;
+using App.Data;
+using App.Data.Repositories;
+using App.Services;
+using App.Services.Services;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi.Models;
+using Serilog;
+using Serilog.Sinks.SystemConsole.Themes;
+using LogEventLevel = Serilog.Events.LogEventLevel;
+using RollingInterval = Serilog.RollingInterval;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:3000",
+                "https://sellpoint.pp.ua"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy
+            .SetIsOriginAllowed(_ => true) // дозволяємо будь-який origin
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials(); // потрібне для SignalR
+    });
+});
+
+// --- MongoDB settings ---
+builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDb"));
+
+// --- File storage settings
+builder.Services.Configure<FileStorageOptions>(builder.Configuration.GetSection("FileStorage"));
+builder.Services.Configure<MinIOOptions>(builder.Configuration.GetSection("CloudflareR2"));
+builder.Services.Configure<ProductMediaKeys>(builder.Configuration.GetSection("ProductMediaKeys"));
+
+// --- Auth sessions settings ---
+builder.Services.Configure<SessionsOptions>(builder.Configuration.GetSection("SessionsSettings"));
+
+// --- Infrastructure ---
+builder.Services.AddSingleton<MongoDbContext>();
+builder.Services.AddSingleton<MongoDbSeeder>();
+
+// --- Repositories ---
+builder.Services.AddSingleton<ICategoryRepository, CategoryRepository>();
+builder.Services.AddSingleton<IProductRepository, ProductRepository>();
+builder.Services.AddSingleton<ProductRepository>();
+builder.Services.AddSingleton<IProductReviewRepository, ProductReviewRepository>();
+builder.Services.AddSingleton<IUserRepository, UserRepository>();
+builder.Services.AddSingleton<IProductMediaRepository, ProductMediaRepository>();
+builder.Services.AddSingleton<IAvailableFiltersRepository, AvailableFiltersRepository>();
+builder.Services.AddSingleton<IUserBanRepository, UserBanRepository>();
+builder.Services.AddSingleton<IUserSessionRepository, UserSessionRepository>();
+builder.Services.AddSingleton<IStoreCreateRequestRepository, StoreCreateRequestRepository>();
+builder.Services.AddSingleton<ICartRepository, CartRepository>();
+builder.Services.AddSingleton<IStoreRepository, StoreRepository>();
+builder.Services.AddSingleton<INotificationRepository, NotificationRepository>();
+builder.Services.AddSingleton<IFavoriteSellerRepository, FavoriteSellerRepository>();
+builder.Services.AddSingleton<IFavoriteProductRepository, FavoriteProductRepository>();
+builder.Services.AddSingleton<IBuyInfoRepository, BuyInfoRepository>();
+
+// --- Services ---
+builder.Services.AddSingleton<ICategoryService, CategoryService>();
+builder.Services.AddSingleton<IProductService, ProductService>();
+builder.Services.AddSingleton<IUserService, UserService>();
+builder.Services.AddSingleton<IProductMediaService, ProductMediaService>();
+builder.Services.AddSingleton<IFileService, FileService>();
+builder.Services.AddSingleton<IProductReviewService, ProductReviewService>();
+builder.Services.AddSingleton<IEmailService, EmailService>();
+builder.Services.AddSingleton<IAvailableFiltersService, AvailableFiltersService>();
+builder.Services.AddSingleton<IAuthService, AuthService>();
+builder.Services.AddSingleton<IStoreService, StoreService>();
+builder.Services.AddSingleton<ICartService, CartService>();
+builder.Services.AddSingleton<INotificationService, NotificationService>();
+builder.Services.AddSingleton<IFavoriteService, FavoriteService>();
+builder.Services.AddSingleton<IBuyService, BuyService>();
+
+builder.Services.AddSingleton<ISessionHubNotifier, SessionHubNotifier>();
+builder.Services.AddSingleton<INotificationHubNotifier, NotificationHubNotifier>();
+
+
+builder.Services.AddMemoryCache();
+
+// --- Validation ---
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var errors = context.ModelState
+                .Where(x => x.Value.Errors.Count > 0)
+                .ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                );
+
+            return new BadRequestObjectResult(new { errors });
+        };
+    });
+builder.Services.AddValidatorsFromAssemblyContaining<ProductCreateDtoValidator>();
+builder.Services.AddFluentValidationAutoValidation();
+
+// --- Controllers ---
+builder.Services.AddControllers();
+
+// ip
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+    options.KnownProxies.Add(IPAddress.Parse("172.17.0.1"));
+    // options.KnownProxies.Add(System.Net.IPAddress.Parse("127.0.0.1"));
+    // options.KnownProxies.Add(System.Net.IPAddress.Parse("::1"));
+});
+
+// --- Swagger ---
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "App API",
+        Version = "v1"
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+// --- Mapper ----
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+builder.Services.AddAuthentication("ReferenceToken")
+    .AddScheme<AuthenticationSchemeOptions, ReferenceTokenAuthHandler>("ReferenceToken", null);
+
+builder.Services.AddAuthorization();
+
+var env = builder.Environment;
+
+var loggerConfig = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .WriteTo.Console(
+        env.IsDevelopment() ? LogEventLevel.Verbose : LogEventLevel.Information,
+        "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}",
+        theme: AnsiConsoleTheme.Code
+    )
+    .WriteTo.File(
+        "logs/app.log",
+        rollingInterval: RollingInterval.Day,
+        restrictedToMinimumLevel: LogEventLevel.Verbose, // завжди Verbose у файлі
+        rollOnFileSizeLimit: true,
+        fileSizeLimitBytes: 10_000_000,
+        outputTemplate: "[{Timestamp:HH:mm:ss.fff} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}"
+    );
+
+loggerConfig = loggerConfig
+    .MinimumLevel.Verbose()
+    .MinimumLevel.Override("Microsoft", env.IsDevelopment() ? LogEventLevel.Information : LogEventLevel.Warning);
+
+Log.Logger = loggerConfig.CreateLogger();
+
+builder.Host.UseSerilog();
+
+builder.Services.AddSignalR();
+
+// --- Create app ---
+var app = builder.Build();
+
+// // Включаємо підтримку forwarded headers, щоб коректно отримувати інформацію про клієнта, IP, схему (http/https)
+// app.UseForwardedHeaders(new ForwardedHeadersOptions
+// {
+//     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+// });
+app.UseForwardedHeaders();
+
+// app.UseCors("AllowAll");
+app.UseCors("AllowAll");
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+app.UseStaticFiles();
+
+app.MapHub<SessionHub>("/hubs/session");
+app.MapHub<NotificationHub>("/hubs/notification");
+
+// --- Create MongoDB indexes on startup ---
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<MongoDbContext>();
+    await dbContext.CreateCategoryIndexesAsync();
+    await dbContext.CreateProductIndexesAsync();
+    await dbContext.CreateProductReviewIndexesAsync();
+    await dbContext.CreateAvailableFiltersIndexesAsync();
+    await dbContext.CreateUserIndexesAsync();
+    await dbContext.CreateStoreCreateRequestsIndexesAsync();
+
+    var dbSeeder = scope.ServiceProvider.GetRequiredService<MongoDbSeeder>();
+    await dbSeeder.SeedUserAsync();
+}
+
+// --- HTTP request pipeline ---
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();

@@ -1,0 +1,71 @@
+name: Build and Deploy API
+
+on:
+  push:
+    branches:
+      - dev
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Generate appsettings.json
+        run: |
+          cd App.Api
+          cp appsettings.template.json appsettings.json
+          jq \
+            --arg mongo "$MONGO_CONN" \
+            --arg cfkey "$CLOUDFLARE_KEY" \
+            --arg cfsecret "$CLOUDFLARE_SECRET" \
+            --arg smtp_nu "$SMTP_NOREPLY_USER" \
+            --arg smtp_np "$SMTP_NOREPLY_PASS" \
+            --arg smtp_su "$SMTP_SUPPORT_USER" \
+            --arg smtp_sp "$SMTP_SUPPORT_PASS" \
+            '.MongoDb.ConnectionString=$mongo |
+             .CloudflareR2.AccessKey=$cfkey |
+             .CloudflareR2.SecretKey=$cfsecret |
+             .EmailSettings.Accounts.NoReply.Username=$smtp_nu |
+             .EmailSettings.Accounts.NoReply.Password=$smtp_np |
+             .EmailSettings.Accounts.Support.Username=$smtp_su |
+             .EmailSettings.Accounts.Support.Password=$smtp_sp' \
+             appsettings.json > tmp.json && mv tmp.json appsettings.json
+        env:
+          MONGO_CONN: ${{ secrets.MONGO_CONN }}
+          CLOUDFLARE_KEY: ${{ secrets.CLOUDFLARE_KEY }}
+          CLOUDFLARE_SECRET: ${{ secrets.CLOUDFLARE_SECRET }}
+          SMTP_NOREPLY_USER: ${{ secrets.SMTP_NOREPLY_USER }}
+          SMTP_NOREPLY_PASS: ${{ secrets.SMTP_NOREPLY_PASS }}
+          SMTP_SUPPORT_USER: ${{ secrets.SMTP_SUPPORT_USER }}
+          SMTP_SUPPORT_PASS: ${{ secrets.SMTP_SUPPORT_PASS }}
+
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t pashhun/app-api-image .
+          docker push pashhun/app-api-image
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 22
+          script: |
+            docker stop app-api-container || true
+            docker rm app-api-container || true
+            docker pull pashhun/app-api-image:latest
+            docker run -v /home/pashhun/app-api/logs:/app/logs -d -p 8080:80 --gpus all --restart=always --name app-api-container pashhun/app-api-image:latest
