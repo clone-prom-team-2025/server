@@ -9,6 +9,9 @@ using MongoDB.Bson;
 
 namespace App.Services.Services;
 
+/// <summary>
+/// Service responsible for managing favorite products and favorite sellers for users.
+/// </summary>
 public class FavoriteService(
     IStoreRepository storeRepository,
     IFavoriteProductRepository favoriteProductRepository,
@@ -26,6 +29,10 @@ public class FavoriteService(
     private readonly IStoreRepository _storeRepository = storeRepository;
     private readonly IUserRepository _userRepository = userRepository;
 
+    /// <summary>
+    /// Creates a new favorite product collection for a user.
+    /// </summary>
+    /// <param name="dto">Data transfer object containing information about the favorite product collection to create.</param>
     public async Task CreateFavoriteProductCollection(FavoriteProductCreateDto dto)
     {
         using (_logger.BeginScope("CreateFavoriteProductCollection"))
@@ -36,6 +43,10 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Retrieves all favorite products for a user.
+    /// </summary>
+    /// <param name="userId">The ID of the user.</param>
     public async Task<IEnumerable<FavoriteProductDto>?> GetFavoriteProductAllByUserIdAsync(string userId)
     {
         using (_logger.BeginScope("GetFavoriteProductAllByUserIdAsync"))
@@ -46,6 +57,10 @@ public class FavoriteService(
         }
     }
     
+    /// <summary>
+    /// Retrieves a favorite product collection by its ID.
+    /// </summary>
+    /// <param name="id">The ID of the favorite product collection.</param>
     public async Task<IEnumerable<FavoriteProductDto>?> GetFavoriteProductAllByIdAsync(string id)
     {
         using (_logger.BeginScope("GetFavoriteProductAllByIdAsync"))
@@ -56,6 +71,12 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Updates the name of a favorite product collection.
+    /// </summary>
+    /// <param name="id">The ID of the collection.</param>
+    /// <param name="name">The new name for the collection.</param>
+    /// <param name="userId">The ID of the user.</param>
     public async Task UpdateFavoriteProductCollectionName(string id, string name, string userId)
     {
         using (_logger.BeginScope("UpdateFavoriteProductCollectionName: Id={id}, Name={name}, UserId={userId}", id,
@@ -103,6 +124,12 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Adds a product to a favorite product collection.
+    /// </summary>
+    /// <param name="id">The ID of the favorite collection.</param>
+    /// <param name="userId">The ID of the user.</param>
+    /// <param name="productId">The ID of the product to add.</param>
     public async Task AddToFavoriteProductCollection(string id, string userId, string productId)
     {
         using (_logger.BeginScope("AddToFavoriteProductCollection"))
@@ -154,6 +181,12 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Adds a product to a favorite product collection by collection name.
+    /// </summary>
+    /// <param name="name">The name of the favorite collection.</param>
+    /// <param name="userId">The ID of the user.</param>
+    /// <param name="productId">The ID of the product to add.</param>
     public async Task AddToFavoriteProductCollectionByName(string name, string userId, string productId)
     {
         using (_logger.BeginScope("AddToFavoriteProductByNameCollection"))
@@ -212,6 +245,11 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Adds a product to the default favorite product collection.
+    /// </summary>
+    /// <param name="userId">The ID of the user.</param>
+    /// <param name="productId">The ID of the product to add.</param>
     public async Task AddToFavoriteProductCollectionToDefault(string userId, string productId)
     {
         using (_logger.BeginScope("AddToFavoriteProductCollectionToDefault"))
@@ -276,6 +314,12 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Removes a product from a favorite product collection.
+    /// </summary>
+    /// <param name="id">The ID of the favorite collection.</param>
+    /// <param name="userId">The ID of the user.</param>
+    /// <param name="productId">The ID of the product to remove.</param>
     public async Task RemoveFromFavoriteProductCollection(string id, string userId, string productId)
     {
         using (_logger.BeginScope("RemoveFromFavoriteProductCollection"))
@@ -327,6 +371,11 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Creates an empty favorite product collection.
+    /// </summary>
+    /// <param name="name">The name of the collection.</param>
+    /// <param name="userId">The ID of the user.</param>
     public async Task CreateEmptyFavoriteProductCollection(string name, string userId)
     {
         using (_logger.BeginScope("CreateEmptyFavoriteProductCollection"))
@@ -353,6 +402,10 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Creates a default favorite product collection if it does not exist for the user.
+    /// </summary>
+    /// <param name="userId">The ID of the user.</param>
     public async Task CreateDefaultFavoriteProductCollectionIfNotExist(string userId)
     {
         using (_logger.BeginScope("CreateDefaultFavoriteProductCollectionIfNotExist"))
@@ -378,6 +431,11 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Deletes a favorite product collection.
+    /// </summary>
+    /// <param name="id">The ID of the collection.</param>
+    /// <param name="userId">The ID of the user.</param>
     public async Task DeleteFavoriteProductCollection(string id, string userId)
     {
         using (_logger.BeginScope("DeleteFavoriteProductCollection"))
@@ -420,6 +478,10 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Creates a new favorite seller collection for a user.
+    /// </summary>
+    /// <param name="dto">Data transfer object containing information about the favorite seller collection to create.</param>
     public async Task CreateFavoriteSellerCollection(FavoriteSellerCreateDto dto)
     {
         using (_logger.BeginScope("CreateFavoriteSellerCollection"))
@@ -430,7 +492,11 @@ public class FavoriteService(
         }
     }
 
-    public async Task<IEnumerable<FavoriteSellerDto>> GetFavoriteSellerAllByUserIdAsync(string userId)
+    /// <summary>
+    /// Retrieves all favorite sellers for a user.
+    /// </summary>
+    /// <param name="userId">The ID of the user.</param>
+    public async Task<IEnumerable<FavoriteSellerDto>?> GetFavoriteSellerAllByUserIdAsync(string userId)
     {
         using (_logger.BeginScope("GetFavoriteSellerAllByUserIdAsync"))
         {
@@ -441,6 +507,12 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Updates the name of a favorite seller collection.
+    /// </summary>
+    /// <param name="id">The ID of the collection.</param>
+    /// <param name="name">The new name for the collection.</param>
+    /// <param name="userId">The ID of the user.</param>
     public async Task UpdateFavoriteSellerCollectionName(string id, string name, string userId)
     {
         using (_logger.BeginScope("UpdateFavoriteSellerCollectionName: Id={id}, Name={name}, UserId={userId}", id, name,
@@ -487,6 +559,10 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Retrieves a favorite seller collection by its ID.
+    /// </summary>
+    /// <param name="id">The ID of the favorite seller collection.</param>
     public async Task<IEnumerable<FavoriteSellerDto>?> GetFavoriteSellerAllByIdAsync(string id)
     {
         using (_logger.BeginScope("GetFavoriteSellerAllByIdAsync"))
@@ -497,6 +573,12 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Adds a seller to a favorite seller collection.
+    /// </summary>
+    /// <param name="id">The ID of the favorite seller collection.</param>
+    /// <param name="userId">The ID of the user.</param>
+    /// <param name="productId">The ID of the seller to add.</param>
     public async Task AddToFavoriteSellerCollection(string id, string userId, string productId)
     {
         using (_logger.BeginScope("AddToFavoriteSellerCollection"))
@@ -548,6 +630,12 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Adds a seller to a favorite seller collection by collection name.
+    /// </summary>
+    /// <param name="name">The name of the collection.</param>
+    /// <param name="userId">The ID of the user.</param>
+    /// <param name="productSellerIdtId">The ID of the seller to add.</param>
     public async Task AddToFavoriteSellerCollectionByName(string name, string userId, string productSellerIdtId)
     {
         using (_logger.BeginScope("AddToFavoriteSellerCollectionByName"))
@@ -606,6 +694,11 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Adds a seller to the default favorite seller collection.
+    /// </summary>
+    /// <param name="userId">The ID of the user.</param>
+    /// <param name="sellerId">The ID of the seller to add.</param>
     public async Task AddToFavoriteSellerCollectionToDefault(string userId, string sellerId)
     {
         using (_logger.BeginScope("AddToFavoriteSellerCollectionToDefault"))
@@ -670,6 +763,12 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Removes a seller from a favorite seller collection.
+    /// </summary>
+    /// <param name="id">The ID of the collection.</param>
+    /// <param name="userId">The ID of the user.</param>
+    /// <param name="productId">The ID of the seller to remove.</param>
     public async Task RemoveFromFavoriteSellerCollection(string id, string userId, string productId)
     {
         using (_logger.BeginScope("RemoveFromFavoriteSellerCollection"))
@@ -721,6 +820,11 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Creates an empty favorite seller collection.
+    /// </summary>
+    /// <param name="name">The name of the collection.</param>
+    /// <param name="userId">The ID of the user.</param>
     public async Task CreateEmptyFavoriteSellerCollection(string name, string userId)
     {
         using (_logger.BeginScope("CreateEmptyFavoriteSellerCollection"))
@@ -747,6 +851,10 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Creates a default favorite seller collection if it does not exist for the user.
+    /// </summary>
+    /// <param name="userId">The ID of the user.</param>
     public async Task CreateDefaultFavoriteSellerCollectionIfNotExist(string userId)
     {
         using (_logger.BeginScope("CreateDefaultFavoriteSellerCollectionIfNotExist"))
@@ -772,6 +880,11 @@ public class FavoriteService(
         }
     }
 
+    /// <summary>
+    /// Deletes a favorite seller collection.
+    /// </summary>
+    /// <param name="id">The ID of the collection.</param>
+    /// <param name="userId">The ID of the user.</param>
     public async Task DeleteFavoriteSellerCollection(string id, string userId)
     {
         using (_logger.BeginScope("DeleteFavoriteSellerCollection"))
@@ -813,14 +926,14 @@ public class FavoriteService(
             _logger.LogInformation("Delete favorite seller successfully");
         }
     }
-
-    public async Task CreateFavoriteSellerCollection(FavoriteProductCreateDto dto)
-    {
-        using (_logger.BeginScope("CreateFavoriteSellerCollection"))
-        {
-            _logger.LogInformation("CreateFavoriteSellerCollection called");
-            await _favoriteSellerRepository.CreateAsync(_mapper.Map<FavoriteSeller>(dto));
-            _logger.LogInformation("CreateFavoriteSellerCollection successfully");
-        }
-    }
+    
+    // public async Task CreateFavoriteSellerCollection(FavoriteProductCreateDto dto)
+    // {
+    //     using (_logger.BeginScope("CreateFavoriteSellerCollection"))
+    //     {
+    //         _logger.LogInformation("CreateFavoriteSellerCollection called");
+    //         await _favoriteSellerRepository.CreateAsync(_mapper.Map<FavoriteSeller>(dto));
+    //         _logger.LogInformation("CreateFavoriteSellerCollection successfully");
+    //     }
+    // }
 }

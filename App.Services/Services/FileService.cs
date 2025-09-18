@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
-using Amazon.S3.Transfer;
 using App.Core.Interfaces;
 using App.Core.Models.FileStorage;
 using Microsoft.Extensions.Options;
@@ -12,40 +11,49 @@ using Xabe.FFmpeg;
 
 namespace App.Services.Services;
 
+/// <summary>
+/// Handles file storage operations including image and video conversion,
+/// uploading to S3/MinIO, and file deletion.
+/// </summary>
 public class FileService : IFileService
 {
-    private readonly MinIOOptions _minIOoptions;
-    private readonly FileStorageOptions _options;
+    private readonly MinIOOptions _minIOptions;
     private readonly IAmazonS3 _s3Client;
 
-    private readonly TransferUtility _transferUtility;
-    private readonly int fileUniqueidLength = 10;
+    private readonly int _fileUniqueLength = 10;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FileService"/> class.
+    /// Sets up S3 client and FFmpeg path.
+    /// </summary>
     public FileService(IOptions<FileStorageOptions> options, IOptions<MinIOOptions> minioOptions)
     {
-        _options = options.Value;
-        _minIOoptions = minioOptions.Value;
+        var options1 = options.Value;
+        _minIOptions = minioOptions.Value;
 
-        var credentials = new BasicAWSCredentials(_minIOoptions.AccessKey, _minIOoptions.SecretKey);
+        var credentials = new BasicAWSCredentials(_minIOptions.AccessKey, _minIOptions.SecretKey);
 
         var s3Config = new AmazonS3Config
         {
-            ServiceURL = _minIOoptions.Endpoint,
+            ServiceURL = _minIOptions.Endpoint,
             ForcePathStyle = true,
             AuthenticationRegion = "auto"
         };
 
         _s3Client = new AmazonS3Client(credentials, s3Config);
-        _transferUtility = new TransferUtility(_s3Client);
 
-        var ffmpegPath = GetFfmpegPath(_options.FfmpegPath);
+        var ffmpegPath = GetFfmpegPath(options1.FfmpegPath);
         FFmpeg.SetExecutablesPath(Path.GetDirectoryName(ffmpegPath)!);
     }
 
+    /// <summary>
+    /// Converts an input image to WebP format, generates a compressed version,
+    /// uploads both files to storage, and provides their URLs and names.
+    /// </summary>
     public async Task<(string SourceUrl, string CompressedUrl, string SourceName, string CompressedFileName)>
         SaveImageAsync(Stream imageStream, string fileName, string key)
     {
-        var id = NanoIdGenerator.Generate(fileUniqueidLength);
+        var id = NanoIdGenerator.Generate(_fileUniqueLength);
         var baseFileName = Path.GetFileNameWithoutExtension(fileName);
 
         var sourceName = GenerateFileName(id, baseFileName, "_source", ".webp");
@@ -97,9 +105,12 @@ public class FileService : IFileService
         }
     }
 
+    /// <summary>
+    /// Converts an input video to WebM format, uploads it to storage, and provides the URL and filename.
+    /// </summary>
     public async Task<(string Url, string FileName)> SaveVideoAsync(Stream videoStream, string fileName, string key)
     {
-        var id = NanoIdGenerator.Generate(fileUniqueidLength);
+        var id = NanoIdGenerator.Generate(_fileUniqueLength);
         var baseFileName = Path.GetFileNameWithoutExtension(videoStream.Length > 0 ? fileName : "video");
         var outputWebmFileName = GenerateFileName(id, baseFileName, "", ".webm");
 
@@ -138,12 +149,19 @@ public class FileService : IFileService
         return (url, outputWebmFileName);
     }
 
+    /// <summary>
+    /// Deletes a file from S3/MinIO storage.
+    /// </summary>
     public async Task DeleteFileAsync(string key, string fileName)
     {
-        var Key = $"{key}/{fileName}";
-        var result = await _s3Client.DeleteObjectAsync(_minIOoptions.BucketName, Key);
+        var key1 = $"{key}/{fileName}";
+        await _s3Client.DeleteObjectAsync(_minIOptions.BucketName, key1);
     }
 
+    /// <summary>
+    /// Finds the path of FFmpeg executable based on user-defined path or system environment.
+    /// Throws FileNotFoundException if FFmpeg cannot be found.
+    /// </summary>
     private string GetFfmpegPath(string? userDefinedPath)
     {
         if (!string.IsNullOrWhiteSpace(userDefinedPath) && File.Exists(userDefinedPath))
@@ -169,15 +187,19 @@ public class FileService : IFileService
             if (!string.IsNullOrWhiteSpace(result) && File.Exists(result))
                 return result;
         }
-        catch
+        catch (Exception ex)
         {
+            throw new Exception("Unable to get ffmpeg path", ex);
         }
 
         throw new FileNotFoundException(
             "FFmpeg executable not found. Please install FFmpeg or set path in appsettings.json.");
     }
 
-    public string GetPreSignedURL(string bucketName, string objectKey, double expirationMinutes = 60)
+    /// <summary>
+    /// Generates a pre-signed URL for accessing a file with a limited expiration time.
+    /// </summary>
+    public string GetPreSignedUrl(string bucketName, string objectKey, double expirationMinutes = 60)
     {
         var request = new GetPreSignedUrlRequest
         {
@@ -188,34 +210,45 @@ public class FileService : IFileService
         return _s3Client.GetPreSignedURL(request);
     }
 
+    // /// <summary>
+    // /// Generates a unique filename for storage.
+    // /// </summary>
+    // private string GenerateFileName(string originalName, string suffix, string extension)
+    // {
+    //     var id = NanoIdGenerator.Generate(_fileUniqueLength);
+    //     var sanitized = Path.GetFileNameWithoutExtension(originalName).Trim().Replace(" ", "-");
+    //     return $"{id}_{sanitized}{suffix}{extension}";
+    // }
 
-    private string GenerateFileName(string originalName, string suffix, string extension)
-    {
-        var id = NanoIdGenerator.Generate(fileUniqueidLength);
-        var sanitized = Path.GetFileNameWithoutExtension(originalName).Trim().Replace(" ", "-");
-        return $"{id}_{sanitized}{suffix}{extension}";
-    }
-
+    /// <summary>
+    /// Generates a unique filename using a provided ID for storage.
+    /// </summary>
     private string GenerateFileName(string id, string originalName, string suffix, string extension)
     {
         var sanitized = Path.GetFileNameWithoutExtension(originalName).Trim().Replace(" ", "-");
         return $"{id}_{sanitized}{suffix}{extension}";
     }
 
+    /// <summary>
+    /// Uploads a file stream to S3/MinIO storage and returns the public URL.
+    /// </summary>
     private async Task<string> UploadAsync(string keyPrefix, Stream fileStream, string fileName)
     {
         var key = $"{keyPrefix.TrimEnd('/')}/{fileName}";
         var request = new PutObjectRequest
         {
-            BucketName = _minIOoptions.BucketName,
+            BucketName = _minIOptions.BucketName,
             Key = key,
             InputStream = fileStream,
             ContentType = GetMimeType(fileName)
         };
         await _s3Client.PutObjectAsync(request);
-        return $"{_minIOoptions.PublicBaseUrl.TrimEnd('/')}/{key}";
+        return $"{_minIOptions.PublicBaseUrl.TrimEnd('/')}/{key}";
     }
 
+    /// <summary>
+    /// Determines the MIME type of file based on its extension.
+    /// </summary>
     private string GetMimeType(string fileName)
     {
         var ext = Path.GetExtension(fileName).ToLowerInvariant();
