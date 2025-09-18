@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using App.Core.Constants;
 using App.Core.DTOs;
 using App.Services;
@@ -66,11 +67,12 @@ public class ProductMediaController : ControllerBase
     }
 
     [HttpPut("many")]
-    [Authorize(Roles = RoleNames.Admin)]
+    [Authorize]
     public async Task<IActionResult> SyncProductMediaAsync([FromForm] IFormFile[] files,
         [FromQuery] string productId)
     {
         using (_logger.BeginScope("SyncProductMediaAsync")) {
+            var userId = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
             _logger.LogInformation("SyncProductMediaAsync action");
             if (files.Length == 0)
                 return BadRequest("No files uploaded.");
@@ -101,7 +103,7 @@ public class ProductMediaController : ControllerBase
                 }
             }
 
-            var result = await _productMediaService.SyncMediaFromTempFilesAsync(filesDto, productId);
+            var result = await _productMediaService.SyncMediaFromTempFilesAsync(filesDto, productId, userId);
 
             foreach (var file in filesDto)
                 if (!string.IsNullOrWhiteSpace(file.Url) && System.IO.File.Exists(file.Url))

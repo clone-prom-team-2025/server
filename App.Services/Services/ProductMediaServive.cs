@@ -4,6 +4,7 @@ using App.Core.Enums;
 using App.Core.Interfaces;
 using App.Core.Models.FileStorage;
 using App.Core.Models.Product;
+using App.Core.Models.Store;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -20,7 +21,10 @@ public class ProductMediaService(
     IFileService fileService,
     IMapper mapper,
     IOptions<ProductMediaKeys> productMediaKeys,
-    ILogger<ProductMediaService> logger) : IProductMediaService
+    ILogger<ProductMediaService> logger,
+    IStoreRepository storeRepository,
+    IUserRepository userRepository,
+    IProductRepository productRepository) : IProductMediaService
 {
     /// <summary>
     ///     Service responsible for saving and deleting files on disk.
@@ -40,6 +44,9 @@ public class ProductMediaService(
     private readonly IProductMediaRepository _repository = repository;
 
     private readonly ILogger<ProductMediaService> _logger = logger;
+    private readonly IProductRepository _productRepository = productRepository;
+    private readonly IStoreRepository _storeRepository = storeRepository;
+    private readonly IUserRepository _userRepository = userRepository;
 
     /// <summary>
     ///     Retrieves all product media from the database.
@@ -114,15 +121,42 @@ public class ProductMediaService(
     /// </summary>
     /// <param name="files">List of media files with temporary URLs.</param>
     /// <param name="productId">The ID of the product.</param>
+    /// <param name="userId">Id of store owner/manager/admin</param>
     /// <returns>List of newly added media DTOs.</returns>
     public async Task<List<ProductMediaDto>?> SyncMediaFromTempFilesAsync(List<FileArrayItemDto> files,
-        string productId)
+        string productId, string userId)
     {
         using (_logger.BeginScope("SyncMediaFromTempFilesAsync")){
             _logger.LogInformation("SyncMediaFromTempFilesAsync called");
             // foreach (var file in files)
             //     if (!MediaInspector.IsSafeMedia(file.Stream, file.FileName))
             //         throw new InvalidOperationException("Invalid or potentially harmful file");
+            
+            var product = await _productRepository.GetByIdAsync(ObjectId.Parse(productId));
+            if (product == null)
+            {
+                _logger.LogInformation("SyncMediaFromTempFilesAsync product not found");
+                throw new KeyNotFoundException("Product not found");
+            }
+            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+            if (user == null)
+            {
+                _logger.LogInformation("SyncMediaFromTempFilesAsync user not found");
+                throw new KeyNotFoundException("User not found");
+            }
+
+            var store = await _storeRepository.GetStoreById(product.SellerId);
+            if (store == null)
+            {
+                _logger.LogInformation("SyncMediaFromTempFilesAsync store not found");
+                throw new KeyNotFoundException("Store not found");
+            }
+
+            if (!store.Roles.ContainsKey(userId))
+            {
+                _logger.LogInformation("SyncMediaFromTempFilesAsync it's now your store");
+                throw new KeyNotFoundException("It's not your store");
+            }
 
             var existing = await _repository.GetByProductIdAsync(productId);
             if (existing is { Count: > 0 })
