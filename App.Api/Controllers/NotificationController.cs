@@ -29,7 +29,7 @@ public class NotificationController : ControllerBase
         {
             _logger.LogInformation("GetAllNotificationsAsync called");
             var result = await _notificationService.GetAllNotificationsAsync();
-            _logger.LogInformation("GetAllNotificationsAsync completed");
+            _logger.LogInformation("GetAllNotificationsAsync success");
             return Ok(result);
         }
     }
@@ -41,7 +41,7 @@ public class NotificationController : ControllerBase
         {
             _logger.LogInformation("GetAllNotificationById called with Id={id}", id);
             var result = await _notificationService.GetNotificationAsync(id);
-            _logger.LogInformation("GetAllNotificationById completed");
+            _logger.LogInformation("GetAllNotificationById success");
             return Ok(result);
         }
     }
@@ -54,7 +54,7 @@ public class NotificationController : ControllerBase
         {
             _logger.LogInformation("GetAllNotificationsByUserId called with UserId={userId}", userId);
             var result = await _notificationService.GetAllNotificationsByUserIdAsync(userId);
-            _logger.LogInformation("GetAllNotificationsByUserId completed");
+            _logger.LogInformation("GetAllNotificationsByUserId success");
             return Ok(result);
         }
     }
@@ -69,7 +69,7 @@ public class NotificationController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("GetAllNotificationsByUserId called with UserId={userId}", userId);
             var result = await _notificationService.GetAllNotificationsByUserIdAsync(userId);
-            _logger.LogInformation("GetAllNotificationsByUserId completed");
+            _logger.LogInformation("GetAllNotificationsByUserId success");
             return Ok(result);
         }
     }
@@ -84,7 +84,7 @@ public class NotificationController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("GetSeenNotifications called with UserId={userId}", userId);
             var result = await _notificationService.GetSeenNotificationsAsync(userId);
-            _logger.LogInformation("GetSeenNotifications completed");
+            _logger.LogInformation("GetSeenNotifications success");
             return Ok(result);
         }
     }
@@ -99,7 +99,7 @@ public class NotificationController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("GetUnSeenNotificationsAsync called with UserId={userId}", userId);
             var result = await _notificationService.GetUnSeenNotificationsAsync(userId);
-            _logger.LogInformation("GetUnSeenNotificationsAsync completed");
+            _logger.LogInformation("GetUnSeenNotificationsAsync success");
             return Ok(result);
         }
     }
@@ -111,7 +111,7 @@ public class NotificationController : ControllerBase
         {
             _logger.LogInformation("SendNotification called");
             await _notificationService.SendNotificationAsync(notification);
-            _logger.LogInformation("SendNotification completed");
+            _logger.LogInformation("SendNotification success");
             return NoContent();
         }
     }
@@ -127,7 +127,7 @@ public class NotificationController : ControllerBase
             _logger.LogInformation("SeeNotification called with Id={notificationId}, UserId={userId}", notificationId,
                 userId);
             await _notificationService.SeeNotificationAsync(notificationId, userId);
-            _logger.LogInformation("SeeNotification completed");
+            _logger.LogInformation("SeeNotification success");
             return NoContent();
         }
     }

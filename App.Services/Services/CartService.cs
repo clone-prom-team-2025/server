@@ -8,12 +8,20 @@ using MongoDB.Bson;
 
 namespace App.Services.Services;
 
+/// <summary>
+/// Service responsible for managing user carts, including adding, removing, updating, and retrieving cart items.
+/// </summary>
 public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger<CartService> logger) : ICartService
 {
     private readonly ICartRepository _cartRepository = cartRepository;
     private readonly ILogger<CartService> _logger = logger;
     private readonly IMapper _mapper = mapper;
 
+    /// <summary>
+    /// Adds a product to the user's cart.
+    /// </summary>
+    /// <param name="dto">The cart creation data.</param>
+    /// <param name="userId">The ID of the user.</param>
     public async Task AddAsync(CreateCartDto dto, string userId)
     {
         using (_logger.BeginScope("AddAsync: ProductId={productId}, UserId={userId}", dto.ProductId, userId))
@@ -39,6 +47,11 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
         }
     }
 
+    /// <summary>
+    /// Removes a product from the user's cart by cart ID.
+    /// </summary>
+    /// <param name="id">The cart item ID.</param>
+    /// <param name="userId">The ID of the user.</param>
     public async Task RemoveAsync(string id, string userId)
     {
         using (_logger.BeginScope("RemoveAsync: id={id}, UserId={userId}", id, userId))
@@ -55,6 +68,10 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
         }
     }
 
+    /// <summary>
+    /// Clears all cart items for a specific user.
+    /// </summary>
+    /// <param name="userId">The ID of the user.</param>
     public async Task ClearAsync(string userId)
     {
         using (_logger.BeginScope("RemoveAsync: UserId={userId}", userId))
@@ -71,6 +88,12 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
         }
     }
 
+    /// <summary>
+    /// Changes the quantity of a cart item.
+    /// </summary>
+    /// <param name="id">The cart item ID.</param>
+    /// <param name="pcs">The new quantity.</param>
+    /// <param name="userId">The ID of the user.</param>
     public async Task ChangePcsAsync(string id, int pcs, string userId)
     {
         using (_logger.BeginScope("ChangePcsAsync: Id={id}, Pcs={pcs}, UserId={userId}", id, pcs, userId))
@@ -114,6 +137,9 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
         }
     }
 
+    /// <summary>
+    /// Retrieves all cart items from the database.
+    /// </summary>
     public async Task<IEnumerable<CartDto>?> GetAllAsync()
     {
         using (_logger.BeginScope("GetAllAsync"))
@@ -131,6 +157,10 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
         }
     }
 
+    /// <summary>
+    /// Retrieves a cart item by its ID.
+    /// </summary>
+    /// <param name="id">The cart item ID.</param>
     public async Task<CartDto?> GetByIdAsync(string id)
     {
         using (_logger.BeginScope("GetByIdAsync: CartId={id}", id))
@@ -148,6 +178,10 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
         }
     }
 
+    /// <summary>
+    /// Retrieves all cart items for a specific user.
+    /// </summary>
+    /// <param name="userId">The ID of the user.</param>
     public async Task<IEnumerable<CartDto>?> GetByUserIdAsync(string userId)
     {
         using (_logger.BeginScope("GetByUserIdAsync: UserId={id}", userId))
@@ -165,6 +199,11 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
         }
     }
 
+    /// <summary>
+    /// Checks if a product is already in the user's cart.
+    /// </summary>
+    /// <param name="productId">The ID of the product.</param>
+    /// <param name="userId">The ID of the user.</param>
     public async Task<bool> IsProductInCartAsync(string productId, string userId)
     {
         using (_logger.BeginScope("GetByIdAsync: ProductId={productId}, UserId={userId}", productId, userId))

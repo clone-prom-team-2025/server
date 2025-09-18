@@ -27,25 +27,10 @@ public class FavoriteController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("GetAllFavoriteProducts called with UserId={userId}", userId);
             var result = await _favoriteService.GetFavoriteProductAllByUserIdAsync(userId);
-            _logger.LogInformation("GetAllFavoriteProducts successfully");
+            _logger.LogInformation("GetAllFavoriteProducts success");
             return Ok(result);
         }
     }
-
-    // [HttpPost]
-    // public async Task<IActionResult> CreateDefaultFavoriteProductCollectionIfNotExist()
-    // {
-    //     using (_logger.BeginScope("CreateDefaultFavoriteProductCollectionIfNotExist"))
-    //     {
-    //         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    //         if (userId == null)
-    //             return BadRequest();
-    //         _logger.LogInformation("CreateDefaultFavoriteProductCollectionIfNotExist");
-    //         await _favoriteService.CreateDefaultFavoriteProductCollectionIfNotExist(userId);
-    //         _logger.LogInformation("CreateDefaultFavoriteProductCollectionIfNotExist");
-    //         return NoContent();
-    //     }
-    // }
 
     [HttpPost]
     public async Task<IActionResult> CreateEmptyFavoriteProductCollection(string name)
@@ -57,6 +42,7 @@ public class FavoriteController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("CreateEmptyFavoriteProductCollection");
             await _favoriteService.CreateEmptyFavoriteProductCollection(name, userId);
+            _logger.LogInformation("CreateEmptyFavoriteProductCollection success");
             return NoContent();
         }
     }
@@ -71,7 +57,7 @@ public class FavoriteController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("UpdateFavoriteProductCollectionName");
             await _favoriteService.UpdateFavoriteProductCollectionName(id, name, userId);
-            _logger.LogInformation("UpdateFavoriteProductCollectionName successfully");
+            _logger.LogInformation("UpdateFavoriteProductCollectionName success");
             return NoContent();
         }
     }
@@ -86,7 +72,7 @@ public class FavoriteController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("AddToFavoriteProductCollection");
             await _favoriteService.AddToFavoriteProductCollection(id, userId, productId);
-            _logger.LogInformation("AddToFavoriteProductCollection successfully");
+            _logger.LogInformation("AddToFavoriteProductCollection success");
             return NoContent();
         }
     }
@@ -101,7 +87,7 @@ public class FavoriteController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("AddToFavoriteProductCollectionByName");
             await _favoriteService.AddToFavoriteProductCollectionByName(name, userId, productId);
-            _logger.LogInformation("AddToFavoriteProductCollectionByName successfully");
+            _logger.LogInformation("AddToFavoriteProductCollectionByName success");
             return NoContent();
         }
     }
@@ -116,7 +102,7 @@ public class FavoriteController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("AddToFavoriteProductCollectionByName");
             await _favoriteService.AddToFavoriteProductCollectionToDefault(userId, productId);
-            _logger.LogInformation("AddToFavoriteProductCollectionByName successfully");
+            _logger.LogInformation("AddToFavoriteProductCollectionByName success");
             return NoContent();
         }
     }
@@ -131,7 +117,7 @@ public class FavoriteController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("RemoveFromFavoriteProductCollection");
             await _favoriteService.RemoveFromFavoriteProductCollection(id, userId, productId);
-            _logger.LogInformation("RemoveFromFavoriteProductCollection successfully");
+            _logger.LogInformation("RemoveFromFavoriteProductCollection success");
             return NoContent();
         }
     }
@@ -146,7 +132,7 @@ public class FavoriteController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("DeleteFavoriteProductCollection");
             await _favoriteService.DeleteFavoriteProductCollection(id, userId);
-            _logger.LogInformation("DeleteFavoriteProductCollection successfully");
+            _logger.LogInformation("DeleteFavoriteProductCollection success");
             return NoContent();
         }
     }
@@ -161,7 +147,7 @@ public class FavoriteController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("GetAllSellerProducts called with UserId={userId}", userId);
             var result = await _favoriteService.GetFavoriteSellerAllByUserIdAsync(userId);
-            _logger.LogInformation("GetAllSellerProducts successfully");
+            _logger.LogInformation("GetAllSellerProducts success");
             return Ok(result);
         }
     }
@@ -176,7 +162,7 @@ public class FavoriteController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("AddToFavoriteSellerCollection");
             await _favoriteService.AddToFavoriteSellerCollectionToDefault(userId, productId);
-            _logger.LogInformation("AddToFavoriteSellerCollection successfully");
+            _logger.LogInformation("AddToFavoriteSellerCollection success");
             return NoContent();
         }
     }
@@ -191,7 +177,7 @@ public class FavoriteController : ControllerBase
                 return BadRequest();
             _logger.LogInformation("RemoveFromFavoriteSellerCollection");
             await _favoriteService.RemoveFromFavoriteSellerCollection(id, userId, productId);
-            _logger.LogInformation("RemoveFromFavoriteSellerCollection successfully");
+            _logger.LogInformation("RemoveFromFavoriteSellerCollection success");
             return NoContent();
         }
     }
