@@ -15,4 +15,5 @@ public interface IProductService
     Task UpdateAsync(UpdateProductDto productDto, string userId);
     Task DeleteAsync(string id, string userId);
     Task<IEnumerable<ProductSearchResultDto>?> SearchByNameAsync(string name);
+    Task<IEnumerable<ProductDto>> GetRandomProductsAsync(int page, int pageSize);
 }

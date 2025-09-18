@@ -14,8 +14,9 @@ public interface IProductRepository
     Task<Product> CreateAsync(Product product);
     Task<bool> UpdateAsync(Product product);
     Task<bool> DeleteAsync(ObjectId id);
-    Task<List<ProductSearchResult>> SearchByNameAsync(string name);
+    Task<IEnumerable<ProductSearchResult>> SearchByNameAsync(string name);
     
     Task<bool> ExistById(ObjectId id);
     Task<bool> ExistBySellerId(ObjectId sellerId);
+    Task<IEnumerable<Product>> GetRandomProductsAsync(int page, int pageSize);
 }

@@ -93,4 +93,10 @@ public class ProductController : ControllerBase
         var search = await _productService.SearchByNameAsync(name);
         return search == null ? NotFound() : Ok(search);
     }
+
+    [HttpGet("random")]
+    public async Task<ActionResult<ProductDto?>> GetRandomAsync(int page, int pageSize)
+    {
+        return Ok(await _productService.GetRandomProductsAsync(page, pageSize));   
+    }
 }
