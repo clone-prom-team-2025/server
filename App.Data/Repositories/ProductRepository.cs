@@ -246,7 +246,8 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         var builder = Builders<Product>.Filter;
         var filters = new List<FilterDefinition<Product>>();
 
-        if (filter.CategoryId.HasValue) filters.Add(builder.AnyEq(p => p.CategoryPath, filter.CategoryId.Value));
+        if (filter.CategoryId.HasValue) 
+            filters.Add(builder.AnyEq(p => p.CategoryPath, filter.CategoryId.Value));
 
         if (filter.PriceMin.HasValue && filter.PriceMin > 0)
             filters.Add(builder.Gte(p => p.Price, filter.PriceMin.Value));
@@ -254,30 +255,39 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         if (filter.PriceMax.HasValue && filter.PriceMax > 0)
             filters.Add(builder.Lte(p => p.Price, filter.PriceMax.Value));
 
-        foreach (var kv in filter.Include)
+        foreach (var group in filter.Include.GroupBy(kv => kv.Key))
         {
-            var includeFilter = builder.ElemMatch(p => p.Features,
-                feature => feature.Features.ContainsKey(kv.Key) &&
-                           feature.Features[kv.Key].Value == kv.Value
-            );
+            var includeFilters = new List<FilterDefinition<Product>>();
 
-            filters.Add(includeFilter);
-        }
-
-        foreach (var kv in filter.Exclude)
-        {
-            var excludeFilter = builder.Not(
-                builder.ElemMatch(p => p.Features,
+            foreach (var kv in group)
+            {
+                includeFilters.Add(builder.ElemMatch(p => p.Features,
                     feature => feature.Features.ContainsKey(kv.Key) &&
                                feature.Features[kv.Key].Value == kv.Value
-                )
-            );
+                ));
+            }
 
-            filters.Add(excludeFilter);
+            filters.Add(builder.Or(includeFilters));
+        }
+
+        foreach (var group in filter.Exclude.GroupBy(kv => kv.Key))
+        {
+            var excludeFilters = new List<FilterDefinition<Product>>();
+
+            foreach (var kv in group)
+            {
+                excludeFilters.Add(builder.ElemMatch(p => p.Features,
+                    feature => feature.Features.ContainsKey(kv.Key) &&
+                               feature.Features[kv.Key].Value == kv.Value
+                ));
+            }
+
+            filters.Add(builder.Not(builder.Or(excludeFilters)));
         }
 
         return filters;
     }
+
 
     private static int FindOriginalIndexWithoutSpaces(string text, int indexInClean)
     {
