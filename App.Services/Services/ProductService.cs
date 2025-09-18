@@ -1,3 +1,4 @@
+using App.Core.Constants;
 using App.Core.DTOs.Product;
 using App.Core.Enums;
 using App.Core.Exceptions;
@@ -177,21 +178,38 @@ public class ProductService(
     /// <param name="userId">Product deleter</param>
     public async Task DeleteAsync(string id, string userId)
     {
-        using (_logger.BeginScope("DeleteAsync")) {
+        using (_logger.BeginScope("DeleteAsync"))
+        {
             _logger.LogInformation("DeleteAsync called");
-            var store = await _storeRepository.GetStoreById(ObjectId.Parse(id));
+            var product = await _productRepository.GetByIdAsync(ObjectId.Parse(id));
+            if (product == null)
+            {
+                _logger.LogInformation("Product could not be deleted.");
+                throw new KeyNotFoundException("Product could not be deleted.");
+            }
+
+            var store = await _storeRepository.GetStoreById(product.SellerId);
             if (store == null)
+            {
+                _logger.LogInformation("Store not found.");
                 throw new KeyNotFoundException("Store not found.");
-
-            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(id));
+            }
+            
+            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
             if (user == null)
-                throw new KeyNotFoundException("User not found.");
+            {
+                _logger.LogInformation("User not found.");
+                throw new AccessDeniedException("User not found.");
+            }
 
-            if (!store.Roles.TryGetValue(userId, out var role) ||
-                (role != StoreRole.Owner && role != StoreRole.Manager))
+            if (!store.Roles.ContainsKey(userId) && !user.Roles.Contains(RoleNames.Admin))
+            {
+                _logger.LogInformation("User is not owner or manager.");
                 throw new AccessDeniedException("User is not owner or manager.");
+            }
             if (!await _productRepository.DeleteAsync(ObjectId.Parse(id)))
                 throw new InvalidOperationException("Product could not be deleted.");
+            
             _logger.LogInformation("DeleteAsync success");
         }
     }
