@@ -45,10 +45,10 @@ public class AuthService(
     private readonly IUserRepository _userRepository = userRepository;
 
     /// <summary>
-    ///     Logs in a user using email or username and returns a session token.
+    /// Authenticates a user by email or username and issues a new or existing session token.
     /// </summary>
-    /// <param name="model">Login credentials.</param>
-    /// <returns>Session ID as a string if successful; otherwise, null.</returns>
+    /// <param name="model">The login request containing credentials.</param>
+    /// <param name="deviceInfo">The device information for the session.</param>
     public async Task<string?> LoginAsync(LoginDto model, DeviceInfo deviceInfo)
     {
         var user = await _userRepository.GetUserByEmailAsync(model.Login)
@@ -85,10 +85,10 @@ public class AuthService(
     }
 
     /// <summary>
-    ///     Registers a new user, saves their avatar, and logs them in.
+    /// Registers a new user, generates an avatar, initializes default favorites, and logs them in.
     /// </summary>
-    /// <param name="model">Registration data.</param>
-    /// <returns>Session ID as a string if successful; otherwise, null.</returns>
+    /// <param name="model">The registration request data.</param>
+    /// <param name="deviceInfo">The device information for the session.</param>
     public async Task<string?> RegisterAsync(RegisterDto model, DeviceInfo deviceInfo)
     {
         var existingUser = await _userRepository.GetUserByEmailAsync(model.Email);
@@ -125,7 +125,8 @@ public class AuthService(
     ///     Revokes an active session (logout).
     /// </summary>
     /// <param name="sessionId">The ID of the session to revoke.</param>
-    /// <returns>True if the session was successfully revoked; otherwise, false.</returns>
+    /// <exception cref="KeyNotFoundException">Thrown if the session does not exist or is already revoked.</exception>
+
     public async Task LogoutAsync(string sessionId)
     {
         var session = await _sessionRepository.GetSessionAsync(ObjectId.Parse(sessionId));
@@ -137,6 +138,13 @@ public class AuthService(
         await _sessionRepository.RevokeSessionAsync(ObjectId.Parse(sessionId));
     }
 
+    /// <summary>
+    /// Revokes a session belonging to a specific user.
+    /// </summary>
+    /// <param name="sessionId">The session ID.</param>
+    /// <param name="userId">The ID of the user owning the session.</param>
+    /// <exception cref="KeyNotFoundException">Thrown if the user or session is not found.</exception>
+    /// <exception cref="AccessDeniedException">Thrown if the session does not belong to the user.</exception>
     public async Task LogoutAsync(string sessionId, string userId)
     {
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
@@ -153,6 +161,10 @@ public class AuthService(
         await _sessionRepository.RevokeSessionAsync(ObjectId.Parse(sessionId));
     }
 
+    /// <summary>
+    /// Sends a password reset email containing a verification code.
+    /// </summary>
+    /// <param name="login">The email or username of the account.</param>
     public async Task<string?> SendPasswordReset(string login)
     {
         var user = await _userRepository.GetUserByEmailAsync(login)
@@ -191,19 +203,24 @@ public class AuthService(
         return resetToken;
     }
 
+    /// <summary>
+    /// Validates a password reset code.
+    /// </summary>
+    /// <param name="resetToken">The reset token issued to the user.</param>
+    /// <param name="inputCode">The verification code entered by the user.</param>
     public async Task<string?> VerifyPasswordCodeAsync(string resetToken, string inputCode)
     {
         var cacheKey = $"reset-pass:{resetToken}";
 
         if (_cache.TryGetValue(cacheKey, out ResetPassData? stored))
-            if (string.Equals(stored.Code, inputCode, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(stored?.Code, inputCode, StringComparison.OrdinalIgnoreCase))
             {
                 _cache.Remove(cacheKey);
 
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
                     .SetSlidingExpiration(TimeSpan.FromMinutes(30));
                 var newAccessCode = Guid.NewGuid().ToString("N");
-                _cache.Set($"reset-pass-access-code:{newAccessCode}", stored.UserId, cacheEntryOptions);
+                _cache.Set($"reset-pass-access-code:{newAccessCode}", stored?.UserId, cacheEntryOptions);
 
                 return newAccessCode;
             }
@@ -211,11 +228,18 @@ public class AuthService(
         return null;
     }
 
+    /// <summary>
+    /// Resets a user's password using a valid access code.
+    /// </summary>
+    /// <param name="password">The new password to set.</param>
+    /// <param name="accessCode">The access code obtained from verification.</param>
+    /// <exception cref="KeyNotFoundException">Thrown if the user is not found.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if the access code is invalid.</exception>
     public async Task ResetPassword(string password, string accessCode)
     {
         var cacheKey = $"reset-pass-access-code:{accessCode}";
 
-        if (_cache.TryGetValue(cacheKey, out string userId))
+        if (_cache.TryGetValue(cacheKey, out string? userId))
         {
             var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
             if (user == null)
@@ -230,10 +254,11 @@ public class AuthService(
     }
 
     /// <summary>
-    ///     Sends an email with a verification code to the user.
+    /// Sends an email verification code to the user.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
-    /// <returns>True if the email was sent successfully; otherwise, false.</returns>
+    /// <exception cref="KeyNotFoundException">Thrown if the user does not exist.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if the email is already confirmed.</exception>
     public async Task SendEmailVerificationCodeAsync(string userId)
     {
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
@@ -265,12 +290,12 @@ public class AuthService(
     }
 
     /// <summary>
-    ///     Verifies the user's input code with the one stored in cache.
-    ///     If valid, marks the email as confirmed.
+    /// Verifies an email confirmation code and marks the email as confirmed if valid.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     /// <param name="inputCode">The verification code entered by the user.</param>
-    /// <returns>True if the code is correct and email is confirmed; otherwise, false.</returns>
+    /// <exception cref="KeyNotFoundException">Thrown if the user does not exist.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if the code is invalid.</exception>
     public async Task VerifyCode(string userId, string inputCode)
     {
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
@@ -289,6 +314,11 @@ public class AuthService(
         throw new InvalidOperationException("Invalid code");
     }
 
+    /// <summary>
+    /// Retrieves all active sessions for a given user.
+    /// </summary>
+    /// <param name="userId">The ID of the user.</param>
+    /// <exception cref="KeyNotFoundException">Thrown if the user is not found.</exception>
     public async Task<IEnumerable<UserSessionDto>?> GetActiveSessions(string userId)
     {
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
@@ -300,6 +330,11 @@ public class AuthService(
         return _mapper.Map<IEnumerable<UserSessionDto>>(sessions);
     }
 
+    /// <summary>
+    /// Revokes all sessions associated with a given user.
+    /// </summary>
+    /// <param name="userId">The ID of the user.</param>
+    /// <exception cref="KeyNotFoundException">Thrown if the user is not found.</exception>
     public async Task RevokeAllSessions(string userId)
     {
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
@@ -313,10 +348,10 @@ public class AuthService(
     }
 
     /// <summary>
-    ///     Saves the generated verification code in memory cache.
+    /// Saves a verification code for email confirmation in memory cache.
     /// </summary>
-    /// <param name="email">User's email address.</param>
-    /// <param name="code">The verification code.</param>
+    /// <param name="email">The user's email address.</param>
+    /// <param name="code">The generated verification code.</param>
     /// <param name="expires">Expiration time in minutes.</param>
     public void SaveVerificationCode(string email, string code, int expires)
     {
@@ -326,10 +361,9 @@ public class AuthService(
     }
 
     /// <summary>
-    ///     Retrieves a verification code from memory cache.
+    /// Retrieves a stored verification code from memory cache.
     /// </summary>
-    /// <param name="email">User's email address.</param>
-    /// <returns>The verification code if found; otherwise, null.</returns>
+    /// <param name="email">The user's email address.</param>
     public string? GetVerificationCode(string email)
     {
         _cache.TryGetValue($"verify:{email}", out string? code);

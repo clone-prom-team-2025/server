@@ -103,6 +103,12 @@ public class ProductService(
         product.Id = ObjectId.GenerateNewId();
         product.CategoryPath = [..categories];
         product.SellerId = store.Id;
+        product.QuantityStatus = product.Quantity switch
+        {
+            0 => QuantityStatus.OutOfStock,
+            <= 4 => QuantityStatus.Ending,
+            _ => QuantityStatus.InStock
+        };
 
         await _productRepository.CreateAsync(product);
     }
@@ -131,6 +137,12 @@ public class ProductService(
             throw new KeyNotFoundException("Category not found.");
         var product = _mapper.Map<Product>(productDto);
         product.CategoryPath = categories;
+        product.QuantityStatus = product.Quantity switch
+        {
+            0 => QuantityStatus.OutOfStock,
+            <= 4 => QuantityStatus.Ending,
+            _ => QuantityStatus.InStock
+        };
         var success = await _productRepository.UpdateAsync(product);
         if (!success)
             throw new InvalidOperationException("Product could not be updated.");
@@ -167,5 +179,10 @@ public class ProductService(
     public async Task<IEnumerable<ProductSearchResultDto>?> SearchByNameAsync(string name)
     {
         return _mapper.Map<IEnumerable<ProductSearchResultDto>?>(await _productRepository.SearchByNameAsync(name));
+    }
+
+    public async Task<IEnumerable<ProductDto>> GetRandomProductsAsync(int page, int pageSize)
+    {
+        return _mapper.Map<IEnumerable<ProductDto>>(await _productRepository.GetRandomProductsAsync(page, pageSize));
     }
 }

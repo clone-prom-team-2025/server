@@ -182,7 +182,7 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         return result.IsAcknowledged && result.DeletedCount > 0;
     }
 
-    public async Task<List<ProductSearchResult>> SearchByNameAsync(string name)
+    public async Task<IEnumerable<ProductSearchResult>> SearchByNameAsync(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
             return new List<ProductSearchResult>();
@@ -306,4 +306,18 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 
         return text.Length;
     }
+    
+    public async Task<IEnumerable<Product>> GetRandomProductsAsync(int page, int pageSize)
+    {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 10;
+
+        var pipeline = _products.Aggregate()
+            .AppendStage<Product>("{$sample: { size: 1000 }}")
+            .Skip((page - 1) * pageSize)
+            .Limit(pageSize);
+
+        return await pipeline.ToListAsync();
+    }
+
 }

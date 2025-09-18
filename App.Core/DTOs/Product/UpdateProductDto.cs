@@ -6,7 +6,7 @@ namespace App.Core.DTOs.Product;
 public class UpdateProductDto
 {
     public UpdateProductDto(string id, string name, string category, List<ProductFeatureDto> features,
-        string sellerId, int quantity, QuantityStatus quantityStatus, decimal price, PriceType priceType,
+        string sellerId, int quantity, decimal price, PriceType priceType,
         PaymentOptions paymentOptions, ProductDeliveryType deliveryType, decimal? discountPrice = null)
     {
         Id = id;
@@ -16,7 +16,6 @@ public class UpdateProductDto
         SellerId = sellerId;
         Price = price;
         DiscountPrice = discountPrice;
-        QuantityStatus = quantityStatus;
         Quantity = quantity;
         PriceType = priceType;
         PaymentOptions = paymentOptions;
@@ -44,9 +43,7 @@ public class UpdateProductDto
     public decimal? DiscountPrice { get; set; }
 
     public string SellerId { get; set; }
-
-    public QuantityStatus QuantityStatus { get; set; }
-
+    
     public int Quantity { get; set; }
 
     public ProductDeliveryType DeliveryType { get; set; }
