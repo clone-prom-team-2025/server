@@ -120,13 +120,11 @@ public class FileService : IFileService
         var inputPath = Path.Combine(tempDir, Guid.NewGuid() + Path.GetExtension(fileName));
         var outputWebmPath = Path.Combine(tempDir, Guid.NewGuid() + ".webm");
 
-        // Зберігаємо вхідний стрім у файл
         await using (var fileStream = File.Create(inputPath))
         {
             await videoStream.CopyToAsync(fileStream);
         }
 
-        // Конвертація у WebM
         var conversionWebm = FFmpeg.Conversions.New()
             .AddParameter($"-i \"{inputPath}\"", ParameterPosition.PreInput)
             .AddParameter("-vf scale='min(1280,iw)':'min(720,ih)'")
@@ -136,14 +134,11 @@ public class FileService : IFileService
 
         await conversionWebm.Start();
 
-        // Видаляємо вхідний файл
         File.Delete(inputPath);
 
-        // Завантажуємо WebM на S3/MinIO
         await using var webmStream = File.OpenRead(outputWebmPath);
         var url = await UploadAsync(key, webmStream, outputWebmFileName);
 
-        // Очищаємо тимчасовий WebM файл
         File.Delete(outputWebmPath);
 
         return (url, outputWebmFileName);
@@ -209,16 +204,6 @@ public class FileService : IFileService
         };
         return _s3Client.GetPreSignedURL(request);
     }
-
-    // /// <summary>
-    // /// Generates a unique filename for storage.
-    // /// </summary>
-    // private string GenerateFileName(string originalName, string suffix, string extension)
-    // {
-    //     var id = NanoIdGenerator.Generate(_fileUniqueLength);
-    //     var sanitized = Path.GetFileNameWithoutExtension(originalName).Trim().Replace(" ", "-");
-    //     return $"{id}_{sanitized}{suffix}{extension}";
-    // }
 
     /// <summary>
     /// Generates a unique filename using a provided ID for storage.
