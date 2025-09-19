@@ -50,6 +50,28 @@ public class AuthController : ControllerBase
             return Ok(result);
         }
     }
+    
+    [HttpPost("google-login")]
+    public async Task<IActionResult> GoogleLogin(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return BadRequest("IdToken is required");
+
+        var deviceInfo = DeviceInfoHelper.GetDeviceInfo(Request);
+
+        try
+        {
+            var sessionId = await _authService.LoginWithGoogleAsync(token, deviceInfo);
+            if (sessionId == null)
+                return Unauthorized("Cannot login");
+
+            return Ok(new { SessionId = sessionId });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ex.Message);
+        }
+    }
 
     [Authorize]
     [HttpPost("logout")]
