@@ -29,17 +29,17 @@ public class ProductFilterRequest
     /// <param name="priceMax">Price range to</param>
     /// <param name="priceMin">Price range from</param>
     public ProductFilterRequest(ObjectId? categoryId, int page, int pageSize,
-        Dictionary<string, string>? include = null,
-        Dictionary<string, string>? exclude = null,
+        Dictionary<string, List<string>>? include = null,
+        Dictionary<string, List<string>>? exclude = null,
         SortDirection sortDirection = SortDirection.None,
         decimal? priceMin = null,
         decimal? priceMax = null)
     {
         CategoryId = categoryId;
-        Include = include ?? new Dictionary<string, string>();
+        Include = include ?? new Dictionary<string, List<string>>();
         Page = page;
         PageSize = pageSize;
-        Exclude = exclude ?? new Dictionary<string, string>();
+        Exclude = exclude ?? new Dictionary<string, List<string>>();
         Sort = sortDirection;
         PriceMin = priceMin;
         PriceMax = priceMax;
@@ -53,12 +53,12 @@ public class ProductFilterRequest
     /// <summary>
     ///     Features to include in filtering.
     /// </summary>
-    public Dictionary<string, string> Include { get; set; } = new();
+    public Dictionary<string, List<string>> Include { get; set; } = new();
 
     /// <summary>
     ///     Features to exclude from filtering.
     /// </summary>
-    public Dictionary<string, string> Exclude { get; set; } = new();
+    public Dictionary<string, List<string>> Exclude { get; set; } = new();
 
     /// <summary>
     ///     Current page number for pagination.
