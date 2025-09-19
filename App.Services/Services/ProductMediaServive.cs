@@ -72,33 +72,42 @@ public class ProductMediaService(
     /// <param name="order">Ordering position of the media among other media for the same product.</param>
     public async Task<ProductMediaDto> PushMediaAsync(string productId, Stream stream, string fileName, int order)
     {
-        using (_logger.BeginScope("PushMediaAsync")){
+        using (_logger.BeginScope("PushMediaAsync"))
+        {
             _logger.LogInformation("PushMediaAsync called");
-            // if (!MediaInspector.IsSafeMedia(stream, fileName))
-            //     throw new InvalidOperationException("Invalid or potentially harmful file");
 
             var type = MediaInspector.GetMediaType(stream, fileName);
 
-            BaseFile file = new();
-
-            if (type == MediaType.Image)
-                (file.SourceUrl, file.CompressedUrl, file.SourceFileName, file.CompressedFileName) =
-                    await _fileService.SaveImageAsync(stream, fileName, _productMediaKeys.Image);
-            else if (type == MediaType.Video)
-                (file.SourceUrl, file.SourceFileName) =
-                    await _fileService.SaveVideoAsync(stream, fileName, _productMediaKeys.Video);
-            else
-                throw new InvalidOperationException("Unsupported media type");
-
             var medias = await _repository.GetByProductIdAsync(productId);
+
             if (medias == null || medias.Count == 0)
             {
+                if (type != MediaType.Image)
+                    throw new InvalidOperationException("The first media must be an image.");
+
                 order = 0;
             }
             else
             {
                 medias = medias.OrderByDescending(m => m.Order).ToList();
                 order = medias.First().Order + 1;
+            }
+
+            BaseFile file = new();
+
+            if (type == MediaType.Image)
+            {
+                (file.SourceUrl, file.CompressedUrl, file.SourceFileName, file.CompressedFileName) =
+                    await _fileService.SaveImageAsync(stream, fileName, _productMediaKeys.Image);
+            }
+            else if (type == MediaType.Video)
+            {
+                (file.SourceUrl, file.SourceFileName) =
+                    await _fileService.SaveVideoAsync(stream, fileName, _productMediaKeys.Video);
+            }
+            else
+            {
+                throw new InvalidOperationException("Unsupported media type");
             }
 
             var media = new ProductMedia(

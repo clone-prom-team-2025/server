@@ -405,7 +405,7 @@ public class StoreController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Roles = RoleNames.Admin)]
+    [Authorize]     
     public async Task<IActionResult> GetStoreMembers(string storeId)
     {
         using (_logger.BeginScope("GetStoreMembers action"))
