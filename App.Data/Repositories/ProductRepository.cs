@@ -246,7 +246,7 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         var builder = Builders<Product>.Filter;
         var filters = new List<FilterDefinition<Product>>();
 
-        if (filter.CategoryId.HasValue) 
+        if (filter.CategoryId.HasValue)
             filters.Add(builder.AnyEq(p => p.CategoryPath, filter.CategoryId.Value));
 
         if (filter.PriceMin.HasValue && filter.PriceMin > 0)
@@ -255,39 +255,36 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         if (filter.PriceMax.HasValue && filter.PriceMax > 0)
             filters.Add(builder.Lte(p => p.Price, filter.PriceMax.Value));
 
-        foreach (var group in filter.Include.GroupBy(kv => kv.Key))
+        foreach (var kv in filter.Include)
         {
-            var includeFilters = new List<FilterDefinition<Product>>();
-
-            foreach (var kv in group)
+            if (kv.Value is { Count: > 0 })
             {
-                includeFilters.Add(builder.ElemMatch(p => p.Features,
-                    feature => feature.Features.ContainsKey(kv.Key) &&
-                               feature.Features[kv.Key].Value == kv.Value
-                ));
-            }
+                var valueFilters = kv.Value.Select(val =>
+                    builder.ElemMatch(p => p.Features,
+                        feature => feature.Features.ContainsKey(kv.Key) &&
+                                   feature.Features[kv.Key].Value == val
+                    )).ToList();
 
-            filters.Add(builder.Or(includeFilters));
+                filters.Add(builder.Or(valueFilters));
+            }
         }
 
-        foreach (var group in filter.Exclude.GroupBy(kv => kv.Key))
+        foreach (var kv in filter.Exclude)
         {
-            var excludeFilters = new List<FilterDefinition<Product>>();
-
-            foreach (var kv in group)
+            if (kv.Value is { Count: > 0 })
             {
-                excludeFilters.Add(builder.ElemMatch(p => p.Features,
-                    feature => feature.Features.ContainsKey(kv.Key) &&
-                               feature.Features[kv.Key].Value == kv.Value
-                ));
-            }
+                var valueFilters = kv.Value.Select(val =>
+                    builder.ElemMatch(p => p.Features,
+                        feature => feature.Features.ContainsKey(kv.Key) &&
+                                   feature.Features[kv.Key].Value == val
+                    )).ToList();
 
-            filters.Add(builder.Not(builder.Or(excludeFilters)));
+                filters.Add(builder.Not(builder.Or(valueFilters)));
+            }
         }
 
         return filters;
     }
-
 
     private static int FindOriginalIndexWithoutSpaces(string text, int indexInClean)
     {
