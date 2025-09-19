@@ -71,9 +71,11 @@ public class ProductMediaController : ControllerBase
     public async Task<IActionResult> SyncProductMediaAsync([FromForm] IFormFile[] files,
         [FromQuery] string productId)
     {
-        using (_logger.BeginScope("SyncProductMediaAsync")) {
+        using (_logger.BeginScope("SyncProductMediaAsync"))
+        {
             var userId = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
             _logger.LogInformation("SyncProductMediaAsync action");
+
             if (files.Length == 0)
                 return BadRequest("No files uploaded.");
 
@@ -103,14 +105,34 @@ public class ProductMediaController : ControllerBase
                 }
             }
 
-            var result = await _productMediaService.SyncMediaFromTempFilesAsync(filesDto, productId, userId);
-
-            foreach (var file in filesDto)
-                if (!string.IsNullOrWhiteSpace(file.Url) && System.IO.File.Exists(file.Url))
-                    System.IO.File.Delete(file.Url);
-
-            _logger.LogInformation("SyncMediaFromTempFilesAsync success");
-            return Ok(result);
+            try
+            {
+                var result = await _productMediaService.SyncMediaFromTempFilesAsync(filesDto, productId, userId);
+                _logger.LogInformation("SyncProductMediaAsync success");
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in SyncProductMediaAsync");
+                return BadRequest(ex.Message);
+            }
+            finally
+            {
+                foreach (var file in filesDto)
+                {
+                    if (!string.IsNullOrWhiteSpace(file.Url) && System.IO.File.Exists(file.Url))
+                    {
+                        try
+                        {
+                            System.IO.File.Delete(file.Url);
+                        }
+                        catch (Exception deleteEx)
+                        {
+                            _logger.LogWarning(deleteEx, $"Failed to delete temp file {file.Url}");
+                        }
+                    }
+                }
+            }
         }
     }
 }
