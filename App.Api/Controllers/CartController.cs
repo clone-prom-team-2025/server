@@ -58,7 +58,7 @@ public class CartController : ControllerBase
 
             _logger.LogInformation("DeleteFromCart called with Dto by UserId={userId}", userIdClaim.Value);
 
-            await _cartService.RemoveAsync(id, userIdClaim.Value);
+            await _cartService.RemoveAsync(id);
 
             _logger.LogInformation("Cart={Id} deleted cart from by UserId={UserId}", id, userIdClaim.Value);
             _logger.LogInformation("DeleteFromCart success");

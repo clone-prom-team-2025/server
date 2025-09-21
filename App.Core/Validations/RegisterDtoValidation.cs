@@ -21,8 +21,12 @@ public class RegisterDtoValidation : AbstractValidator<RegisterDto>
             .Matches("^[a-zA-Z0-9!&*$_%@]+$")
             .WithMessage("Password can only contain letters, numbers, and the following symbols: ! & * $ _ % @");
 
-        RuleFor(x => x.FullName)
-            .NotEmpty().WithMessage("Full name must be provided.")
-            .MinimumLength(3).WithMessage("Full name must be at least 3 characters long.");
+        RuleFor(x => x.FirstName)
+            .NotEmpty().WithMessage("First name name must be provided.")
+            .MinimumLength(3).WithMessage("First name must be at least 3 characters long.");
+        
+        RuleFor(x => x.LastName)
+            .NotEmpty().WithMessage("Last name name must be provided.")
+            .MinimumLength(3).WithMessage("Last name must be at least 3 characters long.");
     }
 }

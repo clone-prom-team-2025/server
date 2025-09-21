@@ -98,7 +98,7 @@ public class ProductMediaService(
             if (type == MediaType.Image)
             {
                 (file.SourceUrl, file.CompressedUrl, file.SourceFileName, file.CompressedFileName) =
-                    await _fileService.SaveImageAsync(stream, fileName, _productMediaKeys.Image);
+                    await _fileService.SaveImageAsync(stream, fileName, _productMediaKeys.Image, 80, 40);
             }
             else if (type == MediaType.Video)
             {

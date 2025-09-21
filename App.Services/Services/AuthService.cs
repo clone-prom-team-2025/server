@@ -61,17 +61,18 @@ public class AuthService(
         }
 
         var email = payload.Email;
-        var fullName = payload.Name ?? email;
+        var firstName = payload.GivenName;
+        var lastName = payload.FamilyName;
         var user = await _userRepository.GetUserByEmailAsync(email);
         var pictureUrl = payload.Picture;
 
         if (user == null)
         {
             BaseFile avatar = new();
-            var stream = pictureUrl != null ? await WebpDownloader.GetWebpStreamAsync(pictureUrl) : AvatarGenerator.ByteToStream(AvatarGenerator.CreateAvatar(fullName ?? email));
+            var stream = pictureUrl != null ? await WebpDownloader.GetWebpStreamAsync(pictureUrl) : AvatarGenerator.ByteToStream(AvatarGenerator.CreateAvatar(firstName ?? lastName ?? email));
             var id = ObjectId.GenerateNewId();
             (avatar.SourceUrl, avatar.CompressedUrl, avatar.SourceFileName, avatar.CompressedFileName) =
-                await _fileService.SaveImageAsync(stream, id.ToString(), "user-avatars");
+                await _fileService.SaveImageAsync(stream, id.ToString(), "user-avatars", 100, 70);
             
             var timestamp = DateTime.UtcNow.ToString("yyyyMMddss");
 
@@ -81,7 +82,8 @@ public class AuthService(
                 email: email,
                 avatar: avatar,
                 roles: [RoleNames.User],
-                fullName: fullName ?? email.Split('@')[0]
+                firstName: firstName ?? $"ім'я{timestamp}",
+                lastName: lastName ?? $"прізвище{timestamp}"
             )
             {
                 Id = id,
@@ -179,14 +181,14 @@ public class AuthService(
 
         var normalizedEmail = model.Email.ToLower();
 
-        await using (var image = AvatarGenerator.ByteToStream(AvatarGenerator.CreateAvatar(model.FullName)))
+        await using (var image = AvatarGenerator.ByteToStream(AvatarGenerator.CreateAvatar(model.FirstName)))
         {
             BaseFile file = new();
             var id = ObjectId.GenerateNewId();
             (file.SourceUrl, file.CompressedFileName, file.SourceFileName, file.CompressedFileName) =
-                await _fileService.SaveImageAsync(image, id + "-avatar", "user-avatars");
+                await _fileService.SaveImageAsync(image, id + "-avatar", "user-avatars", 80, 50);
             var user = new User(username, model.Password, normalizedEmail,
-                file, [RoleNames.User], model.FullName)
+                file, [RoleNames.User], model.FirstName, model.LastName)
             {
                 Id = id
             };
@@ -275,7 +277,7 @@ public class AuthService(
         {
             From = "no-reply@sellpoint.pp.ua",
             To = [user.Email],
-            Subject = "Reset Password",
+            Subject = "Скидання пароля",
             HtmlBody = readyHtml
         };
 
@@ -362,7 +364,7 @@ public class AuthService(
         {
             From = "no-reply@sellpoint.pp.ua",
             To = [user.Email],
-            Subject = "Confirm your email address",
+            Subject = "Підтвердіть пошту",
             HtmlBody = readyHtml
         };
 

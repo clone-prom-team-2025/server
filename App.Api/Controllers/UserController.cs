@@ -306,7 +306,8 @@ public class UserController : ControllerBase
             await _userService.CreateAdminAsync(
                 dto.Email,
                 dto.Password,
-                dto.FullNmae,
+                dto.FirstName,
+                dto.LastName,
                 dto.Username,
                 stream,
                 dto.Avatar?.FileName
