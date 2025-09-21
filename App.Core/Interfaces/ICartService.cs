@@ -5,7 +5,7 @@ namespace App.Core.Interfaces;
 public interface ICartService
 {
     Task AddAsync(CreateCartDto dto, string userId);
-    Task RemoveAsync(string id, string userId);
+    Task RemoveAsync(string id);
     Task ClearAsync(string userId);
     Task ChangePcsAsync(string id, int pcs, string userId);
     Task<IEnumerable<CartDto>?> GetAllAsync();

@@ -8,146 +8,94 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace App.Api.Controllers;
 
-[Authorize]
 [ApiController]
 [Route("api/[controller]/[action]")]
-public class BuyController : ControllerBase
+public class OrderController : ControllerBase
 {
-    private readonly ILogger<BuyController> _logger;
-    private readonly IBuyService _buyService;
+    private readonly ILogger<OrderController> _logger;
+    private readonly IOrderService _orderService;
 
-    public BuyController(ILogger<BuyController> logger, IBuyService buyService)
+    public OrderController(ILogger<OrderController> logger, IOrderService orderService)
     {
         _logger = logger;
-        _buyService = buyService;
+        _orderService = orderService;
+    }
+
+    [HttpPost]
+    [Authorize]
+    public async Task<IActionResult> BuyRegistered(DeliveryPayment deliveryPayment,
+        PointsOfDelivery deliveryTo,
+        string? phoneNumber, string? firstName, string? lastName, string? middleName)
+    {
+        using (_logger.BeginScope("BuyRegistered"))
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return BadRequest();
+            _logger.LogInformation("BuyRegistered action");
+            await _orderService.BuyRegistered(userId, deliveryPayment, deliveryTo, phoneNumber, firstName, lastName,
+                middleName);
+            _logger.LogInformation("BuyRegistered success");
+            return NoContent();
+        }
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetById(string buyId)
-    {
-        using (_logger.BeginScope("GetBuyId"))
-        {
-            _logger.LogInformation("GetBuyId called");
-            var result = await _buyService.GetBuyInfoAsync(buyId);
-            _logger.LogInformation("GetBuyId success");
-            return Ok(result);
-        }
-    }
-    
-    [HttpGet]
-    public async Task<IActionResult> GetByMyId()
+    [Authorize]
+    public async Task<IActionResult> GetByUserId()
     {
         using (_logger.BeginScope("GetByUserId"))
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null)
                 return BadRequest();
-            _logger.LogInformation("GetByUserId called");
-            var result = await _buyService.GetBuyInfoByUserIdAsync(userId);
+            _logger.LogInformation("GetByUserId action");
+            var result = await _orderService.GetByUserId(userId);
             _logger.LogInformation("GetByUserId success");
             return Ok(result);
         }
     }
-    
+
     [HttpGet]
-    public async Task<IActionResult> GetBySellerId(string sellerId)
+    [Authorize]
+    public async Task<IActionResult> GetByStoreNeedToAccept()
     {
-        using (_logger.BeginScope("GetBySellerId"))
+        using (_logger.BeginScope("GetByStoreNeedToAccept"))
         {
-            _logger.LogInformation("GetBySellerId called");
-            var result = await _buyService.GetBuyInfoBySellerIdAsync(sellerId);
-            _logger.LogInformation("GetBySellerId success");
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return BadRequest();
+            _logger.LogInformation("GetByStoreNeedToAccept action");
+            var result = await _orderService.GetByStoreNeedToAccept(userId);
+            _logger.LogInformation("GetByStoreNeedToAccept success");
             return Ok(result);
         }
     }
-    
-    [HttpPost]
-    public async Task<IActionResult> BuyProduct([FromBody] BuyCreateDto dto)
+
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> GetByStoreAccepted()
     {
-        using (_logger.BeginScope("BuyProduct"))
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
-                return BadRequest();
-            _logger.LogInformation("BuyProduct action");
-            await _buyService.BuyProductAsync(dto, userId);
-            _logger.LogInformation("BuyProduct action success");
-            return NoContent();
-        }
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+            return BadRequest();
+        _logger.LogInformation("GetByStoreAccepted action");
+        var result = await _orderService.GetByStoreAccepted(userId);
+        _logger.LogInformation("GetByStoreAccepted success");
+        return Ok(result);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Accept(string buyId)
+    [Authorize]
+    public async Task<IActionResult> AcceptOrder(string orderId)
     {
-        using (_logger.BeginScope("Accept"))
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
-                return BadRequest();
-            _logger.LogInformation("Accept action");
-            await _buyService.AcceptSellAsync(buyId, userId);
-            _logger.LogInformation("Accept action success");
-            return NoContent();
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> Pay(string buyId)
-    {
-        using (_logger.BeginScope("Pay"))
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
-                return BadRequest();
-            _logger.LogInformation("Pay action");
-            await _buyService.PayForProductAsync(buyId, userId);
-            _logger.LogInformation("Pay action success");
-            return NoContent();
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> SendProduct(string buyId)
-    {
-        using (_logger.BeginScope("SendProduct"))
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
-                return BadRequest();
-            _logger.LogInformation("SendProduct action");
-            await _buyService.SendProductAsync(buyId, userId);
-            _logger.LogInformation("SendProduct action success");
-            return NoContent();
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> Cancel(string buyId)
-    {
-        using (_logger.BeginScope("Cancel"))
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
-                return BadRequest();
-            _logger.LogInformation("Cancel action");
-            await _buyService.CancelSellAsync(buyId, userId);
-            _logger.LogInformation("Cancel action success");
-            return NoContent();
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> Decline(string buyId)
-    {
-        using (_logger.BeginScope("Decline"))
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (userId == null)
-                return BadRequest();
-            _logger.LogInformation("Decline action");
-            await _buyService.DeclineSellAsync(buyId, userId);
-            _logger.LogInformation("Decline action success");
-            return NoContent();
-        }
+        using var scope = _logger.BeginScope("AcceptOrder");
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+            return BadRequest();
+        _logger.LogInformation("AcceptOrder action");
+        await _orderService.AcceptBuyInfo(userId, orderId);
+        _logger.LogInformation("AcceptOrder success");
+        return NoContent();
     }
 }

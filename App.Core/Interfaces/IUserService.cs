@@ -20,5 +20,5 @@ public interface IUserService
     Task UpdateUser(string userId, UpdateUserDto dto);
     Task SetUserRoleAsync(string userId, string role);
     Task DeleteUserRoleAsync(string userId, string role);
-    Task<bool> CreateAdminAsync(string email, string password, string fullName, string? username, Stream? file, string? fileName);
+    Task<bool> CreateAdminAsync(string email, string password, string firstName, string lastName, string? username, Stream? file, string? fileName);
 }

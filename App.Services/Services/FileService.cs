@@ -51,10 +51,14 @@ public class FileService : IFileService
     /// uploads both files to storage, and provides their URLs and names.
     /// </summary>
     public async Task<(string SourceUrl, string CompressedUrl, string SourceName, string CompressedFileName)>
-        SaveImageAsync(Stream imageStream, string fileName, string key)
+        SaveImageAsync(Stream imageStream, string fileName, string key, int originalQuality, int compressedQuality)
     {
         var id = NanoIdGenerator.Generate(_fileUniqueLength);
         var baseFileName = Path.GetFileNameWithoutExtension(fileName);
+
+        if (originalQuality == 0) throw new InvalidOperationException("Original quality must be greater than 0");
+        if (compressedQuality == 0) throw new InvalidOperationException("Original quality must be greater than 0");
+        if (originalQuality <= compressedQuality) throw new InvalidOperationException("Original quality must be greater than compressed quality");
 
         var sourceName = GenerateFileName(id, baseFileName, "_source", ".webp");
         var compressedName = GenerateFileName(id, baseFileName, "_compressed", ".webp");
@@ -73,14 +77,14 @@ public class FileService : IFileService
             var sourceConversion = FFmpeg.Conversions.New()
                 .AddParameter($"-i \"{tempInput}\"", ParameterPosition.PreInput)
                 .AddParameter("-vf \"scale=w=1280:h=720:force_original_aspect_ratio=decrease\"")
-                .AddParameter("-c:v libwebp -preset picture -compression_level 6 -quality 90 -threads 0")
+                .AddParameter($"-c:v libwebp -preset picture -compression_level 6 -quality {originalQuality} -threads 0")
                 .SetOutput(tempSource);
 
 
             var compressedConversion = FFmpeg.Conversions.New()
                 .AddParameter($"-i \"{tempInput}\"", ParameterPosition.PreInput)
                 .AddParameter("-vf \"scale=w=1280:h=720:force_original_aspect_ratio=decrease\"")
-                .AddParameter("-c:v libwebp -preset picture -compression_level 6 -quality 60 -threads 0")
+                .AddParameter($"-c:v libwebp -preset picture -compression_level 6 -quality {compressedQuality} -threads 0")
                 .SetOutput(tempCompressed);
 
             var sourceTask = sourceConversion.Start();

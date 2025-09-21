@@ -5,6 +5,6 @@ namespace App.Core.Interfaces;
 
 public interface IEmailService
 {
-    Task SendEmailAsync(EmailMessage message);
+    Task SendEmailAsync(EmailMessage message, byte[]? file = null, string? fileName = null);
     Task<List<MimeMessage>> GetInboxAsync(string from);
 }

@@ -387,7 +387,9 @@ public class UserService(
             }
 
             if (dto.Username != null) user.Username = dto.Username;
-            if (dto.FullName != null) user.FullName = dto.FullName;
+            if (dto.FirstName != null) user.FirstName = dto.FirstName;
+            if (dto.LastName != null) user.LastName = dto.LastName;
+            if (dto.MiddleName != null) user.MiddleName = dto.MiddleName;
             if (dto.Gender != null) user.Gender = dto.Gender;
             if (dto.DateOfBirth != null) user.DateOfBirth = dto.DateOfBirth;
             if (dto.Avatar != null)
@@ -397,7 +399,7 @@ public class UserService(
                 BaseFile file = new();
                 var stream = dto.Avatar.OpenReadStream();
                 (file.SourceUrl, file.CompressedUrl, file.SourceFileName, file.CompressedFileName) =
-                    await _fileService.SaveImageAsync(stream, dto.Avatar.FileName, "user-avatars");
+                    await _fileService.SaveImageAsync(stream, dto.Avatar.FileName, "user-avatars", 80, 50);
                 user.Avatar = file;
             }
 
@@ -421,7 +423,7 @@ public class UserService(
     /// <param name="username">Optional username</param>
     /// <param name="file">Optional avatar file stream</param>
     /// <param name="fileName">Optional avatar file name</param>
-    public async Task<bool> CreateAdminAsync(string email, string password, string fullName, string? username, Stream? file, string? fileName)
+    public async Task<bool> CreateAdminAsync(string email, string password, string firstName, string lastName, string? username, Stream? file, string? fileName)
     {
         using (_logger.BeginScope("CreateAdminAsync"))
         {
@@ -443,23 +445,21 @@ public class UserService(
 
             if (file == null && fileName == null)
             {
-                await using var image = AvatarGenerator.ByteToStream(AvatarGenerator.CreateAvatar(fullName));
+                await using var image = AvatarGenerator.ByteToStream(AvatarGenerator.CreateAvatar(firstName));
                 (avatar.SourceUrl, avatar.CompressedUrl, avatar.SourceFileName, avatar.CompressedFileName) =
-                    await _fileService.SaveImageAsync(image, id + "-avatar", "user-avatars");
+                    await _fileService.SaveImageAsync(image, id + "-avatar", "user-avatars", 80, 50);
             }
             else if (file != null && fileName != null)
             {
                 (avatar.SourceUrl, avatar.CompressedUrl, avatar.SourceFileName, avatar.CompressedFileName) =
-                    await _fileService.SaveImageAsync(file, fileName, "user-avatars");
+                    await _fileService.SaveImageAsync(file, fileName, "user-avatars", 80, 50);
             }
             var admin = new User(username, password, normalizedEmail,
-                avatar, [RoleNames.User, RoleNames.Admin], fullName)
+                avatar, [RoleNames.User, RoleNames.Admin], firstName, lastName)
             {
                 Id = id
             };
             
-            Console.WriteLine(avatar.ToJson());
-
             await _userRepository.CreateUserAsync(admin);
 
             return true;

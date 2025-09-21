@@ -57,7 +57,7 @@ public class StoreService(
 
             BaseFile file = new();
             (file.SourceUrl, file.CompressedUrl, file.SourceFileName, file.CompressedFileName) =
-                await _fileService.SaveImageAsync(stream, fileName, "store-avatars");
+                await _fileService.SaveImageAsync(stream, fileName, "store-avatars", 90, 50);
             model.Avatar = file;
             var result2 = await _requestRepository.Update(model);
             if (!result2)

@@ -31,9 +31,9 @@ public class MongoDbSeeder(MongoDbContext context, ILogger<MongoDbSeeder> logger
                 await GetImageStreamAsync(
                     "https://www.cariblist.com/admin/assets/img/UserLogos/1473851754-avatar-generic.jpg"),
                 "admin-avatar",
-                "user-avatars");
+                "user-avatars", 80, 50);
         var defaultUser = new User("admin", "P@ssw0rd", "admin@sellpoint.pp.ua", file,
-            [RoleNames.Admin, RoleNames.User], "Адміністартор сайту");
+            [RoleNames.Admin, RoleNames.User], "Головний", "Адміністратор");
 
         await usersCollection.InsertOneAsync(defaultUser);
         _logger.LogInformation("Default admin user has been created.");

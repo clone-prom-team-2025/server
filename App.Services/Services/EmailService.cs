@@ -36,7 +36,7 @@ public class EmailService : IEmailService
     /// Sends an email asynchronously using the configured sender account.
     /// </summary>
     /// <param name="message">The email message to be sent.</param>
-    public async Task SendEmailAsync(EmailMessage message)
+    public async Task SendEmailAsync(EmailMessage message, byte[]? file = null, string? fileName = null)
     {
         if (!_accounts.TryGetValue(GetAccountKeyFromEmail(message.From), out var sender))
             return;
@@ -46,7 +46,17 @@ public class EmailService : IEmailService
         email.To.AddRange(message.To.Select(to => MailboxAddress.Parse(to)));
         email.Subject = message.Subject;
 
-        email.Body = new BodyBuilder { HtmlBody = message.HtmlBody }.ToMessageBody();
+        var bodyBuilder = new BodyBuilder
+        {
+            HtmlBody = message.HtmlBody
+        };
+
+        if (file != null && !string.IsNullOrEmpty(fileName))
+        {
+            bodyBuilder.Attachments.Add(fileName, file);
+        }
+
+        email.Body = bodyBuilder.ToMessageBody();
 
         using var client = new SmtpClient();
         await client.ConnectAsync(sender.SmtpServer, sender.Port, SecureSocketOptions.StartTls);

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8">
+    <title>Касовий чек</title>
+  </head>
+  <body style="font-family: Courier New, monospace; background-color:#f5f5f5; padding:20px; margin:0;">
+    <table align="center" cellpadding="0" cellspacing="0" width="350" style="background:#fff; padding:20px; border:1px solid #ddd; font-size:14px; line-height:1.4;">
+      <tr>
+        <td align="center" style="font-weight:bold;">Онлайн-замовлення #__ORDERID__<br>SELLPOINT</td>
+      </tr>
+      <tr>
+        <td style="padding-top:10px;">
+          __ORDERTO__<br>
+          __ADDRESS__
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-top:10px;">
+          ІД ***<br>
+          ПН ***
+        </td>
+      </tr>
+      <tr>
+        <td align="center" style="padding:10px 0; font-weight:bold;">Касовий чек</td>
+      </tr>
+
+      <tr>
+        <td>
+          ПРРО ФН *** ВН ***<br>
+          ЧЕК ФН *** ВН *** онлайн<br>
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding:10px 0; border-top:1px dashed #000; border-bottom:1px dashed #000;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;">
+            __PRODUCTS__
+          </table>
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding-top:10px;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td>Сума товарів:</td>
+              <td align="right">__FINALPRICE__</td>
+            </tr>
+            <tr>
+              <td>Бонуси використані:</td>
+              <td align="right">-__BONUS__</td>
+            </tr>
+            <tr>
+              <td><b>СУМА ДО СПЛАТИ:</b></td>
+              <td align="right"><b>__PRICETOPAY__</b></td>
+            </tr>
+            <tr>
+              <td>ОПЛАТА КАРТКОЮ:</td>
+              <td align="right">__PRICETOPAY__</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <tr>
+        <td style="padding-top:10px; border-top:1px dashed #000;">
+          ПДВ Б 0.00% від __PRICETOPAY__: <span style="float:right;">0.00</span>
+        </td>
+      </tr>
+
+      <tr>
+        <td align="center" style="padding-top:15px;">
+          __DATE__<br>
+          <b>ФІСКАЛЬНИЙ ЧЕК</b>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+<!-- 24-06-2025 11:14:56 -->
+ <!-- <tr>
+              <td>АРТ.№ 001 Хліб Баварський</td>
+              <td align="right">25.00 Б</td>
+            </tr>
+            <tr>
+              <td style="font-size:12px;">1 шт × 25.00</td>
+              <td align="right" style="font-size:12px;">= 25.00</td>
+            </tr> -->

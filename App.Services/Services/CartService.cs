@@ -52,12 +52,12 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
     /// </summary>
     /// <param name="id">The cart item ID.</param>
     /// <param name="userId">The ID of the user.</param>
-    public async Task RemoveAsync(string id, string userId)
+    public async Task RemoveAsync(string id)
     {
-        using (_logger.BeginScope("RemoveAsync: id={id}, UserId={userId}", id, userId))
+        using (_logger.BeginScope("RemoveAsync: id={id}", id))
         {
-            _logger.LogInformation("RemoveAsync called with id={id}, UserId={userId}", id, userId);
-            var result = await _cartRepository.DeleteAsync(ObjectId.Parse(id), ObjectId.Parse(userId));
+            _logger.LogInformation("RemoveAsync called with id={id}", id);
+            var result = await _cartRepository.DeleteAsync(ObjectId.Parse(id));
             if (!result)
             {
                 _logger.LogError("RemoveAsync: Failed to delete cart");
@@ -115,7 +115,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
             if (pcs <= 0)
             {
                 _logger.LogInformation("ChangePcsAsync: Pcs is equal or less than 0, deleting cart");
-                var resultDelete = await _cartRepository.DeleteAsync(ObjectId.Parse(id), ObjectId.Parse(userId));
+                var resultDelete = await _cartRepository.DeleteAsync(ObjectId.Parse(id));
                 if (!resultDelete)
                 {
                     _logger.LogError("ChangePcsAsync: Failed to update cart");
