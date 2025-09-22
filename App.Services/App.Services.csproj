@@ -34,9 +34,10 @@
         <EmbeddedResource Include="EmailTemplates/ResetPassword.html"/>
         <EmbeddedResource Include="EmailTemplates/DeleteAccount.html"/>
         <EmbeddedResource Include="EmailTemplates/Order.html"/>
+        <EmbeddedResource Include="EmailTemplates/OrderCanceled.html"/>
+        <EmbeddedResource Include="EmailTemplates/OrderConfirmed.html"/>
         <EmbeddedResource Include="EmailTemplates/SuccessOrderAfterPayment.html"/>
         <EmbeddedResource Include="EmailTemplates/SuccessOrderWithCard.html"/>
-        <EmbeddedResource Include="EmailTemplates/SuccessOrderCanceled.html"/>
     </ItemGroup>
 
 </Project>

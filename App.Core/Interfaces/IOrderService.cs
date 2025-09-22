@@ -12,5 +12,6 @@ public interface IOrderService
     Task<IEnumerable<OrderDto>> GetByUserId(string userId);
     Task<IEnumerable<OrderDto>> GetByStoreNeedToAccept(string userId);
     Task<IEnumerable<OrderDto>> GetByStoreAccepted(string userId);
-    Task AcceptBuyInfo(string userId, string buyInfoId);
+    Task RejectOrder(string userId, string orderId, string reason);
+    Task AcceptOrder(string userId, string buyInfoId);
 }

@@ -59,16 +59,26 @@ public class OrderService(
         _logger.LogInformation("BuyRegistered called for user {UserId}", userId);
 
         var parsedUserId = ObjectId.Parse(userId);
-        var user = await _userRepository.GetUserByIdAsync(parsedUserId)
-            ?? throw new KeyNotFoundException("User not found");
+        var user = await _userRepository.GetUserByIdAsync(parsedUserId);
+        if (user == null)
+        {
+            _logger.LogWarning("User {UserId} not found", parsedUserId);
+            throw new KeyNotFoundException("User not found");
+        }
 
         var userPhone = phoneNumber ?? user.PhoneNumber;
         if (string.IsNullOrWhiteSpace(userPhone))
-            throw new InvalidOperationException("Phone number cannot be empty");
+        {
+            _logger.LogWarning("User {UserId} doesn't have phone number", parsedUserId);
+            throw new KeyNotFoundException("User not found");
+        }
 
         var carts = await _cartRepository.GetByUserIdAsync(parsedUserId);
         if (carts == null || carts.Count == 0)
-            throw new KeyNotFoundException("No carts found");
+        {
+            _logger.LogWarning("User {UserId} doesn't have any carts", parsedUserId);
+            throw new KeyNotFoundException("User not found");
+        }
 
         var orders = new List<Order>();
         
@@ -95,7 +105,10 @@ public class OrderService(
         {
             var product = await _productRepository.GetByIdAsync(cart.ProductId);
             if (product == null)
+            {
+                _logger.LogWarning("Product {ProductId} not found for User {user}, Cart {cart}", cart.ProductId, userId, cart.Id.ToString());
                 throw new KeyNotFoundException($"{cart.ProductId} product not found");
+            }
 
             if (product.Quantity < cart.Pcs)
                 throw new InvalidOperationException($"{cart.ProductId} not enough pcs");
@@ -155,7 +168,7 @@ public class OrderService(
             var updateResult = await _productRepository.UpdateAsync(product);
             if (!updateResult)
             {
-                _logger.LogWarning("Failed to update product {ProductId}", product.Id);
+                _logger.LogWarning("Failed to update product {ProductId} for User {user}, Cart {cart}", product.Id, userId, cart.Id.ToString());
                 foreach (var created in orders)
                 {
                     await _orderRepository.DeleteAsync(created.Id);
@@ -253,21 +266,89 @@ public class OrderService(
         return _mapper.Map<IEnumerable<OrderDto>>(filteredBuyInfos);
     }
 
-    public async Task AcceptBuyInfo(string userId, string buyInfoId)
+    public async Task RejectOrder(string userId, string orderId, string reason)
+    {
+        using var scope = _logger.BeginScope("RejectOrder");
+        _logger.LogInformation("RejectOrder called for userId {UserId}", userId);
+        var store = await _storeRepository.GetStoreByUserId(ObjectId.Parse(userId));
+        if (store == null)
+        {
+            _logger.LogWarning("Store not found for User {user}", userId);
+            throw new KeyNotFoundException("Store not found");
+        }
+        
+        var order = await _orderRepository.GetByIdAsync(ObjectId.Parse(orderId));
+        if (order == null)
+        {
+            _logger.LogWarning("Order {order} not found for User {user}", orderId, userId);
+            throw new KeyNotFoundException("Order not found");
+        }
+
+        if (order.SellerId != store.Id)
+        {
+            _logger.LogWarning("User {userId} does not own order {order} and tried to accept order", userId, orderId);
+            throw new AccessDeniedException("It's not your order");
+        }
+
+        if (order.Status is not (DeliveryStatus.AwaitingConfirmation or DeliveryStatus.WaitingForShipment))
+        {
+            _logger.LogWarning("User {userId} tried reject order but status is not AwaitingConfirmation or WaitingForShipment", userId);
+        }
+
+        order.Confirmed = false;
+        order.Status = DeliveryStatus.Declined;
+        order.SellerMessage = reason;
+        
+        var result = await _orderRepository.UpdateAsync(order);
+        _logger.LogInformation("Rejected order {OrderId}", order.Id);
+        
+        if (order.Registered)
+        {
+            var notification = new NotificationCreateDto()
+            {
+                Type = NotificationType.Info,
+                Message = $"Підзамовлення #{order.Id.ToString()} у складі замовлення #{order.OrderNumber} скасовано продавцем! Причина: {reason}",
+                From = store.Name,
+                To = order.UserId.ToString(),
+                IsHighPriority = false,
+            };
+            await _notificationService.SendNotificationAsync(notification);
+        }
+        var assembly = Assembly.GetExecutingAssembly();
+        await using var streamOrderEmail = assembly.GetManifestResourceStream("App.Services.EmailTemplates.OrderCanceled.html");
+        using var readerOrderEmail = new StreamReader(streamOrderEmail!);
+        var htmlOrderEmail = await readerOrderEmail.ReadToEndAsync();
+        var readyOrderEmail = htmlOrderEmail.Replace("__ORDERID__", order.OrderNumber)
+            .Replace("__ORDERID2__", order.Id.ToString())
+            .Replace("__TRACK__", order.TrackingNumber)
+            .Replace("__COMMENT__", reason);
+        
+        var mail = new EmailMessage()
+        {
+            From = "no-reply@sellpoint.pp.ua",
+            To = [order.Email],
+            Subject = "Ваше замовлення відхилене",
+            HtmlBody = readyOrderEmail
+        };
+        
+        await _emailService.SendEmailAsync(mail);
+    }
+
+    public async Task AcceptOrder(string userId, string buyInfoId)
     {
         using var scope = _logger.BeginScope("AcceptBuyInfo");
         _logger.LogInformation("AcceptBuyInfo called for UserId={userId}", userId);
         var store = await _storeRepository.GetStoreByUserId(ObjectId.Parse(userId));
         if (store == null)
         {
-            _logger.LogWarning("Store not found");
+            _logger.LogWarning("Store not found for User {userId}", userId);
             throw new KeyNotFoundException("Store not found");
         }
         
         var order = await _orderRepository.GetByIdAsync(ObjectId.Parse(buyInfoId));
         if (order == null)
         {
-            _logger.LogWarning("Order not found");
+            _logger.LogWarning("Order not found for Store {storeId}", store.Id.ToString());
             throw new KeyNotFoundException("Order not found");
         }
 
@@ -278,11 +359,10 @@ public class OrderService(
         }
         
         order.Confirmed = true;
-        order.Status = order.Payment switch
-        {
-            DeliveryPayment.AfterPayment => DeliveryStatus.WaitingForShipment,
-            _ => DeliveryStatus.PendingPayment
-        };
+        order.Status = DeliveryStatus.WaitingForShipment;
+        var trackNumber = Guid.NewGuid().ToString("N");
+        order.TrackingNumber = trackNumber;
+
         var result = await _orderRepository.UpdateAsync(order);
         if (!result)
         {
@@ -290,7 +370,6 @@ public class OrderService(
             throw new InvalidOperationException($"Failed to update order");
         }
 
-        var trackNumber = Guid.NewGuid().ToString("N");
 
         if (order.Registered)
         {
@@ -304,7 +383,23 @@ public class OrderService(
             };
             await _notificationService.SendNotificationAsync(notification);
         }
-
+        var assembly = Assembly.GetExecutingAssembly();
+        await using var streamOrderEmail = assembly.GetManifestResourceStream("App.Services.EmailTemplates.OrderConfirmed.html");
+        using var readerOrderEmail = new StreamReader(streamOrderEmail!);
+        var htmlOrderEmail = await readerOrderEmail.ReadToEndAsync();
+        var readyOrderEmail = htmlOrderEmail.Replace("__ORDERID__", order.OrderNumber)
+            .Replace("__ORDERID2__", order.Id.ToString())
+            .Replace("__TRACK__", order.TrackingNumber);
+        
+        var mail = new EmailMessage()
+        {
+            From = "no-reply@sellpoint.pp.ua",
+            To = [order.Email],
+            Subject = "Ваше замовлення прийняте",
+            HtmlBody = readyOrderEmail
+        };
+        
+        await _emailService.SendEmailAsync(mail);
         _logger.LogInformation("Order accepted");
     }
 
@@ -312,7 +407,7 @@ public class OrderService(
     {
         var assembly = Assembly.GetExecutingAssembly();
 
-        await using var streamOrderEmail = assembly.GetManifestResourceStream("App.Services.EmailTemplates.SuccessOrderWithCard.html");
+        await using var streamOrderEmail = assembly.GetManifestResourceStream("App.Services.EmailTemplates.SuccessOrderAfterPayment.html");
         using var readerOrderEmail = new StreamReader(streamOrderEmail!);
         var htmlOrderEmail = await readerOrderEmail.ReadToEndAsync();
         var readyOrderEmailHtml = htmlOrderEmail.Replace("__ORDERID__", orderNumber);
@@ -320,7 +415,7 @@ public class OrderService(
         {
             From = "no-reply@sellpoint.pp.ua",
             To = [email],
-            Subject = "Ваше замовлення прийняте",
+            Subject = "Ваше замовлення зареєстроване",
             HtmlBody = readyOrderEmailHtml
         };
         
@@ -389,7 +484,7 @@ public class OrderService(
         {
             From = "no-reply@sellpoint.pp.ua",
             To = [email],
-            Subject = "Ваше замовлення прийняте",
+            Subject = "Ваше замовлення зареєстроване",
             HtmlBody = readyOrderEmailHtml
         };
         _logger.LogDebug("Order {order}", readyOrderHtml);
