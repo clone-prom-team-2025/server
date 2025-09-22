@@ -94,8 +94,22 @@ public class OrderController : ControllerBase
         if (userId == null)
             return BadRequest();
         _logger.LogInformation("AcceptOrder action");
-        await _orderService.AcceptBuyInfo(userId, orderId);
+        await _orderService.AcceptOrder(userId, orderId);
         _logger.LogInformation("AcceptOrder success");
+        return NoContent();
+    }
+
+    [HttpPost]
+    [Authorize]
+    public async Task<IActionResult> RejectOrder(string orderId, string reason)
+    {
+        using var scope = _logger.BeginScope("RejectOrder");
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+            return BadRequest();
+        _logger.LogInformation("RejectOrder action");
+        await _orderService.RejectOrder(userId, orderId, reason);
+        _logger.LogInformation("RejectOrder success");
         return NoContent();
     }
 }

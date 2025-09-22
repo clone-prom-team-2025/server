@@ -45,6 +45,8 @@ public class Order
     public bool Confirmed { get; set; } = false;
 
     public bool Registered = false;
+    
+    public string? SellerMessage { get; set; }
 
     public DeliveryStatus Status { get; set; } = DeliveryStatus.AwaitingConfirmation;
 }
