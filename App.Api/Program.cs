@@ -16,7 +16,9 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
+using MongoDB.Driver;
 using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
 using LogEventLevel = Serilog.Events.LogEventLevel;
@@ -60,6 +62,12 @@ builder.Services.Configure<ProductMediaKeys>(builder.Configuration.GetSection("P
 // --- Auth sessions settings ---
 builder.Services.Configure<SessionsOptions>(builder.Configuration.GetSection("SessionsSettings"));
 
+builder.Services.AddSingleton<IMongoClient>(sp =>
+{
+    var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
+    return new MongoClient(settings.ConnectionString);
+});
+
 // --- Infrastructure ---
 builder.Services.AddSingleton<MongoDbContext>();
 builder.Services.AddSingleton<MongoDbSeeder>();
@@ -100,10 +108,11 @@ builder.Services.AddSingleton<ICartService, CartService>();
 builder.Services.AddSingleton<INotificationService, NotificationService>();
 builder.Services.AddSingleton<IFavoriteService, FavoriteService>();
 builder.Services.AddSingleton<IOrderService, OrderService>();
+builder.Services.AddHostedService<CleanSchedulerService>();
+builder.Services.AddSingleton<IArchiveAndCleanupManager, ArchiveAndCleanupManager>();
 
 builder.Services.AddSingleton<ISessionHubNotifier, SessionHubNotifier>();
 builder.Services.AddSingleton<INotificationHubNotifier, NotificationHubNotifier>();
-
 
 builder.Services.AddMemoryCache();
 

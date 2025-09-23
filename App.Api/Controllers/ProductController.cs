@@ -35,7 +35,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("get-by-id/{id}")]
-    public async Task<ActionResult<ProductDto?>> GetByIdAsync(string id)
+    public async Task<IActionResult> GetByIdAsync(string id)
     {
         using (_logger.BeginScope("GetById")) {
             _logger.LogInformation("GetById action");
@@ -46,7 +46,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpPost("get-by-name/{name}")]
-    public async Task<ActionResult<ProductFilterResponseDto?>> GetByNameAsync(string name,
+    public async Task<IActionResult> GetByNameAsync(string name,
         ProductFilterRequestDto filter)
     {
         using (_logger.BeginScope("GetByName")) {
@@ -89,7 +89,7 @@ public class ProductController : ControllerBase
 
     [HttpPut]
     [Authorize]
-    public async Task<ActionResult<ProductDto?>> UpdateAsync(UpdateProductDto productDto)
+    public async Task<IActionResult> UpdateAsync(UpdateProductDto productDto)
     {
         using (_logger.BeginScope("Update")) {
             _logger.LogInformation("Update action");
@@ -103,7 +103,7 @@ public class ProductController : ControllerBase
 
     [HttpDelete]
     [Authorize]
-    public async Task<ActionResult> DeleteAsync(string id)
+    public async Task<IActionResult> DeleteAsync(string id)
     {
         using (_logger.BeginScope("Delete")) {
             _logger.LogInformation("Delete action");
@@ -117,7 +117,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("search")]
-    public async Task<ActionResult<List<ProductSearchResult>?>> SearchByNameAsync(string name)
+    public async Task<IActionResult> SearchByNameAsync(string name)
     {
         using (_logger.BeginScope("SearchByName")) {
             _logger.LogInformation("SearchByNameAsync action");
@@ -128,7 +128,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("random")]
-    public async Task<ActionResult<ProductDto?>> GetRandomAsync(int page, int pageSize)
+    public async Task<IActionResult> GetRandomAsync(int page, int pageSize)
     {
         using (_logger.BeginScope("GetRandom")) {
             _logger.LogInformation("GetRandomAsync action");
@@ -137,4 +137,35 @@ public class ProductController : ControllerBase
             return Ok(result);
         } 
     }
+
+    [HttpPost("restore")]
+    [Authorize]
+    public async Task<IActionResult> Restore(string productId)
+    {
+        using (_logger.BeginScope("Restore"))
+        {
+            _logger.LogInformation("Restore action");
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return BadRequest();
+            await _productService.RestoreAsync(productId, userId);
+            _logger.LogInformation("Restore success");
+            return NoContent();
+        }
+    }
+
+    [HttpGet("get-archived")]
+    [Authorize]
+    public async Task<IActionResult> GetArchivedByUserIdAsync()
+    {
+        using (_logger.BeginScope("GetArchivedByUserIdAsync"))
+        {
+            _logger.LogInformation("GetArchivedByUserIdAsync action");
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return BadRequest();
+            var result = await _productService.GetArchivedByUserIdAsync(userId);
+            _logger.LogInformation("GetArchivedByUserIdAsync success");
+            return Ok(result);
+        }
+    }
+    
 }
