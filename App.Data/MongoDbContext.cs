@@ -1,3 +1,4 @@
+using App.Core.Archive.Product;
 using App.Core.Models;
 using App.Core.Models.Auth;
 using App.Core.Models.AvailableFilters;
@@ -20,6 +21,8 @@ namespace App.Data;
 /// </summary>
 public class MongoDbContext
 {
+    private const int ProductArchiveLifetime = 30;
+    
     private readonly IMongoDatabase _database;
 
     /// <summary>
@@ -87,7 +90,15 @@ public class MongoDbContext
         _database.GetCollection<FavoriteSeller>("FavoriteSellers");
     
     public IMongoCollection<Order> Orders => _database.GetCollection<Order>("Orders");
-
+        
+    public IMongoCollection<ProductArchive> ProductArchives =>
+        _database.GetCollection<ProductArchive>("ProductArchives");
+    
+    public IMongoCollection<ProductMediaArchive> ProductMediaArchives =>
+        _database.GetCollection<ProductMediaArchive>("ProductMediaArchives");
+    
+    public IMongoCollection<ProductReviewArchive> ProductReviewArchives =>
+        _database.GetCollection<ProductReviewArchive>("ProductReviewArchives");
 
     /// <summary>
     ///     Ensures that the necessary indexes for the <see cref="Category" /> collection are created.

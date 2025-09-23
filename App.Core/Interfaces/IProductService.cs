@@ -1,3 +1,4 @@
+using App.Core.Archive.Product.DTOs;
 using App.Core.DTOs.Product;
 
 namespace App.Core.Interfaces;
@@ -13,6 +14,8 @@ public interface IProductService
     Task<ProductFilterResponseDto?> GetBySellerIdAsync(string sellerId, ProductFilterRequestDto filter);
     Task CreateAsync(ProductCreateDto productDto, string userId);
     Task UpdateAsync(UpdateProductDto productDto, string userId);
+    Task RestoreAsync(string id, string userId);
+    Task<IEnumerable<ProductArchiveDto>> GetArchivedByUserIdAsync(string userId);
     Task DeleteAsync(string id, string userId);
     Task<IEnumerable<ProductSearchResultDto>?> SearchByNameAsync(string name);
     Task<IEnumerable<ProductDto>> GetRandomProductsAsync(int page, int pageSize);

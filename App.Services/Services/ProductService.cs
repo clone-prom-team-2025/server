@@ -1,3 +1,5 @@
+using App.Core.Archive.Product;
+using App.Core.Archive.Product.DTOs;
 using App.Core.Constants;
 using App.Core.DTOs.Product;
 using App.Core.Enums;
@@ -19,7 +21,8 @@ public class ProductService(
     ICategoryRepository categoryRepository,
     IStoreRepository storeRepository,
     IUserRepository userRepository,
-    ILogger<ProductService> logger) : IProductService
+    ILogger<ProductService> logger,
+    IArchiveAndCleanupManager archiveAndCleanupManager) : IProductService
 {
     private readonly ICategoryRepository _categoryRepository = categoryRepository;
     private readonly IMapper _mapper = mapper;
@@ -27,6 +30,7 @@ public class ProductService(
     private readonly IStoreRepository _storeRepository = storeRepository;
     private readonly IUserRepository _userRepository = userRepository;
     private readonly ILogger<ProductService> _logger = logger;
+    private readonly IArchiveAndCleanupManager _archiveAndCleanupManager = archiveAndCleanupManager;
 
     /// <summary>
     ///     Retrieves all products matching the specified filter.
@@ -171,6 +175,63 @@ public class ProductService(
         }
     }
 
+    public async Task RestoreAsync(string id, string userId)
+    {
+        using (_logger.BeginScope("RestoreAsync"))
+        {
+            _logger.LogInformation("RestoreAsync called");
+            var productArchived = await _archiveAndCleanupManager.GetArchivedProductsAsync(ObjectId.Parse(id));
+            if (productArchived == null)
+            {
+                _logger.LogInformation("Product could not be restored.");
+                throw new KeyNotFoundException("Product could not be deleted.");
+            }
+
+            var store = await _storeRepository.GetStoreById(productArchived.SellerId);
+            if (store == null)
+            {
+                _logger.LogInformation("Store not found.");
+                throw new KeyNotFoundException("Store not found.");
+            }
+            
+            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+            if (user == null)
+            {
+                _logger.LogInformation("User not found.");
+                throw new AccessDeniedException("User not found.");
+            }
+
+            if (!store.Roles.ContainsKey(userId) && !user.Roles.Contains(RoleNames.Admin))
+            {
+                _logger.LogInformation("User is not owner or manager.");
+                throw new AccessDeniedException("User is not owner or manager.");
+            }
+
+            await _archiveAndCleanupManager.RestoreProductAsync(ObjectId.Parse(id));
+            // if (!await _productRepository.DeleteAsync(ObjectId.Parse(id)))
+            //     throw new InvalidOperationException("Product could not be deleted.");
+            
+            _logger.LogInformation("RestoreAsync success");
+        }
+    }
+
+    public async Task<IEnumerable<ProductArchiveDto>> GetArchivedByUserIdAsync(string userId)
+    {
+        using (_logger.BeginScope("GetArchivedByUserIdAsync"))
+        {
+            _logger.LogInformation("GetArchivedByUserIdAsync called");
+            var store = await _storeRepository.GetStoreByUserId(ObjectId.Parse(userId));
+            if (store == null)
+            {
+                _logger.LogInformation("Store not found.");
+                throw new KeyNotFoundException("Store not found.");
+            }
+            var result = await _archiveAndCleanupManager.GetProductArchiveCollection(store.Id);
+            _logger.LogInformation("GetArchivedByUserIdAsync success");
+            return _mapper.Map<IEnumerable<ProductArchiveDto>>(result);
+        }
+    }
+
     /// <summary>
     ///     Deletes a product by ID.
     /// </summary>
@@ -207,8 +268,10 @@ public class ProductService(
                 _logger.LogInformation("User is not owner or manager.");
                 throw new AccessDeniedException("User is not owner or manager.");
             }
-            if (!await _productRepository.DeleteAsync(ObjectId.Parse(id)))
-                throw new InvalidOperationException("Product could not be deleted.");
+
+            await _archiveAndCleanupManager.SoftDeleteProductAsync(ObjectId.Parse(id));
+            // if (!await _productRepository.DeleteAsync(ObjectId.Parse(id)))
+            //     throw new InvalidOperationException("Product could not be deleted.");
             
             _logger.LogInformation("DeleteAsync success");
         }
