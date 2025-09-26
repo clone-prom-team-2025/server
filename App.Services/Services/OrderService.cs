@@ -467,7 +467,7 @@ public class OrderService(
         
         var productsHtml = string.Join(Environment.NewLine, htmlRows);
         
-        var kyivTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Kiev");
+        var kyivTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Kyiv");
         var kyivTime = TimeZoneInfo.ConvertTimeFromUtc(order.First().CreatedAt, kyivTimeZone);
         var date = kyivTime.ToString("dd-MM-yyyy HH:mm:ss");
         var assembly = Assembly.GetExecutingAssembly();
