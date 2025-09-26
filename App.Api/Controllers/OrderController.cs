@@ -112,4 +112,18 @@ public class OrderController : ControllerBase
         _logger.LogInformation("RejectOrder success");
         return NoContent();
     }
+
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> GetDeliveryAndPaymentOptions()
+    {
+        using var scope = _logger.BeginScope("GetDeliveryAndPaymentOptions");
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+            return BadRequest();
+        _logger.LogInformation("GetDeliveryAndPaymentOptions action");
+        var result = await _orderService.GetDeliveryTypeAsync(userId);
+        _logger.LogInformation("GetDeliveryAndPaymentOptions success");
+        return Ok(result);
+    }
 }

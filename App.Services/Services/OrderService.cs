@@ -223,6 +223,67 @@ public class OrderService(
 
         _logger.LogInformation("BuyRegistered successfully completed for user {UserId}", userId);
     }
+
+    public async Task<DeliveryAndPaymentDto> GetDeliveryTypeAsync(string userId)
+    {
+        using var scope = _logger.BeginScope("GetDeliveryTypeAsync");
+        _logger.LogInformation("GetDeliveryTypeAsync called for user {UserId}", userId);
+
+        var parsedUserId = ObjectId.Parse(userId);
+        var user = await _userRepository.GetUserByIdAsync(parsedUserId);
+        if (user == null)
+        {
+            _logger.LogWarning("User {UserId} not found", parsedUserId);
+            throw new KeyNotFoundException("User not found");
+        }
+        
+        var carts = await _cartRepository.GetByUserIdAsync(parsedUserId);
+        if (carts == null || carts.Count == 0)
+        {
+            _logger.LogWarning("Cart not found for user {UserId}", parsedUserId);
+            throw new KeyNotFoundException("Cart not found");
+        }
+        
+        ProductDeliveryType? commonDeliveryType = null;
+        PaymentOptions? commonPaymentOptions = null;
+
+        foreach (var cart in carts)
+        {
+            var product = await _productRepository.GetByIdAsync(cart.ProductId);
+            if (product == null)
+            {
+                _logger.LogWarning("Product not found {ProductId}", cart.ProductId);
+                throw new KeyNotFoundException($"Product {cart.ProductId} not found");
+            }
+
+            if (commonDeliveryType == null)
+                commonDeliveryType = product.DeliveryType;
+            else
+                commonDeliveryType &= product.DeliveryType;
+
+            if (commonPaymentOptions == null)
+                commonPaymentOptions = product.PaymentOptions;
+            else
+                commonPaymentOptions &= product.PaymentOptions;
+        }
+        
+        if (commonDeliveryType == 0)
+        {
+            _logger.LogWarning("No common delivery options found for user {UserId}", userId);
+            throw new InvalidOperationException("No common delivery options available for the products in the cart.");
+        }
+        if (commonPaymentOptions == 0)
+        {
+            _logger.LogWarning("No common payment options found for user {UserId}", userId);
+            throw new InvalidOperationException("No common payment options available for the products in the cart.");
+        }
+
+        return new DeliveryAndPaymentDto
+        {
+            ProductDeliveryType = commonDeliveryType ?? 0,
+            PaymentOptions = commonPaymentOptions ?? 0
+        };
+    }
     
     public async Task<IEnumerable<OrderDto>> GetByUserId(string userId)
     {

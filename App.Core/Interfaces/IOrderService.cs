@@ -14,4 +14,5 @@ public interface IOrderService
     Task<IEnumerable<OrderDto>> GetByStoreAccepted(string userId);
     Task RejectOrder(string userId, string orderId, string reason);
     Task AcceptOrder(string userId, string buyInfoId);
+    Task<DeliveryAndPaymentDto> GetDeliveryTypeAsync(string userId);
 }
