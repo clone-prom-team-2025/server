@@ -14,6 +14,7 @@ using AutoMapper;
 using DinkToPdf;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
+using MongoDB.Driver;
 
 namespace App.Services.Services;
 
@@ -31,7 +32,8 @@ public class OrderService(
     IFileService fileService,
     INotificationService notificationService,
     ICartRepository cartRepository,
-    IEmailService emailService) : IOrderService
+    IEmailService emailService,
+    IMongoClient client) : IOrderService
 {
     private readonly ILogger<OrderService> _logger = logger;
     private readonly IMapper _mapper = mapper;
@@ -44,8 +46,8 @@ public class OrderService(
     private readonly INotificationService _notificationService = notificationService;
     private readonly ICartRepository _cartRepository = cartRepository;
     private readonly IEmailService _emailService = emailService;
-    //private readonly IRedisService _redisService = redisService;
-
+    private readonly IMongoClient _client = client;
+    
     public async Task BuyRegistered(
         string userId, 
         DeliveryPayment deliveryPayment, 
@@ -109,9 +111,13 @@ public class OrderService(
                 _logger.LogWarning("Product {ProductId} not found for User {user}, Cart {cart}", cart.ProductId, userId, cart.Id.ToString());
                 throw new KeyNotFoundException($"{cart.ProductId} product not found");
             }
-
             if (product.Quantity < cart.Pcs)
                 throw new InvalidOperationException($"{cart.ProductId} not enough pcs");
+        }
+        
+        foreach (var cart in carts)
+        {
+            var product = await _productRepository.GetByIdAsync(cart.ProductId);
             
             var productMedia = await _productMediaRepository.GetByProductIdAsync(product.Id.ToString());
             

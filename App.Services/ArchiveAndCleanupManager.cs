@@ -34,6 +34,7 @@ public class ArchiveAndCleanupManager : IArchiveAndCleanupManager
         _logger = logger;
         _mapper = mapper;
         _client = client;
+        _fileService = fileService;
         
         _productCollection = context.Products;
         _productMediaCollection = context.ProductMedia;
