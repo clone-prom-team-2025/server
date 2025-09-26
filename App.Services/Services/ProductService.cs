@@ -114,6 +114,12 @@ public class ProductService(
 
             if (role != StoreRole.Owner && role != StoreRole.Manager)
                 throw new AccessDeniedException("User is not owner or manager.");
+            
+            if (!productDto.DeliveryType.HasFlag(ProductDeliveryType.NovaPost))
+                throw new AccessDeniedException("Delivery must include Nova Poshta");
+            
+            if (!productDto.PaymentOptions.HasFlag(PaymentOptions.AfterPayment))
+                throw new AccessDeniedException("Payment options must include After Payment");
 
             var categories = await _categoryRepository.GetCategoryPathAsync(productDto.Category);
             if (categories == null)
