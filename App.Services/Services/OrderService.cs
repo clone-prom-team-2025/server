@@ -118,6 +118,11 @@ public class OrderService(
         foreach (var cart in carts)
         {
             var product = await _productRepository.GetByIdAsync(cart.ProductId);
+            if (product == null)
+            {
+                _logger.LogWarning("Product {ProductId} not found for User {user}, Cart {cart}", cart.ProductId, userId, cart.Id.ToString());
+                throw new KeyNotFoundException($"{cart.ProductId} product not found");
+            }
             
             var productMedia = await _productMediaRepository.GetByProductIdAsync(product.Id.ToString());
             
