@@ -59,11 +59,9 @@ RUN apt-get update && \
     curl \
     gnupg \
     tzdata \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
     
-# Встановлюємо FFmpeg
-RUN apt-get install -y ffmpeg
-
 # Налаштування часового поясу на Europe/Kyiv
 ENV TZ=Europe/Kyiv
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
