@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -217,8 +218,10 @@ public class OrderService(
         };
         await _notificationService.SendNotificationAsync(notification);
         
+        _logger.LogInformation("Start sending email to {Email}", user.Email);
         if (deliveryPayment != DeliveryPayment.AfterPayment) await SendEmailPayCard(user.Email, orders);
         else await SendEmailAfterPayment(user.Email, orderNumber);
+        _logger.LogInformation("Finished sending email to {Email}", user.Email);
 
         _logger.LogInformation("BuyRegistered successfully completed for user {UserId}", userId);
     }
@@ -794,12 +797,22 @@ public class OrderService(
 
     private async Task SendEmailAfterPayment(string email, string orderNumber)
     {
-        var assembly = Assembly.GetExecutingAssembly();
+        _logger.LogInformation("SendEmailAfterPayment started for email {Email} and order {OrderNumber}", email, orderNumber);
 
+        var assembly = Assembly.GetExecutingAssembly();
         await using var streamOrderEmail = assembly.GetManifestResourceStream("App.Services.EmailTemplates.SuccessOrderAfterPayment.html");
-        using var readerOrderEmail = new StreamReader(streamOrderEmail!);
+        if (streamOrderEmail == null)
+        {
+            _logger.LogWarning("Email template 'SuccessOrderAfterPayment.html' not found in assembly resources.");
+            return;
+        }
+
+        using var readerOrderEmail = new StreamReader(streamOrderEmail);
         var htmlOrderEmail = await readerOrderEmail.ReadToEndAsync();
         var readyOrderEmailHtml = htmlOrderEmail.Replace("__ORDERID__", orderNumber);
+
+        _logger.LogInformation("Email HTML prepared for order {OrderNumber}", orderNumber);
+
         var mail = new EmailMessage()
         {
             From = "no-reply@sellpoint.pp.ua",
@@ -807,32 +820,40 @@ public class OrderService(
             Subject = "Ваше замовлення зареєстроване",
             HtmlBody = readyOrderEmailHtml
         };
-        
+
         await _emailService.SendEmailAsync(mail);
+        _logger.LogInformation("Email successfully sent to {Email} for order {OrderNumber}", email, orderNumber);
     }
 
     private async Task SendEmailPayCard(string email, List<Order> order)
     {
-        if (order.Count == 0) return;
+        if (order.Count == 0)
+        {
+            _logger.LogWarning("SendEmailPayCard called with empty order list for email {Email}", email);
+            return;
+        }
+
+        _logger.LogInformation("SendEmailPayCard started for email {Email} with {OrderCount} items", email, order.Count);
+
         decimal totalPrice = 0;
         foreach (var orderItem in order)
         {
             totalPrice += orderItem.TotalPrice;
         }
-        
-        var htmlRows = new List<string>();
+        _logger.LogInformation("Total price calculated: {TotalPrice}", totalPrice);
 
+        var htmlRows = new List<string>();
         foreach (var item in order)
         {
             var row = @"
-<tr>
-    <td>АРТ.№ __ARTNO__ __PRODUCTNAME__</td>
-    <td align='right'>__PRICE__ Б</td>
-</tr>
-<tr>
-    <td style='font-size:12px;'>__QUANTITY__ шт × __PRICE__</td>
-    <td align='right' style='font-size:12px;'>= __TOTALPRICE__</td>
-</tr>";
+    <tr>
+        <td>АРТ.№ __ARTNO__ __PRODUCTNAME__</td>
+        <td align='right'>__PRICE__ Б</td>
+    </tr>
+    <tr>
+        <td style='font-size:12px;'>__QUANTITY__ шт × __PRICE__</td>
+        <td align='right' style='font-size:12px;'>= __TOTALPRICE__</td>
+    </tr>";
 
             row = row.Replace("__ARTNO__", item.MiniProductsInfo.ProductId.ToString())
                 .Replace("__PRODUCTNAME__", item.MiniProductsInfo.ProductName)
@@ -842,15 +863,24 @@ public class OrderService(
 
             htmlRows.Add(row);
         }
-        
+
         var productsHtml = string.Join(Environment.NewLine, htmlRows);
-        
+
         var kyivTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Kyiv");
         var kyivTime = TimeZoneInfo.ConvertTimeFromUtc(order.First().CreatedAt, kyivTimeZone);
         var date = kyivTime.ToString("dd-MM-yyyy HH:mm:ss");
+
+        _logger.LogInformation("Order date converted to Kyiv time: {KyivTime}", date);
+
         var assembly = Assembly.GetExecutingAssembly();
         await using var streamOrder = assembly.GetManifestResourceStream("App.Services.EmailTemplates.Order.html");
-        using var readerOrder = new StreamReader(streamOrder!);
+        if (streamOrder == null)
+        {
+            _logger.LogWarning("Email template 'Order.html' not found in assembly resources.");
+            return;
+        }
+
+        using var readerOrder = new StreamReader(streamOrder);
         var htmlOrder = await readerOrder.ReadToEndAsync();
         var readyOrderHtml = htmlOrder
             .Replace("__ORDERID__", order.First().OrderNumber.ToString())
@@ -861,9 +891,13 @@ public class OrderService(
             .Replace("__PRICETOPAY__", totalPrice.ToString("F2"))
             .Replace("__DATE__", date)
             .Replace("__PRODUCTS__", productsHtml);
-        
+
+        _logger.LogInformation("Order HTML prepared for PDF generation for order {OrderNumber}", order.First().OrderNumber);
+
+        _logger.LogInformation("Starting PDF generation for order {OrderNumber}", order.First().OrderNumber);
         var file = await GenerateOrderPdfAsync(order, readyOrderHtml);
-        
+        _logger.LogInformation("PDF generation completed for order {OrderNumber}", order.First().OrderNumber);
+
         await using var streamOrderEmail = assembly.GetManifestResourceStream("App.Services.EmailTemplates.SuccessOrderWithCard.html");
         using var readerOrderEmail = new StreamReader(streamOrderEmail!);
         var htmlOrderEmail = await readerOrderEmail.ReadToEndAsync();
@@ -872,26 +906,43 @@ public class OrderService(
         var mail = new EmailMessage()
         {
             From = "no-reply@sellpoint.pp.ua",
-            To = [email],
+            To = [ email ],
             Subject = "Ваше замовлення зареєстроване",
             HtmlBody = readyOrderEmailHtml
         };
-        _logger.LogDebug("Order {order}", readyOrderHtml);
-        
+
+        _logger.LogDebug("Order HTML for logging: {ReadyOrderHtml}", readyOrderHtml);
+
         await _emailService.SendEmailAsync(mail, file, $"Замовлення{order.First().OrderNumber}.pdf");
+        _logger.LogInformation("Email with PDF successfully sent to {Email} for order {OrderNumber}", email, order.First().OrderNumber);
     }
+
 
     private static readonly SemaphoreSlim _pdfSemaphore = new SemaphoreSlim(2);
     
     public async Task<byte[]> GenerateOrderPdfAsync(IEnumerable<Order> order, string readyOrderHtml)
     {
-        if (!order.Any()) return Array.Empty<byte>();
+        if (!order.Any())
+        {
+            _logger.LogWarning("GenerateOrderPdfAsync called with empty order list.");
+            return Array.Empty<byte>();
+        }
 
         var orderId = order.First().OrderNumber;
+        _logger.LogInformation("GenerateOrderPdfAsync started for order {OrderId}", orderId);
+
+        var stopwatch = Stopwatch.StartNew();
+        _logger.LogDebug("Waiting to enter PDF semaphore for order {OrderId}", orderId);
+        
         await _pdfSemaphore.WaitAsync();
+        _logger.LogDebug("Entered PDF semaphore for order {OrderId}", orderId);
+
         try
         {
-            var pdfDoc = new HtmlToPdfDocument() {
+            _logger.LogDebug("Preparing HtmlToPdfDocument for order {OrderId}", orderId);
+
+            var pdfDoc = new HtmlToPdfDocument
+            {
                 GlobalSettings = {
                     ColorMode = ColorMode.Color,
                     Orientation = Orientation.Portrait,
@@ -899,19 +950,40 @@ public class OrderService(
                     DocumentTitle = $"Замовлення_{orderId}"
                 },
                 Objects = {
-                    new ObjectSettings()
+                    new ObjectSettings
                     {
                         HtmlContent = readyOrderHtml,
                         WebSettings = { DefaultEncoding = "utf-8" }
                     }
                 }
             };
-            var converter = new SynchronizedConverter(new PdfTools());
-            return await Task.Run(() => converter.Convert(pdfDoc));
+
+            _logger.LogDebug("HtmlToPdfDocument prepared for order {OrderId}", orderId);
+            _logger.LogDebug("Starting PDF conversion for order {OrderId}", orderId);
+
+            byte[] pdfBytes = await Task.Run(() =>
+            {
+                var converter = new SynchronizedConverter(new PdfTools());
+                var result = converter.Convert(pdfDoc);
+                _logger.LogDebug("PDF conversion completed inside Task.Run for order {OrderId}", orderId);
+                return result;
+            });
+
+            stopwatch.Stop();
+            _logger.LogInformation("GenerateOrderPdfAsync completed for order {OrderId} in {ElapsedMilliseconds} ms, PDF size: {PdfSize} bytes", 
+                orderId, stopwatch.ElapsedMilliseconds, pdfBytes.Length);
+
+            return pdfBytes;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during PDF generation for order {OrderId}", orderId);
+            throw;
         }
         finally
         {
             _pdfSemaphore.Release();
+            _logger.LogDebug("Released PDF semaphore for order {OrderId}", orderId);
         }
     }
     
