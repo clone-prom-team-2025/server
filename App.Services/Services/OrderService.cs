@@ -931,16 +931,13 @@ public class OrderService(
         var orderId = order.First().OrderNumber;
         _logger.LogInformation("GenerateOrderPdfAsync started for order {OrderId}", orderId);
 
-        var stopwatch = Stopwatch.StartNew();
-        _logger.LogDebug("Waiting to enter PDF semaphore for order {OrderId}", orderId);
-        
+        _logger.LogDebug("HTML length for order {OrderId}: {HtmlLength}", orderId, readyOrderHtml.Length);
+
         await _pdfSemaphore.WaitAsync();
         _logger.LogDebug("Entered PDF semaphore for order {OrderId}", orderId);
 
         try
         {
-            _logger.LogDebug("Preparing HtmlToPdfDocument for order {OrderId}", orderId);
-
             var pdfDoc = new HtmlToPdfDocument
             {
                 GlobalSettings = {
@@ -959,19 +956,19 @@ public class OrderService(
             };
 
             _logger.LogDebug("HtmlToPdfDocument prepared for order {OrderId}", orderId);
-            _logger.LogDebug("Starting PDF conversion for order {OrderId}", orderId);
 
-            byte[] pdfBytes = await Task.Run(() =>
-            {
-                var converter = new SynchronizedConverter(new PdfTools());
-                var result = converter.Convert(pdfDoc);
-                _logger.LogDebug("PDF conversion completed inside Task.Run for order {OrderId}", orderId);
-                return result;
-            });
+            var convertStopwatch = Stopwatch.StartNew();
+            _logger.LogInformation("Starting PDF conversion for order {OrderId} at {Time}", orderId, DateTime.UtcNow);
 
-            stopwatch.Stop();
-            _logger.LogInformation("GenerateOrderPdfAsync completed for order {OrderId} in {ElapsedMilliseconds} ms, PDF size: {PdfSize} bytes", 
-                orderId, stopwatch.ElapsedMilliseconds, pdfBytes.Length);
+            // ✅ Тест без Task.Run
+            var converter = new SynchronizedConverter(new PdfTools());
+            byte[] pdfBytes = converter.Convert(pdfDoc);
+
+            convertStopwatch.Stop();
+            _logger.LogInformation(
+                "PDF conversion completed for order {OrderId} at {Time}, elapsed {ElapsedMilliseconds} ms, PDF size: {PdfSize} bytes",
+                orderId, DateTime.UtcNow, convertStopwatch.ElapsedMilliseconds, pdfBytes.Length
+            );
 
             return pdfBytes;
         }
