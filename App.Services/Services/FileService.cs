@@ -131,11 +131,9 @@ public class FileService : IFileService
 
         var conversionWebm = FFmpeg.Conversions.New()
             .AddParameter($"-i \"{inputPath}\"", ParameterPosition.PreInput)
-            .AddParameter("-vf scale='min(1280,iw)':'min(720,ih)'") 
-            .AddParameter("-c:v h264_nvenc")                          
-            .AddParameter("-b:v 2M")                                   
-            .AddParameter("-c:a aac")                                
-            .AddParameter("-b:a 128k")                               
+            .AddParameter("-vf scale='min(1280,iw)':'min(720,ih)'")
+            .AddParameter("-c:v libvpx -b:v 2M")
+            .AddParameter("-c:a libvorbis -b:a 128k")
             .SetOutput(outputWebmPath);
 
         await conversionWebm.Start();
