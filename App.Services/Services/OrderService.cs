@@ -880,35 +880,55 @@ public class OrderService(
         
         await _emailService.SendEmailAsync(mail, file, $"Замовлення{order.First().OrderNumber}.pdf");
     }
+
+    private static readonly SemaphoreSlim _pdfSemaphore = new SemaphoreSlim(2);
     
-    private async Task<byte[]> GenerateOrderPdfAsync(IEnumerable<Order> order, string readyOrderHtml)
+    public async Task<byte[]> GenerateOrderPdfAsync(IEnumerable<Order> order, string readyOrderHtml)
     {
         if (!order.Any()) return Array.Empty<byte>();
 
         var orderId = order.First().OrderNumber;
-
-        var pdfDoc = new HtmlToPdfDocument()
+        await _pdfSemaphore.WaitAsync();
+        try
         {
-            GlobalSettings = {
-                ColorMode = ColorMode.Color,
-                Orientation = Orientation.Portrait,
-                PaperSize = PaperKind.A4,
-                DocumentTitle = $"Замовлення_{orderId}"
-            },
-            Objects = {
-                new ObjectSettings()
-                {
-                    HtmlContent = readyOrderHtml,
-                    WebSettings = { DefaultEncoding = "utf-8" }
+            var pdfDoc = new HtmlToPdfDocument() {
+                GlobalSettings = {
+                    ColorMode = ColorMode.Color,
+                    Orientation = Orientation.Portrait,
+                    PaperSize = PaperKind.A4,
+                    DocumentTitle = $"Замовлення_{orderId}"
+                },
+                Objects = {
+                    new ObjectSettings()
+                    {
+                        HtmlContent = readyOrderHtml,
+                        WebSettings = { DefaultEncoding = "utf-8" }
+                    }
                 }
-            }
-        };
-
-        var converter = new SynchronizedConverter(new PdfTools());
-        byte[] pdfBytes = converter.Convert(pdfDoc);
-
-        return pdfBytes;
+            };
+            var converter = new SynchronizedConverter(new PdfTools());
+            return await Task.Run(() => converter.Convert(pdfDoc));
+        }
+        finally
+        {
+            _pdfSemaphore.Release();
+        }
     }
+    
+    // private async Task<byte[]> GenerateOrderPdfAsync(IEnumerable<Order> order, string readyOrderHtml)
+    // {
+    //     if (!order.Any()) return Array.Empty<byte>();
+    //
+    //     var orderId = order.First().OrderNumber;
+    //
+    //     var pdfDoc = new HtmlToPdfDocument()
+    //    
+    //
+    //     var converter = new SynchronizedConverter(new PdfTools());
+    //     byte[] pdfBytes = await Task.Run(() => converter.Convert(pdfDoc));
+    //     
+    //     return pdfBytes;
+    // }
     
     private void SaveVerificationCode(string email, string code, int expires)
     {
