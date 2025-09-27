@@ -8,11 +8,14 @@ public interface IOrderService
 {
     Task BuyRegistered(string userId, DeliveryPayment deliveryPayment, PointsOfDelivery deliveryTo,
         string? phoneNumber, string? firstName, string? lastName, string? middleName);
-
+    Task BuyUnRegistered(Dictionary<string, int> products, DeliveryPayment deliveryPayment, PointsOfDelivery deliveryTo, string email,
+        string phoneNumber, string firstName, string lastName, string? middleName);
     Task<IEnumerable<OrderDto>> GetByUserId(string userId);
+    Task<IEnumerable<GroupedOrders>> GetByUserIdGrouped(string userId);
     Task<IEnumerable<OrderDto>> GetByStoreNeedToAccept(string userId);
     Task<IEnumerable<OrderDto>> GetByStoreAccepted(string userId);
     Task RejectOrder(string userId, string orderId, string reason);
     Task AcceptOrder(string userId, string buyInfoId);
     Task<DeliveryAndPaymentDto> GetDeliveryTypeAsync(string userId);
+    
 }

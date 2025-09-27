@@ -31,11 +31,13 @@
 
     <ItemGroup>
         <EmbeddedResource Include="EmailTemplates/ConfirmEmail.html"/>
-        <EmbeddedResource Include="EmailTemplates/ResetPassword.html"/>
         <EmbeddedResource Include="EmailTemplates/DeleteAccount.html"/>
+        <EmbeddedResource Include="EmailTemplates/EmailCode.html"/>
         <EmbeddedResource Include="EmailTemplates/Order.html"/>
         <EmbeddedResource Include="EmailTemplates/OrderCanceled.html"/>
+        <EmbeddedResource Include="EmailTemplates/OrderCanceledByUser.html"/>
         <EmbeddedResource Include="EmailTemplates/OrderConfirmed.html"/>
+        <EmbeddedResource Include="EmailTemplates/ResetPassword.html"/>
         <EmbeddedResource Include="EmailTemplates/SuccessOrderAfterPayment.html"/>
         <EmbeddedResource Include="EmailTemplates/SuccessOrderWithCard.html"/>
     </ItemGroup>
