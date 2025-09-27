@@ -20,7 +20,8 @@ RUN apt-get update && \
     apt-get install -y dotnet-runtime-9.0 aspnetcore-runtime-9.0
     
 # Встановлюємо бібліотеки для графіки (wkhtmltopdf залежності)
-RUN apt-get install -y \
+RUN apt-get update && \
+    apt-get install -y \
     libxrender1 \
     libxext6 \
     libfontconfig1 \
@@ -54,6 +55,8 @@ RUN apt-get install -y ffmpeg && \
 RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6.1-2/wkhtmltox_0.12.6.1-2.jammy_amd64.deb && \
     dpkg -i wkhtmltox_0.12.6.1-2.jammy_amd64.deb || apt-get install -f -y && \
     rm wkhtmltox_0.12.6.1-2.jammy_amd64.deb
+    
+RUN apt-get install -f -y
 
 # Копіюємо зібраний застосунок
 WORKDIR /app
