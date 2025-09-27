@@ -12,6 +12,7 @@ using App.Core.Models.Sell;
 using App.Core.Utils;
 using AutoMapper;
 using DinkToPdf;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -33,10 +34,11 @@ public class OrderService(
     INotificationService notificationService,
     ICartRepository cartRepository,
     IEmailService emailService,
-    IMongoClient client) : IOrderService
+    IMemoryCache memoryCache) : IOrderService
 {
     private readonly ILogger<OrderService> _logger = logger;
     private readonly IMapper _mapper = mapper;
+    private readonly IMemoryCache _cache = memoryCache;
     private readonly IOrderRepository _orderRepository = orderRepository;
     private readonly IStoreRepository _storeRepository = storeRepository;
     private readonly IUserRepository _userRepository = userRepository;
@@ -46,7 +48,6 @@ public class OrderService(
     private readonly INotificationService _notificationService = notificationService;
     private readonly ICartRepository _cartRepository = cartRepository;
     private readonly IEmailService _emailService = emailService;
-    private readonly IMongoClient _client = client;
     
     public async Task BuyRegistered(
         string userId, 
@@ -72,14 +73,14 @@ public class OrderService(
         if (string.IsNullOrWhiteSpace(userPhone))
         {
             _logger.LogWarning("User {UserId} doesn't have phone number", parsedUserId);
-            throw new KeyNotFoundException("User not found");
+            throw new KeyNotFoundException("Phone number not found");
         }
 
         var carts = await _cartRepository.GetByUserIdAsync(parsedUserId);
         if (carts == null || carts.Count == 0)
         {
             _logger.LogWarning("User {UserId} doesn't have any carts", parsedUserId);
-            throw new KeyNotFoundException("User not found");
+            throw new KeyNotFoundException("Cart not found");
         }
 
         var orders = new List<Order>();
@@ -120,7 +121,7 @@ public class OrderService(
             var product = await _productRepository.GetByIdAsync(cart.ProductId);
             if (product == null)
             {
-                _logger.LogWarning("Product {ProductId} not found for User {user}, Cart {cart}", cart.ProductId, userId, cart.Id.ToString());
+                _logger.LogWarning("Product {ProductId} not found", cart.ProductId);
                 throw new KeyNotFoundException($"{cart.ProductId} product not found");
             }
             
@@ -198,9 +199,7 @@ public class OrderService(
                 }
                 throw new InvalidOperationException($"Failed to buy product {product.Id}");
             }
-
-            //await _redisService.SetObjectAsync($"buy:{buyInfo.Id}", buyInfo, TimeSpan.FromMinutes(30));
-
+            
             orders.Add(buyInfo);
         }
 
@@ -222,6 +221,153 @@ public class OrderService(
         else await SendEmailAfterPayment(user.Email, orderNumber);
 
         _logger.LogInformation("BuyRegistered successfully completed for user {UserId}", userId);
+    }
+    
+    public async Task BuyUnRegistered(
+        Dictionary<string, int> products,
+        DeliveryPayment deliveryPayment, 
+        PointsOfDelivery deliveryTo,
+        string email,
+        string phoneNumber, 
+        string firstName, 
+        string lastName, 
+        string? middleName)
+    {
+        using var scope = _logger.BeginScope("BuyRegistered");
+        _logger.LogInformation("BuyUnRegistered called");
+        
+        if (string.IsNullOrWhiteSpace(phoneNumber))
+        {
+            _logger.LogWarning("Phone number missing");
+            throw new KeyNotFoundException("Phone number not found");
+        }
+
+        var orders = new List<Order>();
+        
+        var bytes = new byte[10];
+        RandomNumberGenerator.Fill(bytes);
+        string orderNumber = Convert.ToBase64String(bytes)
+            .Replace("+", "")
+            .Replace("/", "")
+            .Replace("=", "");
+
+        string Base36Encode(long value)
+        {
+            const string chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            string result = "";
+            do
+            {
+                result = chars[(int)(value % 36)] + result;
+                value /= 36;
+            } while (value > 0);
+            return result;
+        }
+        
+        foreach (var productId in products.Keys)
+        {
+            var product = await _productRepository.GetByIdAsync(ObjectId.Parse(productId));
+            if (product == null)
+            {
+                _logger.LogWarning("Product {ProductId} not found", productId);
+                throw new KeyNotFoundException($"{productId} product not found");
+            }
+            if (product.Quantity < 1)
+                throw new InvalidOperationException($"{productId} not enough pcs");
+        }
+        
+        foreach (var prod in products)
+        {
+            var product = await _productRepository.GetByIdAsync(ObjectId.Parse(prod.Key));
+            if (product == null)
+            {
+                _logger.LogWarning("Product {ProductId} not found", prod.Key);
+                throw new KeyNotFoundException($"{prod.Key} product not found");
+            }
+            
+            var productMedia = await _productMediaRepository.GetByProductIdAsync(product.Id.ToString());
+            
+            Stream? stream = null;
+
+            if (productMedia?.Count > 0)
+            {
+                var firstUrl = productMedia.First().Files.SourceUrl;
+                stream = await WebpDownloader.GetWebpStreamAsync(firstUrl);
+            }
+            
+            var file = new BaseFile();
+            if (stream != null)
+                (file.SourceUrl, file.CompressedUrl, file.SourceFileName, file.CompressedFileName) =
+                    await _fileService.SaveImageAsync(stream, product.Id.ToString(), "orders", 100, 70);
+
+            var buyInfo = new Order
+            {
+                Id = ObjectId.GenerateNewId(),
+                UserId = null,
+                FirstName = firstName,
+                LastName = lastName,
+                MiddleName = middleName,
+                PhoneNumber = phoneNumber,
+                Status = DeliveryStatus.AwaitingConfirmation,
+                Payment = deliveryPayment,
+                DeliveryToInfo = deliveryTo,
+                TotalPrice = (product.DiscountPrice ?? product.Price) * prod.Value,
+                SellerId = product.SellerId,
+                Confirmed = false,
+                Registered = true,
+                Email = email,
+                OrderNumber = orderNumber,
+                CreatedAt = DateTime.UtcNow,
+                
+                MiniProductsInfo = new MiniProductInfo
+                {
+                    ProductId = product.Id,
+                    ProductName = product.Name,
+                    Price = product.Price,
+                    Image = file
+                },
+                Pcs = prod.Value,
+            };
+
+            product.Quantity -= prod.Value;
+            product.QuantityStatus = product.Quantity switch
+            {
+                0 => QuantityStatus.OutOfStock,
+                <= 4 => QuantityStatus.Ending,
+                _ => QuantityStatus.InStock
+            };
+
+            var updateResult = await _productRepository.UpdateAsync(product);
+            if (!updateResult)
+            {
+                _logger.LogWarning("Failed to update product {ProductId}", product.Id);
+                foreach (var created in orders)
+                {
+                    await _orderRepository.DeleteAsync(created.Id);
+                    var prodToRestore = await _productRepository.GetByIdAsync(created.MiniProductsInfo.ProductId);
+                    if (prodToRestore != null)
+                    {
+                        prodToRestore.Quantity += prod.Value;
+                        prodToRestore.QuantityStatus = prodToRestore.Quantity switch
+                        {
+                            0 => QuantityStatus.OutOfStock,
+                            <= 4 => QuantityStatus.Ending,
+                            _ => QuantityStatus.InStock
+                        };
+                        await _productRepository.UpdateAsync(prodToRestore);
+                    }
+                }
+                throw new InvalidOperationException($"Failed to buy product {product.Id}");
+            }
+            
+            orders.Add(buyInfo);
+        }
+
+        await _orderRepository.CreateManyAsync(orders);
+        
+        if (deliveryPayment != DeliveryPayment.AfterPayment) await SendEmailPayCard(email, orders);
+        else await SendEmailAfterPayment(email, orderNumber);
+
+        _logger.LogInformation("BuyUnRegistered successfully completed");
     }
 
     public async Task<DeliveryAndPaymentDto> GetDeliveryTypeAsync(string userId)
@@ -292,6 +438,24 @@ public class OrderService(
         var result = await _orderRepository.GetByUserIdAsync(ObjectId.Parse(userId));
         _logger.LogInformation("Getting buy infos successfully for user {UserId}", userId);
         return _mapper.Map<IEnumerable<OrderDto>>(result);
+    }
+    
+    public async Task<IEnumerable<GroupedOrders>> GetByUserIdGrouped(string userId)
+    {
+        using var scope = _logger.BeginScope("GetByUserId");
+        _logger.LogInformation("Getting buy infos for user {UserId}", userId);
+        var result = await _orderRepository.GetByUserIdAsync(ObjectId.Parse(userId));
+        var mapped = _mapper.Map<IEnumerable<OrderDto>>(result);
+        var grouped = mapped
+            .GroupBy(o => o.OrderNumber)
+            .Select(g => new GroupedOrders
+            {
+                OrderNumber = g.Key,
+                Orders = g.ToList()
+            });
+        
+        _logger.LogInformation("Getting buy infos successfully for user {UserId}", userId);
+        return grouped;
     }
 
     public async Task<IEnumerable<OrderDto>> GetByStoreNeedToAccept(string userId)
@@ -405,6 +569,159 @@ public class OrderService(
         
         await _emailService.SendEmailAsync(mail);
     }
+
+    public async Task CancelOrder(string userId, string orderId)
+    {
+        using var scope = _logger.BeginScope("CancelOrder");
+        _logger.LogInformation("CancelOrder called for userId {UserId}", userId);
+        
+        var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+        if (user == null)
+        {
+            _logger.LogWarning("User not found for User {user}", userId);
+            throw new KeyNotFoundException("User not found");
+        }
+        
+        var order = await _orderRepository.GetByIdAsync(ObjectId.Parse(orderId));
+        if (order == null)
+        {
+            _logger.LogWarning("Order {order} not found for User {user}", orderId, userId);
+            throw new KeyNotFoundException("Order not found");
+        }
+
+        if (order.UserId == null || order.UserId.ToString() != userId)
+        {
+            _logger.LogWarning("User {userId} does not own order {order} and tried to cancel order", userId, orderId);
+            throw new AccessDeniedException("It's not your order");
+        }
+
+        if (order.Status is (DeliveryStatus.Canceled or DeliveryStatus.Declined or DeliveryStatus.Received))
+        {
+            _logger.LogWarning("User {userId} tried cancel order but status is not AwaitingConfirmation or WaitingForShipment", userId);
+        }
+
+        order.Confirmed = false;
+        order.Status = DeliveryStatus.Canceled;
+        
+        var result = await _orderRepository.UpdateAsync(order);
+        if (!result)
+        {
+            _logger.LogWarning("Failed to update order");
+            throw new InvalidOperationException($"Failed to update order");
+        }
+        
+        var assembly = Assembly.GetExecutingAssembly();
+        await using var streamOrderEmail = assembly.GetManifestResourceStream("App.Services.EmailTemplates.OrderCanceledByUser.html");
+        using var readerOrderEmail = new StreamReader(streamOrderEmail!);
+        var htmlOrderEmail = await readerOrderEmail.ReadToEndAsync();
+        var readyOrderEmailHtml = htmlOrderEmail.Replace("__ORDERID__", order.OrderNumber).Replace("__ORDERID2__", order.Id.ToString());
+        var mail = new EmailMessage()
+        {
+            From = "no-reply@sellpoint.pp.ua",
+            To = [user.Email],
+            Subject = "Ваше замовлення скасоване",
+            HtmlBody = readyOrderEmailHtml
+        };
+        await _emailService.SendEmailAsync(mail);
+
+        _logger.LogInformation("Canceled order {OrderId}", order.Id);
+    }
+    
+    public async Task CancelOrdersByOrderNumber(string userId, string orderNumber)
+    {
+        using var scope = _logger.BeginScope("CancelOrder");
+        _logger.LogInformation("CancelOrder called for userId {UserId}", userId);
+        
+        var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+        if (user == null)
+        {
+            _logger.LogWarning("User not found for User {user}", userId);
+            throw new KeyNotFoundException("User not found");
+        }
+        
+        var orders = await _orderRepository.GetByOrderNumberAsync(orderNumber);
+        if (orders == null || orders.Count == 0)
+        {
+            _logger.LogWarning("Order {order} not found for User {user}", orderNumber, userId);
+            throw new KeyNotFoundException("Order not found");
+        }
+        foreach (var order in orders)
+        {
+            if (order.UserId == null || order.UserId.ToString() != userId)
+            {
+                _logger.LogWarning("User {userId} does not own order {order} and tried to cancel order", userId, order.Id.ToString());
+                throw new AccessDeniedException("It's not your order");
+            }
+
+            if (order.Status is (DeliveryStatus.Canceled or DeliveryStatus.Declined or DeliveryStatus.Received))
+            {
+                _logger.LogWarning("User {userId} tried cancel order but status is not AwaitingConfirmation or WaitingForShipment", userId);
+                continue;
+            }
+
+            order.Confirmed = false;
+            order.Status = DeliveryStatus.Canceled;
+        
+            var result = await _orderRepository.UpdateAsync(order);
+            if (!result)
+            {
+                _logger.LogWarning("Failed to update order");
+                throw new InvalidOperationException($"Failed to update order");
+            }
+            _logger.LogInformation("Canceled order {OrderId}", order.Id);
+        }
+        
+        var assembly = Assembly.GetExecutingAssembly();
+        await using var streamOrderEmail = assembly.GetManifestResourceStream("App.Services.EmailTemplates.OrderCanceledByUser.html");
+        using var readerOrderEmail = new StreamReader(streamOrderEmail!);
+        var htmlOrderEmail = await readerOrderEmail.ReadToEndAsync();
+        var readyOrderEmailHtml = htmlOrderEmail.Replace("__ORDERID__", orders.First().OrderNumber).Replace("__ORDERID2__", string.Join(", ", orders.Select(o => o.Id.ToString())));
+        var mail = new EmailMessage()
+        {
+            From = "no-reply@sellpoint.pp.ua",
+            To = [user.Email],
+            Subject = "Ваше замовлення скасоване",
+            HtmlBody = readyOrderEmailHtml
+        };
+        await _emailService.SendEmailAsync(mail);
+    }
+
+    public async Task SendGetOrdersByEmail(string email)
+    {
+        using var scope = _logger.BeginScope("SendGetOrdersByEmail");
+        _logger.LogInformation("SendGetOrdersByEmail called for email {Email}", email);
+        
+        var code = CodeGenerator.GenerateCode(6);
+        var assembly = Assembly.GetExecutingAssembly();
+        await using var stream = assembly.GetManifestResourceStream("App.Services.EmailTemplates.EmailCode.html");
+        using var reader = new StreamReader(stream!);
+        var html = await reader.ReadToEndAsync();
+        var readyEmail = html.Replace("__CODE__", code);
+        
+        SaveVerificationCode(email, code, 15);
+        
+        var mail = new EmailMessage()
+        {
+            From = "no-reply@sellpoint.pp.ua",
+            To = [email],
+            Subject = "Підтвердіть дію",
+            HtmlBody = readyEmail
+        };
+        
+        await _emailService.SendEmailAsync(mail);
+        _logger.LogInformation("SendGetOrdersByEmail successfully completed for email {Email}", email);
+    }
+
+    // public async Task<IEnumerable<BuyUnRegisteredRequest>> GetByEmailCode(string email, string code)
+    // {
+    //     using var scope = _logger.BeginScope("GetByEmailCode");
+    //     _logger.LogInformation("GetByEmailCode called for email {Email}", email);
+    //     if (!TryGetVerificationCode(email, out var savedCode) || savedCode != code)
+    //     {
+    //         _logger.LogWarning("Invalid or expired code for email {Email}", email);
+    //         throw new InvalidOperationException("Invalid or expired code");
+    //     }
+    // }
 
     public async Task AcceptOrder(string userId, string buyInfoId)
     {
@@ -591,5 +908,12 @@ public class OrderService(
         byte[] pdfBytes = converter.Convert(pdfDoc);
 
         return pdfBytes;
+    }
+    
+    private void SaveVerificationCode(string email, string code, int expires)
+    {
+        var cacheEntryOptions = new MemoryCacheEntryOptions()
+            .SetSlidingExpiration(TimeSpan.FromMinutes(expires));
+        _cache.Set($"verify:{email}", code, cacheEntryOptions);
     }
 }

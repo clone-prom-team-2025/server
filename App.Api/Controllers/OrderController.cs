@@ -39,6 +39,19 @@ public class OrderController : ControllerBase
             return NoContent();
         }
     }
+    
+    [HttpPost]
+    public async Task<IActionResult> BuyUnRegistered([FromBody] BuyUnRegisteredRequest buyUnRegisteredRequest)
+    {
+        using (_logger.BeginScope("BuyUnRegistered"))
+        {
+            _logger.LogInformation("BuyUnRegistered action");
+            await _orderService.BuyUnRegistered(buyUnRegisteredRequest.Products, buyUnRegisteredRequest.DeliveryPayment, buyUnRegisteredRequest.DeliveryTo, buyUnRegisteredRequest.Email,
+                buyUnRegisteredRequest.PhoneNumber, buyUnRegisteredRequest.FirstName, buyUnRegisteredRequest.LastName, buyUnRegisteredRequest.MiddleName);
+            _logger.LogInformation("BuyUnRegistered success");
+            return NoContent();
+        }
+    }
 
     [HttpGet]
     [Authorize]
@@ -52,6 +65,22 @@ public class OrderController : ControllerBase
             _logger.LogInformation("GetByUserId action");
             var result = await _orderService.GetByUserId(userId);
             _logger.LogInformation("GetByUserId success");
+            return Ok(result);
+        }
+    }
+
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> GetByUserIdGrouped()
+    {
+        using (_logger.BeginScope("GetByUserIdGrouped"))
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+                return BadRequest();
+            _logger.LogInformation("GetByUserIdGrouped action");
+            var result = await _orderService.GetByUserIdGrouped(userId);
+            _logger.LogInformation("GetByUserIdGrouped success");
             return Ok(result);
         }
     }

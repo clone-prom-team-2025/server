@@ -9,6 +9,7 @@ public interface IOrderRepository
     Task CreateManyAsync(IEnumerable<Order> buyInfos);
     Task<bool> UpdateAsync(Order order);
     Task<Order?> GetByIdAsync(ObjectId id);
+    Task<List<Order>?> GetByOrderNumberAsync(string orderNumber);
     Task<List<Order>?> GetByUserIdAsync(ObjectId userId);
     Task<List<Order>?> GetAllAsync();
     Task<List<Order>?> GetBySellerId(ObjectId sellerId);

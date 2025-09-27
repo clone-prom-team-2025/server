@@ -261,7 +261,7 @@ public class AuthService(
         var html = await reader.ReadToEndAsync();
 
         var resetToken = Guid.NewGuid().ToString("N");
-        var code = GenerateCode(6);
+        var code = CodeGenerator.GenerateCode(6);
         var readyHtml = html.Replace("__CODE__", code).Replace("__TIME__", "15");
 
         var cacheEntryOptions = new MemoryCacheEntryOptions()
@@ -355,7 +355,7 @@ public class AuthService(
         using var reader = new StreamReader(stream!);
         var html = await reader.ReadToEndAsync();
 
-        var code = GenerateCode(6);
+        var code = CodeGenerator.GenerateCode(6);
         var readyHtml = html.Replace("__CODE__", code).Replace("__TIME__", "15");
 
         SaveVerificationCode(user.Email, code, 15);
@@ -434,7 +434,7 @@ public class AuthService(
     /// <param name="email">The user's email address.</param>
     /// <param name="code">The generated verification code.</param>
     /// <param name="expires">Expiration time in minutes.</param>
-    public void SaveVerificationCode(string email, string code, int expires)
+    private void SaveVerificationCode(string email, string code, int expires)
     {
         var cacheEntryOptions = new MemoryCacheEntryOptions()
             .SetSlidingExpiration(TimeSpan.FromMinutes(expires));
@@ -458,18 +458,6 @@ public class AuthService(
     public void RemoveVerificationCode(string email)
     {
         _cache.Remove($"verify:{email}");
-    }
-
-    /// <summary>
-    ///     Generates a random alphanumeric code.
-    /// </summary>
-    /// <param name="length">The length of the code.</param>
-    /// <returns>A string containing the generated code.</returns>
-    private static string GenerateCode(int length)
-    {
-        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        return new string(Enumerable.Range(0, length)
-            .Select(_ => chars[Random.Next(chars.Length)]).ToArray());
     }
 
     private class ResetPassData

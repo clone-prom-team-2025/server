@@ -31,6 +31,12 @@ public class OrderRepository(MongoDbContext context) : IOrderRepository
         return await _buyInfos.Find(filter).FirstOrDefaultAsync();
     }
 
+    public async Task<List<Order>?> GetByOrderNumberAsync(string orderNumber)
+    {
+        var filter = Builders<Order>.Filter.Eq(d => d.OrderNumber, orderNumber);
+        return await _buyInfos.Find(filter).ToListAsync();
+    }
+
     public async Task<List<Order>?> GetByUserIdAsync(ObjectId userId)
     {
         var filter = Builders<Order>.Filter.Eq(d => d.UserId, userId);
