@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using MongoDB.Driver;
+using PuppeteerSharp;
 using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
 using LogEventLevel = Serilog.Events.LogEventLevel;
@@ -223,6 +224,10 @@ builder.Services.AddSignalR();
 
 // --- Create app ---
 var app = builder.Build();
+
+var browserFetcher = new BrowserFetcher();
+var revisionInfo = await browserFetcher.DownloadAsync(); // Скачає лише якщо ще нема
+app.Logger.LogInformation("Chromium predownloaded at {Path}", revisionInfo.Browser.ToString());
 
 // // Включаємо підтримку forwarded headers, щоб коректно отримувати інформацію про клієнта, IP, схему (http/https)
 // app.UseForwardedHeaders(new ForwardedHeadersOptions

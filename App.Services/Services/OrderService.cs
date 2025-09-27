@@ -12,11 +12,12 @@ using App.Core.Models.FileStorage;
 using App.Core.Models.Sell;
 using App.Core.Utils;
 using AutoMapper;
-using DinkToPdf;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using PuppeteerSharp;
+using PuppeteerSharp.Media;
 
 namespace App.Services.Services;
 
@@ -930,7 +931,6 @@ public class OrderService(
 
         var orderId = order.First().OrderNumber;
         _logger.LogInformation("GenerateOrderPdfAsync started for order {OrderId}", orderId);
-
         _logger.LogDebug("HTML length for order {OrderId}: {HtmlLength}", orderId, readyOrderHtml.Length);
 
         await _pdfSemaphore.WaitAsync();
@@ -938,36 +938,39 @@ public class OrderService(
 
         try
         {
-            var pdfDoc = new HtmlToPdfDocument
+            // Завантажуємо Chromium (одноразово, кешується)
+            var browserFetcher = new BrowserFetcher();
+            await browserFetcher.DownloadAsync();
+            
+            var launchOptions = new LaunchOptions
             {
-                GlobalSettings = {
-                    ColorMode = ColorMode.Color,
-                    Orientation = Orientation.Portrait,
-                    PaperSize = PaperKind.A4,
-                    DocumentTitle = $"Замовлення_{orderId}"
-                },
-                Objects = {
-                    new ObjectSettings
-                    {
-                        HtmlContent = readyOrderHtml,
-                        WebSettings = { DefaultEncoding = "utf-8" }
-                    }
-                }
+                Headless = true,
+                Args = new[] { "--no-sandbox", "--disable-setuid-sandbox" }
             };
 
-            _logger.LogDebug("HtmlToPdfDocument prepared for order {OrderId}", orderId);
+            using var browser = await Puppeteer.LaunchAsync(launchOptions);
+            using var page = await browser.NewPageAsync();
 
-            var convertStopwatch = Stopwatch.StartNew();
+            await page.SetContentAsync(readyOrderHtml, new NavigationOptions
+            {
+                WaitUntil = new[] { WaitUntilNavigation.Networkidle0 }
+            });
+
+            var pdfOptions = new PdfOptions
+            {
+                Format = PaperFormat.A4,
+                PrintBackground = true
+            };
+
+            var sw = Stopwatch.StartNew();
             _logger.LogInformation("Starting PDF conversion for order {OrderId} at {Time}", orderId, DateTime.UtcNow);
 
-            // ✅ Тест без Task.Run
-            var converter = new SynchronizedConverter(new PdfTools());
-            byte[] pdfBytes = converter.Convert(pdfDoc);
+            var pdfBytes = await page.PdfDataAsync(pdfOptions);
 
-            convertStopwatch.Stop();
+            sw.Stop();
             _logger.LogInformation(
                 "PDF conversion completed for order {OrderId} at {Time}, elapsed {ElapsedMilliseconds} ms, PDF size: {PdfSize} bytes",
-                orderId, DateTime.UtcNow, convertStopwatch.ElapsedMilliseconds, pdfBytes.Length
+                orderId, DateTime.UtcNow, sw.ElapsedMilliseconds, pdfBytes.Length
             );
 
             return pdfBytes;
