@@ -67,4 +67,14 @@ public class ProductReviewRepository(MongoDbContext mongoDbContext, ILogger<Prod
         var reviews = await _reviewCollection.Find(FilterDefinition<ProductReview>.Empty).ToListAsync();
         return reviews;
     }
+
+    public async Task<List<ProductReview>> GetByUserId(ObjectId userId)
+    {
+        var filter = Builders<ProductReview>.Filter.ElemMatch(
+            r => r.Comments,
+            c => c.UserId == userId
+        );
+
+        return await _reviewCollection.Find(filter).ToListAsync();
+    }
 }

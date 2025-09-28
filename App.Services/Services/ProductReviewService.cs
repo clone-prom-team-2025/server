@@ -253,4 +253,18 @@ public class ProductReviewService(
             return commentDtos;
         }
     }
+
+    public async Task<IEnumerable<ProductReviewDto>?> GetAllCommentsByUserId(string userId)
+    {
+        using (_logger.BeginScope("GetAllCommentsByUserId"))
+        {
+            _logger.LogInformation("GetAllCommentsByUserId called");
+            var reviews = await _repository.GetByUserId(ObjectId.Parse(userId));
+            if (reviews == null || !reviews.Any())
+                throw new KeyNotFoundException("Review not found");
+            var dtos = _mapper.Map<IEnumerable<ProductReviewDto>>(reviews);
+            _logger.LogInformation("GetAllCommentsByUserId success");
+            return dtos;
+        }
+    }
 }
