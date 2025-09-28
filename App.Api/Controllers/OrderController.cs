@@ -39,7 +39,7 @@ public class OrderController : ControllerBase
             return NoContent();
         }
     }
-    
+
     [HttpPost]
     public async Task<IActionResult> BuyUnRegistered([FromBody] BuyUnRegisteredRequest buyUnRegisteredRequest)
     {
@@ -154,5 +154,64 @@ public class OrderController : ControllerBase
         var result = await _orderService.GetDeliveryTypeAsync(userId);
         _logger.LogInformation("GetDeliveryAndPaymentOptions success");
         return Ok(result);
+    }
+
+    [HttpPost]
+    [Authorize]
+    public async Task<IActionResult> CancelOrder(string orderId)
+    {
+        using var scope = _logger.BeginScope("CancelOrder");
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+            return BadRequest();
+        _logger.LogInformation("CancelOrder action");
+        await _orderService.CancelOrder(userId, orderId);
+        _logger.LogInformation("CancelOrder success");
+        return NoContent();
+    }
+
+    [HttpPost]
+    [Authorize]
+    public async Task<IActionResult> CancelOrdersByOrderNumber(string orderNumber)
+    {
+        using var scope = _logger.BeginScope("CancelOrdersByOrderNumber");
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+            return BadRequest();
+        _logger.LogInformation("CancelOrdersByOrderNumber action");
+        await _orderService.CancelOrdersByOrderNumber(userId, orderNumber);
+        _logger.LogInformation("CancelOrdersByOrderNumber success");
+        return NoContent();
+    }
+    
+    [HttpPost]
+    public async Task<IActionResult> SendOrderActionCode(string email)
+    {
+        using var scope = _logger.BeginScope("SendGetOrdersByEmail");
+        _logger.LogInformation("SendGetOrdersByEmail action");
+        await _orderService.SendOrderActionCode(email);
+        _logger.LogInformation("SendGetOrdersByEmail success");
+        return NoContent();
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetByEmailCode(string email, string inputCode)
+    {
+        using var scope = _logger.BeginScope("GetByEmailCode");
+        _logger.LogInformation("GetByEmailCode action");
+        var result = await _orderService.GetByEmailCode(email, inputCode);
+        _logger.LogInformation("GetByEmailCode success");
+        return Ok(result);
+    }
+    
+
+    [HttpPost]
+    public async Task<IActionResult> CancelOrderByEmail(string email, string inputCode, string orderId)
+    {
+        using var scope = _logger.BeginScope("CancelOrderByEmail");
+        _logger.LogInformation("CancelOrderByEmail action");
+        await _orderService.CancelOrderByEmail(email, inputCode, orderId);
+        _logger.LogInformation("CancelOrderByEmail success");
+        return NoContent();
     }
 }

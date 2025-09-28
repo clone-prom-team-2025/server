@@ -17,5 +17,10 @@ public interface IOrderService
     Task RejectOrder(string userId, string orderId, string reason);
     Task AcceptOrder(string userId, string buyInfoId);
     Task<DeliveryAndPaymentDto> GetDeliveryTypeAsync(string userId);
-    
+    Task CancelOrder(string userId, string orderId);
+    Task CancelOrdersByOrderNumber(string userId, string orderNumber);
+    Task SendOrderActionCode(string email);
+    Task<IEnumerable<GroupedOrders>> GetByEmailCode(string email, string inputCode);
+    Task CancelOrderByEmail(string email, string inputCode, string orderId);
+
 }

@@ -13,6 +13,7 @@ public interface IOrderRepository
     Task<List<Order>?> GetByUserIdAsync(ObjectId userId);
     Task<List<Order>?> GetAllAsync();
     Task<List<Order>?> GetBySellerId(ObjectId sellerId);
+    Task<List<Order>?> GetByEmailAsync(string email);
     Task<List<Order>?> GetByProductId(ObjectId productId);
     Task<Order?> GetByTrackingNumber(string trackingNumber);
     Task<bool> DeleteAsync(ObjectId id);
