@@ -11,4 +11,5 @@ public interface IProductReviewRepository
     Task<ProductReview?> GetReviewById(ObjectId id);
     Task<ProductReview?> GetByProductId(ObjectId productId);
     Task<List<ProductReview>?> GetAll();
+    Task<List<ProductReview>?> GetByUserId(ObjectId userId);
 }

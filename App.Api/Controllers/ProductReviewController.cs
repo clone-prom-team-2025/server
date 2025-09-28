@@ -235,4 +235,30 @@ public class ProductReviewController : ControllerBase
             return Ok();
         }
     }
+
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> GetAllReviewsByUserId()
+    {
+        using (_logger.BeginScope("GetAllReviewsByUserId"))
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                _logger.LogError("UserId claim is missing");
+                return BadRequest();
+            }
+
+            _logger.LogInformation("GetAllReviewsByUserId action for UserId={UserId}", userId);
+            var result = await _productReviewService.GetAllCommentsByUserId(userId);
+            if (result == null || !result.Any())
+            {
+                _logger.LogWarning("GetAllReviewsByUserId returned empty for UserId={UserId}", userId);
+                return NotFound();
+            }
+
+            _logger.LogInformation("GetAllReviewsByUserId success for UserId={UserId}", userId);
+            return Ok(result);
+        }
+    }
 }

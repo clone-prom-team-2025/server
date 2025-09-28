@@ -12,4 +12,5 @@ public interface IProductReviewService
     Task SetReactionToReviewComment(string reviewId, string commentUserId, string reactionUserId, bool reaction);
     Task DeleteReactionToReviewComment(string reviewId, string commentUserId, string reactionUserId);
     Task<IEnumerable<ProductReviewCommentDto>?> GetAllCommentsByProductId(string productId);
+    Task<IEnumerable<ProductReviewDto>?> GetAllCommentsByUserId(string userId);
 }
