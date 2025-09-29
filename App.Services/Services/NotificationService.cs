@@ -8,8 +8,8 @@ using MongoDB.Bson;
 namespace App.Services.Services;
 
 /// <summary>
-/// Handles CRUD operations for notifications, including sending,
-/// marking as seen, and deleting notifications for users.
+///     Handles CRUD operations for notifications, including sending,
+///     marking as seen, and deleting notifications for users.
 /// </summary>
 public class NotificationService(
     INotificationRepository notificationRepository,
@@ -25,8 +25,8 @@ public class NotificationService(
     private readonly IUserRepository _userRepository = userRepository;
 
     /// <summary>
-    /// Retrieves all notifications in the system.
-    /// Throws KeyNotFoundException if no notifications exist.
+    ///     Retrieves all notifications in the system.
+    ///     Throws KeyNotFoundException if no notifications exist.
     /// </summary>
     public async Task<IEnumerable<NotificationDto>> GetAllNotificationsAsync()
     {
@@ -41,8 +41,8 @@ public class NotificationService(
     }
 
     /// <summary>
-    /// Retrieves a single notification by its ID.
-    /// Throws KeyNotFoundException if the notification does not exist.
+    ///     Retrieves a single notification by its ID.
+    ///     Throws KeyNotFoundException if the notification does not exist.
     /// </summary>
     public async Task<NotificationDto> GetNotificationAsync(string id)
     {
@@ -57,8 +57,8 @@ public class NotificationService(
     }
 
     /// <summary>
-    /// Retrieves all notifications for a specific user by user ID.
-    /// Throws KeyNotFoundException if no notifications exist.
+    ///     Retrieves all notifications for a specific user by user ID.
+    ///     Throws KeyNotFoundException if no notifications exist.
     /// </summary>
     public async Task<IEnumerable<NotificationDto>> GetAllNotificationsByUserIdAsync(string userId)
     {
@@ -73,8 +73,8 @@ public class NotificationService(
     }
 
     /// <summary>
-    /// Retrieves all notifications that have been seen by a specific user.
-    /// Throws KeyNotFoundException if no notifications exist.
+    ///     Retrieves all notifications that have been seen by a specific user.
+    ///     Throws KeyNotFoundException if no notifications exist.
     /// </summary>
     public async Task<IEnumerable<NotificationDto>> GetSeenNotificationsAsync(string userId)
     {
@@ -89,8 +89,8 @@ public class NotificationService(
     }
 
     /// <summary>
-    /// Retrieves all notifications that have not been seen by a specific user.
-    /// Throws KeyNotFoundException if no notifications exist.
+    ///     Retrieves all notifications that have not been seen by a specific user.
+    ///     Throws KeyNotFoundException if no notifications exist.
     /// </summary>
     public async Task<IEnumerable<NotificationDto>> GetUnSeenNotificationsAsync(string userId)
     {
@@ -105,7 +105,7 @@ public class NotificationService(
     }
 
     /// <summary>
-    /// Sends a notification by creating it in the repository and notifying via hub.
+    ///     Sends a notification by creating it in the repository and notifying via hub.
     /// </summary>
     public async Task SendNotificationAsync(NotificationCreateDto notificationCreateDto)
     {
@@ -124,8 +124,8 @@ public class NotificationService(
     }
 
     /// <summary>
-    /// Deletes a notification by its ID.
-    /// Throws KeyNotFoundException if the notification does not exist.
+    ///     Deletes a notification by its ID.
+    ///     Throws KeyNotFoundException if the notification does not exist.
     /// </summary>
     public async Task DeleteNotificationAsync(string id)
     {
@@ -139,8 +139,8 @@ public class NotificationService(
     }
 
     /// <summary>
-    /// Deletes all notifications in the system.
-    /// Throws KeyNotFoundException if no notifications exist.
+    ///     Deletes all notifications in the system.
+    ///     Throws KeyNotFoundException if no notifications exist.
     /// </summary>
     public async Task DeleteAllNotificationsAsync(string userId)
     {
@@ -154,8 +154,8 @@ public class NotificationService(
     }
 
     /// <summary>
-    /// Deletes all notifications for a specific user.
-    /// Throws KeyNotFoundException if no notifications exist for the user.
+    ///     Deletes all notifications for a specific user.
+    ///     Throws KeyNotFoundException if no notifications exist for the user.
     /// </summary>
     public async Task DeleteAllNotificationsByUserIdAsync(string userId)
     {
@@ -182,8 +182,8 @@ public class NotificationService(
     // }
 
     /// <summary>
-    /// Deletes a seen notification by ID.
-    /// Throws KeyNotFoundException if the notification does not exist.
+    ///     Deletes a seen notification by ID.
+    ///     Throws KeyNotFoundException if the notification does not exist.
     /// </summary>
     public async Task DeleteSeenNotificationAsync(string id)
     {
@@ -197,8 +197,8 @@ public class NotificationService(
     }
 
     /// <summary>
-    /// Deletes all seen notifications in the system.
-    /// Throws KeyNotFoundException if no notifications exist.
+    ///     Deletes all seen notifications in the system.
+    ///     Throws KeyNotFoundException if no notifications exist.
     /// </summary>
     public async Task DeleteAllSeenNotificationsAsync()
     {
@@ -212,8 +212,8 @@ public class NotificationService(
     }
 
     /// <summary>
-    /// Deletes all seen notifications for a specific user.
-    /// Throws KeyNotFoundException if no notifications exist for the user.
+    ///     Deletes all seen notifications for a specific user.
+    ///     Throws KeyNotFoundException if no notifications exist for the user.
     /// </summary>
     public async Task DeleteAllSeenNotificationsByUserIdAsync(string userId)
     {
@@ -227,8 +227,8 @@ public class NotificationService(
     }
 
     /// <summary>
-    /// Deletes all seen notifications associated with a specific notification ID.
-    /// Throws KeyNotFoundException if no notifications exist.
+    ///     Deletes all seen notifications associated with a specific notification ID.
+    ///     Throws KeyNotFoundException if no notifications exist.
     /// </summary>
     public async Task DeleteAllSeenNotificationsByNotificationIdAsync(string notificationId)
     {
@@ -246,9 +246,9 @@ public class NotificationService(
     }
 
     /// <summary>
-    /// Marks a notification as seen by a user.
-    /// Throws KeyNotFoundException if the notification or user does not exist.
-    /// Throws InvalidOperationException if the notification was already marked as seen.
+    ///     Marks a notification as seen by a user.
+    ///     Throws KeyNotFoundException if the notification or user does not exist.
+    ///     Throws InvalidOperationException if the notification was already marked as seen.
     /// </summary>
     public async Task SeeNotificationAsync(string notificationId, string userId)
     {

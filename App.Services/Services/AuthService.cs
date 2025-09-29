@@ -41,13 +41,13 @@ public class AuthService(
     private readonly IFavoriteProductRepository _favoriteProductRepository = favoriteProductRepository;
     private readonly IFavoriteSellerRepository _favoriteSellerRepository = favoriteSellerRepository;
     private readonly IFileService _fileService = fileService;
+    private readonly ILogger<AuthService> _logger = logger;
     private readonly IMapper _mapper = mapper;
     private readonly SessionsOptions _options = options.Value;
     private readonly ISessionHubNotifier _sessionHubNotifier = sessionHubNotifier;
     private readonly IUserSessionRepository _sessionRepository = sessionRepository;
     private readonly IUserRepository _userRepository = userRepository;
-    private readonly ILogger<AuthService> _logger = logger;
-    
+
     public async Task<string?> LoginWithGoogleAsync(string idToken, DeviceInfo deviceInfo)
     {
         GoogleJsonWebSignature.Payload payload;
@@ -69,26 +69,28 @@ public class AuthService(
         if (user == null)
         {
             BaseFile avatar = new();
-            var stream = pictureUrl != null ? await WebpDownloader.GetWebpStreamAsync(pictureUrl) : AvatarGenerator.ByteToStream(AvatarGenerator.CreateAvatar(firstName ?? lastName ?? email));
+            var stream = pictureUrl != null
+                ? await WebpDownloader.GetWebpStreamAsync(pictureUrl)
+                : AvatarGenerator.ByteToStream(AvatarGenerator.CreateAvatar(firstName ?? lastName ?? email));
             var id = ObjectId.GenerateNewId();
             (avatar.SourceUrl, avatar.CompressedUrl, avatar.SourceFileName, avatar.CompressedFileName) =
                 await _fileService.SaveImageAsync(stream, id.ToString(), "user-avatars", 100, 70);
-            
+
             var timestamp = DateTime.UtcNow.ToString("yyyyMMddss");
 
             user = new User(
-                username: $"{email.Split('@')[0]}{timestamp}",
-                password: Guid.NewGuid().ToString("N"),
-                email: email,
-                avatar: avatar,
-                roles: [RoleNames.User],
-                firstName: firstName ?? $"ім'я{timestamp}",
-                lastName: lastName ?? $"прізвище{timestamp}"
+                $"{email.Split('@')[0]}{timestamp}",
+                Guid.NewGuid().ToString("N"),
+                email,
+                avatar,
+                [RoleNames.User],
+                firstName ?? $"ім'я{timestamp}",
+                lastName ?? $"прізвище{timestamp}"
             )
             {
                 Id = id,
                 EmailConfirmed = true,
-                Avatar = avatar,
+                Avatar = avatar
             };
 
             await _userRepository.CreateUserAsync(user);
@@ -118,7 +120,7 @@ public class AuthService(
             await _sessionRepository.ReplaceSessionsAsync(user.Id, sessions);
             return existingSession.Id.ToString();
         }
-        else
+
         {
             var newSession = await _sessionRepository.CreateSessionAsync(user.Id, deviceInfo);
             return newSession?.Id.ToString();
@@ -126,7 +128,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Authenticates a user by email or username and issues a new or existing session token.
+    ///     Authenticates a user by email or username and issues a new or existing session token.
     /// </summary>
     /// <param name="model">The login request containing credentials.</param>
     /// <param name="deviceInfo">The device information for the session.</param>
@@ -166,7 +168,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Registers a new user, generates an avatar, initializes default favorites, and logs them in.
+    ///     Registers a new user, generates an avatar, initializes default favorites, and logs them in.
     /// </summary>
     /// <param name="model">The registration request data.</param>
     /// <param name="deviceInfo">The device information for the session.</param>
@@ -208,7 +210,6 @@ public class AuthService(
     /// </summary>
     /// <param name="sessionId">The ID of the session to revoke.</param>
     /// <exception cref="KeyNotFoundException">Thrown if the session does not exist or is already revoked.</exception>
-
     public async Task LogoutAsync(string sessionId)
     {
         var session = await _sessionRepository.GetSessionAsync(ObjectId.Parse(sessionId));
@@ -221,7 +222,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Revokes a session belonging to a specific user.
+    ///     Revokes a session belonging to a specific user.
     /// </summary>
     /// <param name="sessionId">The session ID.</param>
     /// <param name="userId">The ID of the user owning the session.</param>
@@ -244,7 +245,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Sends a password reset email containing a verification code.
+    ///     Sends a password reset email containing a verification code.
     /// </summary>
     /// <param name="login">The email or username of the account.</param>
     public async Task<string?> SendPasswordReset(string login)
@@ -286,7 +287,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Validates a password reset code.
+    ///     Validates a password reset code.
     /// </summary>
     /// <param name="resetToken">The reset token issued to the user.</param>
     /// <param name="inputCode">The verification code entered by the user.</param>
@@ -311,7 +312,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Resets a user's password using a valid access code.
+    ///     Resets a user's password using a valid access code.
     /// </summary>
     /// <param name="password">The new password to set.</param>
     /// <param name="accessCode">The access code obtained from verification.</param>
@@ -336,7 +337,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Sends an email verification code to the user.
+    ///     Sends an email verification code to the user.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     /// <exception cref="KeyNotFoundException">Thrown if the user does not exist.</exception>
@@ -372,7 +373,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Verifies an email confirmation code and marks the email as confirmed if valid.
+    ///     Verifies an email confirmation code and marks the email as confirmed if valid.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     /// <param name="inputCode">The verification code entered by the user.</param>
@@ -397,7 +398,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Retrieves all active sessions for a given user.
+    ///     Retrieves all active sessions for a given user.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     /// <exception cref="KeyNotFoundException">Thrown if the user is not found.</exception>
@@ -413,7 +414,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Revokes all sessions associated with a given user.
+    ///     Revokes all sessions associated with a given user.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     /// <exception cref="KeyNotFoundException">Thrown if the user is not found.</exception>
@@ -423,13 +424,15 @@ public class AuthService(
         if (user == null)
             throw new KeyNotFoundException("User not found");
         var sessions = await _sessionRepository.GetSessionsAsync(ObjectId.Parse(userId));
-        if (sessions != null) foreach (var session in sessions) session.IsRevoked = true;
+        if (sessions != null)
+            foreach (var session in sessions)
+                session.IsRevoked = true;
         if (!await _userRepository.UpdateUserAsync(user))
             throw new KeyNotFoundException("User not found");
     }
 
     /// <summary>
-    /// Saves a verification code for email confirmation in memory cache.
+    ///     Saves a verification code for email confirmation in memory cache.
     /// </summary>
     /// <param name="email">The user's email address.</param>
     /// <param name="code">The generated verification code.</param>
@@ -442,7 +445,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Retrieves a stored verification code from memory cache.
+    ///     Retrieves a stored verification code from memory cache.
     /// </summary>
     /// <param name="email">The user's email address.</param>
     public string? GetVerificationCode(string email)

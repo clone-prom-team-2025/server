@@ -27,7 +27,7 @@ public class OrderRepository(MongoDbContext context) : IOrderRepository
 
     public async Task<Order?> GetByIdAsync(ObjectId id)
     {
-        var filter = Builders<Order>.Filter.Eq(d =>d.Id, id);
+        var filter = Builders<Order>.Filter.Eq(d => d.Id, id);
         return await _buyInfos.Find(filter).FirstOrDefaultAsync();
     }
 
@@ -40,7 +40,7 @@ public class OrderRepository(MongoDbContext context) : IOrderRepository
     public async Task<List<Order>?> GetByUserIdAsync(ObjectId userId)
     {
         var filter = Builders<Order>.Filter.Eq(d => d.UserId, userId);
-        return await  _buyInfos.Find(filter).ToListAsync();
+        return await _buyInfos.Find(filter).ToListAsync();
     }
 
     public async Task<List<Order>?> GetAllAsync()

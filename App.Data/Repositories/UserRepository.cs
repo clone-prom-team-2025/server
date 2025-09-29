@@ -177,5 +177,4 @@ public class UserRepository(MongoDbContext mongoDbContext) : IUserRepository
         var filter = Builders<User>.Filter.Eq(u => u.PhoneNumber, phoneNumber);
         return await _users.Find(filter).Limit(1).AnyAsync();
     }
-
 }

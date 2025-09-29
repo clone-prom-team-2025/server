@@ -16,7 +16,7 @@ using MongoDB.Bson;
 namespace App.Services.Services;
 
 /// <summary>
-/// Service for managing users, including CRUD operations, roles, bans, and sessions.
+///     Service for managing users, including CRUD operations, roles, bans, and sessions.
 /// </summary>
 public class UserService(
     IUserRepository userRepository,
@@ -46,7 +46,7 @@ public class UserService(
     private readonly IUserSessionRepository _userSessionRepository = userSessionRepository;
 
     /// <summary>
-    /// Retrieves all users without pagination.
+    ///     Retrieves all users without pagination.
     /// </summary>
     public async Task<IEnumerable<UserDto>?> GetAllUsersAsync()
     {
@@ -66,7 +66,7 @@ public class UserService(
     }
 
     /// <summary>
-    /// Retrieves users with pagination.
+    ///     Retrieves users with pagination.
     /// </summary>
     /// <param name="pageNumber">Page number (1-based)</param>
     /// <param name="pageSize">Number of users per page</param>
@@ -89,7 +89,7 @@ public class UserService(
     }
 
     /// <summary>
-    /// Retrieves a user by their ID.
+    ///     Retrieves a user by their ID.
     /// </summary>
     /// <param name="userId">The user ID</param>
     public async Task<UserDto?> GetUserByIdAsync(string userId)
@@ -110,7 +110,7 @@ public class UserService(
     }
 
     /// <summary>
-    /// Retrieves a user by their username.
+    ///     Retrieves a user by their username.
     /// </summary>
     /// <param name="username">The username of the user</param>
     public async Task<UserDto?> GetUserByUsernameAsync(string username)
@@ -131,7 +131,7 @@ public class UserService(
     }
 
     /// <summary>
-    /// Retrieves users by a specific role without pagination.
+    ///     Retrieves users by a specific role without pagination.
     /// </summary>
     /// <param name="role">The role to filter users by</param>
     public async Task<IEnumerable<UserDto>?> GetUsersByRoleAsync(string role)
@@ -150,9 +150,9 @@ public class UserService(
             return _mapper.Map<IEnumerable<UserDto>?>(users);
         }
     }
-    
+
     /// <summary>
-    /// Retrieves users by a specific role with pagination.
+    ///     Retrieves users by a specific role with pagination.
     /// </summary>
     /// <param name="role">The role to filter users by</param>
     /// <param name="pageNumber">Page number (1-based)</param>
@@ -177,7 +177,7 @@ public class UserService(
     }
 
     /// <summary>
-    /// Deletes a user after validating a confirmation code.
+    ///     Deletes a user after validating a confirmation code.
     /// </summary>
     /// <param name="userId">The user ID</param>
     /// <param name="code">The confirmation code</param>
@@ -223,7 +223,7 @@ public class UserService(
     }
 
     /// <summary>
-    /// Sends a code to the user's email for account deletion confirmation.
+    ///     Sends a code to the user's email for account deletion confirmation.
     /// </summary>
     /// <param name="userId">The user ID</param>
     public async Task SendDeleteAccountCodeAsync(string userId)
@@ -260,7 +260,7 @@ public class UserService(
     }
 
     /// <summary>
-    /// Bans a user with specified ban details.
+    ///     Bans a user with specified ban details.
     /// </summary>
     /// <param name="userBlockInfo">Information about the ban</param>
     /// <param name="adminId">ID of the admin performing the ban</param>
@@ -319,7 +319,7 @@ public class UserService(
     }
 
     /// <summary>
-    /// Unbans a user by the ban ID.
+    ///     Unbans a user by the ban ID.
     /// </summary>
     /// <param name="banId">The ban ID</param>
     /// <param name="adminId">ID of the admin performing the unban</param>
@@ -349,7 +349,7 @@ public class UserService(
     }
 
     /// <summary>
-    /// Retrieves all bans for a specific user.
+    ///     Retrieves all bans for a specific user.
     /// </summary>
     /// <param name="userId">The user ID</param>
     public async Task<IEnumerable<UserBanDto>> GetUserBansByUserId(string userId)
@@ -369,7 +369,7 @@ public class UserService(
     }
 
     /// <summary>
-    /// Updates user information.
+    ///     Updates user information.
     /// </summary>
     /// <param name="userId">The user ID</param>
     /// <param name="dto">The updated user information</param>
@@ -415,7 +415,7 @@ public class UserService(
     }
 
     /// <summary>
-    /// Creates an admin user with optional avatar.
+    ///     Creates an admin user with optional avatar.
     /// </summary>
     /// <param name="email">The admin email</param>
     /// <param name="password">The admin password</param>
@@ -423,7 +423,8 @@ public class UserService(
     /// <param name="username">Optional username</param>
     /// <param name="file">Optional avatar file stream</param>
     /// <param name="fileName">Optional avatar file name</param>
-    public async Task<bool> CreateAdminAsync(string email, string password, string firstName, string lastName, string? username, Stream? file, string? fileName)
+    public async Task<bool> CreateAdminAsync(string email, string password, string firstName, string lastName,
+        string? username, Stream? file, string? fileName)
     {
         using (_logger.BeginScope("CreateAdminAsync"))
         {
@@ -439,7 +440,7 @@ public class UserService(
             username ??= email.Substring(0, index);
 
             var normalizedEmail = email.ToLower();
-            
+
             var id = ObjectId.GenerateNewId();
             BaseFile avatar = new();
 
@@ -454,12 +455,13 @@ public class UserService(
                 (avatar.SourceUrl, avatar.CompressedUrl, avatar.SourceFileName, avatar.CompressedFileName) =
                     await _fileService.SaveImageAsync(file, fileName, "user-avatars", 80, 50);
             }
+
             var admin = new User(username, password, normalizedEmail,
                 avatar, [RoleNames.User, RoleNames.Admin], firstName, lastName)
             {
                 Id = id
             };
-            
+
             await _userRepository.CreateUserAsync(admin);
 
             return true;
@@ -467,7 +469,105 @@ public class UserService(
     }
 
     /// <summary>
-    /// Retrieves a user by their email.
+    ///     Assigns a role to a user.
+    /// </summary>
+    /// <param name="userId">The user ID</param>
+    /// <param name="role">The role to assign</param>
+    public async Task SetUserRoleAsync(string userId, string role)
+    {
+        using (_logger.BeginScope("SetAdminAsync"))
+        {
+            _logger.LogInformation("SetAdminAsync called");
+            if (role != RoleNames.Admin && role != RoleNames.User)
+            {
+                _logger.LogWarning("Role doesn't exist");
+                throw new InvalidOperationException("Role doesn't exist");
+            }
+
+            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+            if (user == null)
+            {
+                _logger.LogWarning("User with ID {UserId} not found", userId);
+                throw new KeyNotFoundException("User not found");
+            }
+
+            if (user.Roles.Contains(role))
+            {
+                _logger.LogInformation("User with ID {UserId} already {role}", user.Id, role);
+                throw new InvalidAsynchronousStateException($"User already {role}");
+            }
+
+            user.Roles.Add(role);
+            var result = await _userRepository.UpdateUserAsync(user);
+            if (!result)
+            {
+                _logger.LogWarning("Failed to update user");
+                throw new InvalidOperationException("Failed to update user");
+            }
+
+            var sessions = await _userSessionRepository.GetSessionsAsync(user.Id);
+            if (sessions != null)
+            {
+                foreach (var session in sessions) session.Roles.Add(role);
+                await _userSessionRepository.ReplaceSessionsAsync(user.Id, sessions);
+            }
+
+
+            _logger.LogInformation("User with ID {UserId} updated", user.Id);
+        }
+    }
+
+    /// <summary>
+    ///     Removes a role from a user.
+    /// </summary>
+    /// <param name="userId">The user ID</param>
+    /// <param name="role">The role to remove</param>
+    public async Task DeleteUserRoleAsync(string userId, string role)
+    {
+        using (_logger.BeginScope("DeleteUserRoleAsync"))
+        {
+            _logger.LogInformation("DeleteUserRoleAsync called");
+            if (role != RoleNames.Admin && role != RoleNames.User)
+            {
+                _logger.LogWarning("Role doesn't exist");
+                throw new InvalidOperationException("Role doesn't exist");
+            }
+
+            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+            if (user == null)
+            {
+                _logger.LogWarning("User with ID {UserId} not found", userId);
+                throw new KeyNotFoundException("User not found");
+            }
+
+            if (!user.Roles.Contains(role))
+            {
+                _logger.LogInformation("User with ID {UserId} doesn't have role {role}", user.Id, role);
+                throw new InvalidAsynchronousStateException($"User doesn't have role {role}");
+            }
+
+            user.Roles.Remove(role);
+            var result = await _userRepository.UpdateUserAsync(user);
+            if (!result)
+            {
+                _logger.LogWarning("Failed to update user");
+                throw new InvalidOperationException("Failed to update user");
+            }
+
+            var sessions = await _userSessionRepository.GetSessionsAsync(user.Id);
+            if (sessions != null)
+            {
+                foreach (var session in sessions) session.Roles.Add(role);
+                await _userSessionRepository.ReplaceSessionsAsync(user.Id, sessions);
+            }
+
+
+            _logger.LogInformation("User with ID {UserId} updated", user.Id);
+        }
+    }
+
+    /// <summary>
+    ///     Retrieves a user by their email.
     /// </summary>
     /// <param name="email">The user's email</param>
     public async Task<UserDto?> GetUserByEmailAsync(string email)
@@ -486,9 +586,9 @@ public class UserService(
             return _mapper.Map<UserDto?>(user);
         }
     }
-    
+
     /// <summary>
-    /// Updates user information based on a UserDto.
+    ///     Updates user information based on a UserDto.
     /// </summary>
     /// <param name="user">The user DTO containing updated information</param>
     public async Task<bool> UpdateUserAsync(UserDto user)
@@ -508,105 +608,7 @@ public class UserService(
     }
 
     /// <summary>
-    /// Assigns a role to a user.
-    /// </summary>
-    /// <param name="userId">The user ID</param>
-    /// <param name="role">The role to assign</param>
-    public async Task SetUserRoleAsync(string userId, string role)
-    {
-        using (_logger.BeginScope("SetAdminAsync"))
-        {
-            _logger.LogInformation("SetAdminAsync called");
-            if (role != RoleNames.Admin && role != RoleNames.User)
-            {
-                _logger.LogWarning("Role doesn't exist");    
-                throw new InvalidOperationException("Role doesn't exist");
-            }
-
-            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
-            if (user == null)
-            {
-                _logger.LogWarning("User with ID {UserId} not found", userId);
-                throw new KeyNotFoundException("User not found");
-            }
-
-            if (user.Roles.Contains(role))
-            {
-                _logger.LogInformation("User with ID {UserId} already {role}", user.Id, role);
-                throw new InvalidAsynchronousStateException($"User already {role}");
-            }
-            
-            user.Roles.Add(role);
-            var result = await _userRepository.UpdateUserAsync(user);
-            if (!result)
-            {
-                _logger.LogWarning("Failed to update user");
-                throw new InvalidOperationException("Failed to update user");
-            }
-            
-            var sessions = await _userSessionRepository.GetSessionsAsync(user.Id);
-            if (sessions != null)
-            {
-                foreach (var session in sessions) session.Roles.Add(role);
-                await _userSessionRepository.ReplaceSessionsAsync(user.Id, sessions);            
-            }
-                
-            
-            _logger.LogInformation("User with ID {UserId} updated", user.Id);
-        }
-    }
-    
-    /// <summary>
-    /// Removes a role from a user.
-    /// </summary>
-    /// <param name="userId">The user ID</param>
-    /// <param name="role">The role to remove</param>
-    public async Task DeleteUserRoleAsync(string userId, string role)
-    {
-        using (_logger.BeginScope("DeleteUserRoleAsync"))
-        {
-            _logger.LogInformation("DeleteUserRoleAsync called");
-            if (role != RoleNames.Admin && role != RoleNames.User)
-            {
-                _logger.LogWarning("Role doesn't exist");    
-                throw new InvalidOperationException("Role doesn't exist");
-            }
-
-            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
-            if (user == null)
-            {
-                _logger.LogWarning("User with ID {UserId} not found", userId);
-                throw new KeyNotFoundException("User not found");
-            }
-
-            if (!user.Roles.Contains(role))
-            {
-                _logger.LogInformation("User with ID {UserId} doesn't have role {role}", user.Id, role);
-                throw new InvalidAsynchronousStateException($"User doesn't have role {role}");
-            }
-            
-            user.Roles.Remove(role);
-            var result = await _userRepository.UpdateUserAsync(user);
-            if (!result)
-            {
-                _logger.LogWarning("Failed to update user");
-                throw new InvalidOperationException("Failed to update user");
-            }
-            
-            var sessions = await _userSessionRepository.GetSessionsAsync(user.Id);
-            if (sessions != null)
-            {
-                foreach (var session in sessions) session.Roles.Add(role);
-                await _userSessionRepository.ReplaceSessionsAsync(user.Id, sessions);            
-            }
-                
-            
-            _logger.LogInformation("User with ID {UserId} updated", user.Id);
-        }
-    }
-
-    /// <summary>
-    /// Deletes an admin user along with sessions and avatar files.
+    ///     Deletes an admin user along with sessions and avatar files.
     /// </summary>
     /// <param name="userId">The admin user ID</param>
     public async Task DeleteAdminAsync(string userId)
@@ -626,9 +628,11 @@ public class UserService(
                 _logger.LogWarning("User is not admin");
                 throw new InvalidOperationException("User is not admin");
             }
+
             await _userSessionRepository.DeleteSessionsAsync(user.Id);
             await _fileService.DeleteFileAsync("user-avatars", user.Avatar.SourceFileName);
-            if (user.Avatar.CompressedFileName != null) await _fileService.DeleteFileAsync("user-avatars", user.Avatar.CompressedFileName);
+            if (user.Avatar.CompressedFileName != null)
+                await _fileService.DeleteFileAsync("user-avatars", user.Avatar.CompressedFileName);
             await _userRepository.DeleteUserAsync(user.Id);
             _logger.LogInformation("User with ID {UserId} deleted", user.Id);
         }

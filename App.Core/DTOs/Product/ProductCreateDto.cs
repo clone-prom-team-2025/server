@@ -5,7 +5,8 @@ namespace App.Core.DTOs.Product;
 
 public class ProductCreateDto
 {
-    public ProductCreateDto(string name, string category, List<ProductFeatureDto> features, int quantity, decimal price, PriceType priceType,
+    public ProductCreateDto(string name, string category, List<ProductFeatureDto> features, int quantity, decimal price,
+        PriceType priceType,
         PaymentOptions paymentOptions, ProductDeliveryType deliveryType, decimal? discountPrice = null)
     {
         Name = name;
@@ -40,6 +41,6 @@ public class ProductCreateDto
     public int Quantity { get; set; }
 
     public ProductDeliveryType DeliveryType { get; set; }
-    
-    public ProductDimensions ProductDimensions { get; set; } = new ProductDimensions();
+
+    public ProductDimensions ProductDimensions { get; set; } = new();
 }

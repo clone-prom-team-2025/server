@@ -43,10 +43,10 @@ public class UpdateProductDto
     public decimal? DiscountPrice { get; set; }
 
     public string SellerId { get; set; }
-    
+
     public int Quantity { get; set; }
 
     public ProductDeliveryType DeliveryType { get; set; }
-    
-    public ProductDimensions ProductDimensions { get; set; } = new ProductDimensions();
+
+    public ProductDimensions ProductDimensions { get; set; } = new();
 }

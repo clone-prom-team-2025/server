@@ -11,8 +11,8 @@ namespace App.Api.Controllers;
 [Route("api/[controller]")]
 public class ProductMediaController : ControllerBase
 {
-    private readonly IProductMediaService _productMediaService;
     private readonly ILogger<ProductMediaController> _logger;
+    private readonly IProductMediaService _productMediaService;
 
     public ProductMediaController(IProductMediaService productMediaService, ILogger<ProductMediaController> logger)
     {
@@ -23,7 +23,8 @@ public class ProductMediaController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        using (_logger.BeginScope("GetAll")){
+        using (_logger.BeginScope("GetAll"))
+        {
             _logger.LogInformation("GetAll action");
             var media = await _productMediaService.GetAll();
             _logger.LogInformation("GetAll success");
@@ -35,7 +36,8 @@ public class ProductMediaController : ControllerBase
     [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteMediaAsync(string id)
     {
-        using (_logger.BeginScope("DeleteMediaAsync")){
+        using (_logger.BeginScope("DeleteMediaAsync"))
+        {
             _logger.LogInformation("DeleteMediaAsync action");
             await _productMediaService.DeleteAsync(id);
             _logger.LogInformation("DeleteMediaAsync success");
@@ -47,7 +49,8 @@ public class ProductMediaController : ControllerBase
     [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteMediaByProductIdAsync(string productId)
     {
-        using  (_logger.BeginScope("DeleteMediaByProductIdAsync")){
+        using (_logger.BeginScope("DeleteMediaByProductIdAsync"))
+        {
             _logger.LogInformation("DeleteMediaByProductIdAsync action");
             await _productMediaService.DeleteByProductIdAsync(productId);
             _logger.LogInformation("DeleteMediaByProductIdAsync success");
@@ -58,7 +61,8 @@ public class ProductMediaController : ControllerBase
     [HttpGet("by-product-id/{productId}")]
     public async Task<IActionResult> GetByProdcutIdAsync(string productId)
     {
-        using (_logger.BeginScope("GetByProdcutIdAsync")){
+        using (_logger.BeginScope("GetByProdcutIdAsync"))
+        {
             _logger.LogInformation("GetByProdcutIdAsync action");
             var result = await _productMediaService.GetByProductIdAsync(productId);
             _logger.LogInformation("GetByProdcutIdAsync success");
@@ -119,9 +123,7 @@ public class ProductMediaController : ControllerBase
             finally
             {
                 foreach (var file in filesDto)
-                {
                     if (!string.IsNullOrWhiteSpace(file.Url) && System.IO.File.Exists(file.Url))
-                    {
                         try
                         {
                             System.IO.File.Delete(file.Url);
@@ -130,8 +132,6 @@ public class ProductMediaController : ControllerBase
                         {
                             _logger.LogWarning(deleteEx, $"Failed to delete temp file {file.Url}");
                         }
-                    }
-                }
             }
         }
     }

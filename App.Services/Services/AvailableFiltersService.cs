@@ -6,7 +6,7 @@ using AutoMapper;
 namespace App.Services.Services;
 
 /// <summary>
-/// Provides operations for managing available filters collections.
+///     Provides operations for managing available filters collections.
 /// </summary>
 public class AvailableFiltersService(IAvailableFiltersRepository repository, IMapper mapper) : IAvailableFiltersService
 {
@@ -14,7 +14,7 @@ public class AvailableFiltersService(IAvailableFiltersRepository repository, IMa
     private readonly IAvailableFiltersRepository _repository = repository;
 
     /// <summary>
-    /// Creates a new filter collection.
+    ///     Creates a new filter collection.
     /// </summary>
     /// <param name="filters">The filter collection to create.</param>
     public async Task CreateFilterCollectionAsync(AvailableFiltersCreateDto filters)
@@ -23,7 +23,7 @@ public class AvailableFiltersService(IAvailableFiltersRepository repository, IMa
     }
 
     /// <summary>
-    /// Retrieves all filter collections.
+    ///     Retrieves all filter collections.
     /// </summary>
     public async Task<List<AvailableFiltersDto>> GetAllFiltersAsync()
     {
@@ -31,7 +31,7 @@ public class AvailableFiltersService(IAvailableFiltersRepository repository, IMa
     }
 
     /// <summary>
-    /// Retrieves all filter collections by category.
+    ///     Retrieves all filter collections by category.
     /// </summary>
     /// <param name="categoryId">The ID of the category.</param>
     public async Task<List<AvailableFiltersDto>> GetAllFiltersAsync(string categoryId)
@@ -40,7 +40,7 @@ public class AvailableFiltersService(IAvailableFiltersRepository repository, IMa
     }
 
     /// <summary>
-    /// Removes a filter collection by category ID.
+    ///     Removes a filter collection by category ID.
     /// </summary>
     /// <param name="categoryId">The ID of the category.</param>
     /// <exception cref="InvalidOperationException">Thrown if the collection could not be removed.</exception>
@@ -51,7 +51,7 @@ public class AvailableFiltersService(IAvailableFiltersRepository repository, IMa
     }
 
     /// <summary>
-    /// Removes a filter collection by its ID.
+    ///     Removes a filter collection by its ID.
     /// </summary>
     /// <param name="id">The collection ID.</param>
     /// <exception cref="InvalidOperationException">Thrown if the collection could not be removed.</exception>
@@ -62,7 +62,7 @@ public class AvailableFiltersService(IAvailableFiltersRepository repository, IMa
     }
 
     /// <summary>
-    /// Adds filters to a collection by category ID.
+    ///     Adds filters to a collection by category ID.
     /// </summary>
     /// <param name="categoryId">The ID of the category.</param>
     /// <param name="filtersDto">The filters to add.</param>
@@ -72,7 +72,7 @@ public class AvailableFiltersService(IAvailableFiltersRepository repository, IMa
     }
 
     /// <summary>
-    /// Removes filters from a collection by category ID.
+    ///     Removes filters from a collection by category ID.
     /// </summary>
     /// <param name="categoryId">The ID of the category.</param>
     /// <param name="values">The filter values to remove.</param>
@@ -82,9 +82,9 @@ public class AvailableFiltersService(IAvailableFiltersRepository repository, IMa
         if (!await _repository.RemoveFilterFromCollectionAsync(categoryId, values))
             throw new InvalidOperationException("Could not remove filter");
     }
-    
+
     /// <summary>
-    /// Updates a filter collection by its ID.
+    ///     Updates a filter collection by its ID.
     /// </summary>
     /// <param name="id">The collection ID.</param>
     /// <param name="filters">The updated filters.</param>
@@ -96,7 +96,7 @@ public class AvailableFiltersService(IAvailableFiltersRepository repository, IMa
     }
 
     /// <summary>
-    /// Updates a filter collection.
+    ///     Updates a filter collection.
     /// </summary>
     /// <param name="updatedFilters">The updated filter collection.</param>
     /// <exception cref="InvalidOperationException">Thrown if the collection could not be updated.</exception>
