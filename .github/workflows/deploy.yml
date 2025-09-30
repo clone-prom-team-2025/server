@@ -41,7 +41,7 @@ jobs:
              .EmailSettings.Accounts.NoReply.Username=$smtp_nu |
              .EmailSettings.Accounts.NoReply.Password=$smtp_np |
              .EmailSettings.Accounts.Support.Username=$smtp_su |
-             .EmailSettings.Accounts.Support.Password=$smtp_sp' |
+             .EmailSettings.Accounts.Support.Password=$smtp_sp |
               GoogleAuth.SecretKey=$gsecret' \
              appsettings.json > tmp.json && mv tmp.json appsettings.json
         env:
