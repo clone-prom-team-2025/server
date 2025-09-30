@@ -42,8 +42,9 @@ jobs:
              .EmailSettings.Accounts.NoReply.Password=$smtp_np |
              .EmailSettings.Accounts.Support.Username=$smtp_su |
              .EmailSettings.Accounts.Support.Password=$smtp_sp |
-              GoogleAuth.SecretKey=$gsecret' \
-             appsettings.json > tmp.json && mv tmp.json appsettings.json
+             .GoogleAuth = { SecretKey: $gsecret }' \
+            appsettings.json > tmp.json && mv tmp.json appsettings.json
+  
         env:
           MONGO_CONN: ${{ secrets.MONGO_CONN }}
           CLOUDFLARE_KEY: ${{ secrets.CLOUDFLARE_KEY }}
