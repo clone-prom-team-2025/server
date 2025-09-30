@@ -53,19 +53,14 @@ public class AuthService(
     public async Task<string?> LoginWithGoogleAsync(string idToken, DeviceInfo deviceInfo)
     {
         GoogleJsonWebSignature.Payload payload;
-        var validationSettings = new GoogleJsonWebSignature.ValidationSettings
-        {
-            Audience = [_googleAuthOptions.SecretKey]
-        };
         try
         {
-            payload = await GoogleJsonWebSignature.ValidateAsync(idToken, validationSettings);
+            payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
         }
-        catch (InvalidJwtException ex)
+        catch (Exception)
         {
-            throw new UnauthorizedAccessException("Invalid Google token", ex);
+            throw new UnauthorizedAccessException("Invalid Google token");
         }
-
 
         var email = payload.Email;
         var firstName = payload.GivenName;
