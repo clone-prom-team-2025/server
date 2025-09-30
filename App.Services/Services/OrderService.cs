@@ -457,7 +457,13 @@ public class OrderService(
     {
         using var scope = _logger.BeginScope("GetByUserId");
         _logger.LogInformation("Getting buy infos for user {UserId}", userId);
-        var result = await _orderRepository.GetByUserIdAsync(ObjectId.Parse(userId));
+        var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+        if (user == null)
+        {
+            _logger.LogWarning("User {UserId} not found", userId);
+            throw new KeyNotFoundException("User not found");
+        }
+        var result = await _orderRepository.GetByEmailAsync(user.Email);
         _logger.LogInformation("Getting buy infos successfully for user {UserId}", userId);
         return _mapper.Map<IEnumerable<OrderDto>>(result);
     }
