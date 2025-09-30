@@ -66,11 +66,16 @@ public class ProductReviewService(
             var review = await _repository.GetByProductId(ObjectId.Parse(productId));
             if (review == null)
                 throw new KeyNotFoundException("Review not found");
+            
+            _logger.LogDebug("RemoveCommentFromReviewByProductId: {comm}", review.ToJson());
 
-            var removedCount = review.Comments.RemoveAll(c => c.UserId == ObjectId.Parse(productId));
+            var removedCount = review.Comments.RemoveAll(c => c.UserId == ObjectId.Parse(userId));
 
             if (removedCount == 0)
-                throw new InvalidOperationException("Comment doesn't exist");
+            {
+                _logger.LogInformation("No comment found for UserId={UserId}", userId); 
+                throw new KeyNotFoundException("Comment doesn't exist");
+            }
 
             var result = await _repository.UpdateReview(review);
             if (!result)
