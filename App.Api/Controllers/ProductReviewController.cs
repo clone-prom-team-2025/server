@@ -263,7 +263,6 @@ public class ProductReviewController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize]
     public async Task<IActionResult> GetAllReviewsByStoreId(string storeId)
     {
         using (_logger.BeginScope("GetAllReviewsByStoreId"))
