@@ -240,7 +240,7 @@ public class CartController : ControllerBase
             _logger.LogInformation("IsProductInCart called with UserId={UserId}", userIdClaim.Value);
 
             var result = await _cartService.IsProductInCartAsync(productId, userIdClaim.Value);
-            _logger.LogInformation("IsProductInCart returned: {result}", result);           
+            _logger.LogInformation("IsProductInCart returned: {result}", result);
             _logger.LogInformation("IsProductInCart success");
 
             return Ok(result);

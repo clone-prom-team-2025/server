@@ -53,7 +53,7 @@ public class NotificationRepository(MongoDbContext context) : INotificationRepos
             {
                 "$project", new BsonDocument
                 {
-                    { "SeenInfo", 0 } 
+                    { "SeenInfo", 0 }
                 }
             }
         };
@@ -78,7 +78,7 @@ public class NotificationRepository(MongoDbContext context) : INotificationRepos
                 }
             }
         };
-        
+
         var match = new BsonDocument
         {
             {
@@ -194,9 +194,11 @@ public class NotificationRepository(MongoDbContext context) : INotificationRepos
                 "$match", new BsonDocument
                 {
                     { "_id", notificationId },
-                    { "SeenInfo", new BsonDocument
+                    {
+                        "SeenInfo", new BsonDocument
                         {
-                            { "$not", new BsonDocument
+                            {
+                                "$not", new BsonDocument
                                 {
                                     { "$elemMatch", new BsonDocument("UserId", userId) }
                                 }

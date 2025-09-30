@@ -12,7 +12,7 @@ using MongoDB.Bson;
 namespace App.Services.Services;
 
 /// <summary>
-/// Provides services for managing store creation requests, stores, and store members.
+///     Provides services for managing store creation requests, stores, and store members.
 /// </summary>
 public class StoreService(
     IStoreCreateRequestRepository requestRepository,
@@ -31,8 +31,8 @@ public class StoreService(
     private readonly IUserRepository _userRepository = userRepository;
 
     /// <summary>
-    /// Creates a store creation request and uploads an avatar image.
-    /// Throws InvalidOperationException if the uploaded file is not an image or creation fails.
+    ///     Creates a store creation request and uploads an avatar image.
+    ///     Throws InvalidOperationException if the uploaded file is not an image or creation fails.
     /// </summary>
     public async Task CreateRequest(CreateStoreCreateRequestDto dto, string userId, Stream stream,
         string fileName)
@@ -71,8 +71,8 @@ public class StoreService(
     }
 
     /// <summary>
-    /// Deletes a store creation request and associated avatar files.
-    /// Throws InvalidOperationException if deletion fails.
+    ///     Deletes a store creation request and associated avatar files.
+    ///     Throws InvalidOperationException if deletion fails.
     /// </summary>
     public async Task DeleteRequest(string requestId)
     {
@@ -98,9 +98,9 @@ public class StoreService(
     }
 
     /// <summary>
-    /// Updates an existing store creation request.
-    /// Throws KeyNotFoundException if the request is not found.
-    /// Throws InvalidOperationException if the update fails.
+    ///     Updates an existing store creation request.
+    ///     Throws KeyNotFoundException if the request is not found.
+    ///     Throws InvalidOperationException if the update fails.
     /// </summary>
     public async Task UpdateRequest(UpdateStoreCreateRequestDto dto)
     {
@@ -129,7 +129,7 @@ public class StoreService(
     }
 
     /// <summary>
-    /// Retrieves all store creation requests.
+    ///     Retrieves all store creation requests.
     /// </summary>
     public async Task<IEnumerable<StoreCreateRequestDto>> GetAllRequests()
     {
@@ -143,8 +143,8 @@ public class StoreService(
     }
 
     /// <summary>
-    /// Retrieves a store creation request by its ID.
-    /// Throws KeyNotFoundException if the request is not found.
+    ///     Retrieves a store creation request by its ID.
+    ///     Throws KeyNotFoundException if the request is not found.
     /// </summary>
     public async Task<StoreCreateRequestDto?> GetRequestById(string requestId)
     {
@@ -164,8 +164,8 @@ public class StoreService(
     }
 
     /// <summary>
-    /// Retrieves a store creation request by user ID.
-    /// Throws KeyNotFoundException if the request is not found.
+    ///     Retrieves a store creation request by user ID.
+    ///     Throws KeyNotFoundException if the request is not found.
     /// </summary>
     public async Task<StoreCreateRequestDto?> GetRequestByUserId(string userId)
     {
@@ -185,7 +185,7 @@ public class StoreService(
     }
 
     /// <summary>
-    /// Retrieves all store requests approved by a specific admin.
+    ///     Retrieves all store requests approved by a specific admin.
     /// </summary>
     public async Task<IEnumerable<StoreCreateRequestDto>> GetRequestApprovedByAdminId(string adminId)
     {
@@ -193,14 +193,15 @@ public class StoreService(
         {
             _logger.LogInformation("GetRequestApprovedByAdminId called with adminId={adminId}", adminId);
             var result = await _requestRepository.GetApprovedByAdminId(ObjectId.Parse(adminId));
-            if (result != null) _logger.LogDebug("Fetched {Count} requests for AdminId={UserId}", result.Count, adminId);
+            if (result != null)
+                _logger.LogDebug("Fetched {Count} requests for AdminId={UserId}", result.Count, adminId);
             _logger.LogInformation("GetRequestApprovedByAdminId succeeded");
             return _mapper.Map<IEnumerable<StoreCreateRequestDto>>(result);
         }
     }
 
     /// <summary>
-    /// Retrieves all store requests rejected by a specific admin.
+    ///     Retrieves all store requests rejected by a specific admin.
     /// </summary>
     public async Task<IEnumerable<StoreCreateRequestDto>> GetRequestRejectedByAdminId(string adminId)
     {
@@ -208,16 +209,17 @@ public class StoreService(
         {
             _logger.LogInformation("GetRequestRejectedByAdminId called with adminId={adminId}", adminId);
             var result = await _requestRepository.GetRejectedByAdminId(ObjectId.Parse(adminId));
-            if (result != null) _logger.LogDebug("Fetched {Count} requests for AdminId={UserId}", result.Count, adminId);
+            if (result != null)
+                _logger.LogDebug("Fetched {Count} requests for AdminId={UserId}", result.Count, adminId);
             _logger.LogInformation("GetRequestRejectedByAdminId succeeded");
             return _mapper.Map<IEnumerable<StoreCreateRequestDto>>(result);
         }
     }
 
     /// <summary>
-    /// Approves a store creation request and creates the store.
-    /// Throws KeyNotFoundException if the request is not found.
-    /// Throws InvalidOperationException if the request is already approved or update fails.
+    ///     Approves a store creation request and creates the store.
+    ///     Throws KeyNotFoundException if the request is not found.
+    ///     Throws InvalidOperationException if the request is already approved or update fails.
     /// </summary>
     public async Task ApproveRequest(string requestId, string adminId)
     {
@@ -259,9 +261,9 @@ public class StoreService(
     }
 
     /// <summary>
-    /// Rejects a store creation request.
-    /// Throws KeyNotFoundException if the request is not found.
-    /// Throws InvalidOperationException if the request is already approved, rejected, or update fails.
+    ///     Rejects a store creation request.
+    ///     Throws KeyNotFoundException if the request is not found.
+    ///     Throws InvalidOperationException if the request is already approved, rejected, or update fails.
     /// </summary>
     public async Task RejectRequest(string requestId, string adminId)
     {
@@ -303,10 +305,10 @@ public class StoreService(
     }
 
     /// <summary>
-    /// Deletes a store if the user is the owner or an admin.
-    /// Throws KeyNotFoundException if the user or store is not found.
-    /// Throws AccessDeniedException if the user is not the owner or admin.
-    /// Throws InvalidOperationException if deletion fails.
+    ///     Deletes a store if the user is the owner or an admin.
+    ///     Throws KeyNotFoundException if the user or store is not found.
+    ///     Throws AccessDeniedException if the user is not the owner or admin.
+    ///     Throws InvalidOperationException if deletion fails.
     /// </summary>
     public async Task DeleteStore(string storeId, string userId)
     {
@@ -345,7 +347,7 @@ public class StoreService(
     }
 
     /// <summary>
-    /// Retrieves a store by its ID.
+    ///     Retrieves a store by its ID.
     /// </summary>
     public async Task<StoreDto?> GetStoreById(string storeId)
     {
@@ -359,7 +361,7 @@ public class StoreService(
     }
 
     /// <summary>
-    /// Retrieves all stores.
+    ///     Retrieves all stores.
     /// </summary>
     public async Task<IEnumerable<StoreDto>?> GetStores()
     {
@@ -373,10 +375,10 @@ public class StoreService(
     }
 
     /// <summary>
-    /// Adds a member to the store with a specific role.
-    /// Throws InvalidOperationException if the user tries to add themselves or update fails.
-    /// Throws KeyNotFoundException if the user, member, or store is not found.
-    /// Throws AccessDeniedException if the user is not the store owner.
+    ///     Adds a member to the store with a specific role.
+    ///     Throws InvalidOperationException if the user tries to add themselves or update fails.
+    ///     Throws KeyNotFoundException if the user, member, or store is not found.
+    ///     Throws AccessDeniedException if the user is not the store owner.
     /// </summary>
     public async Task AddMemberToStoreAsync(string userId, string memberId, StoreRole role)
     {
@@ -430,10 +432,10 @@ public class StoreService(
     }
 
     /// <summary>
-    /// Removes a member from the store.
-    /// Throws InvalidOperationException if the user tries to remove themselves or update fails.
-    /// Throws KeyNotFoundException if the user or store is not found.
-    /// Throws AccessDeniedException if the user is not the store owner.
+    ///     Removes a member from the store.
+    ///     Throws InvalidOperationException if the user tries to remove themselves or update fails.
+    ///     Throws KeyNotFoundException if the user or store is not found.
+    ///     Throws AccessDeniedException if the user is not the store owner.
     /// </summary>
     public async Task RemoveMemberFromStoreAsync(string userId, string memberId)
     {
@@ -479,9 +481,9 @@ public class StoreService(
     }
 
     /// <summary>
-    /// Retrieves store members with their roles.
-    /// Throws KeyNotFoundException if the user or store is not found.
-    /// Throws AccessDeniedException if the user is not the owner or admin.
+    ///     Retrieves store members with their roles.
+    ///     Throws KeyNotFoundException if the user or store is not found.
+    ///     Throws AccessDeniedException if the user is not the owner or admin.
     /// </summary>
     public async Task<Dictionary<string, string>?> GetStoreMembers(string userId, string? storeId)
     {

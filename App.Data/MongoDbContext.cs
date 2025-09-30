@@ -22,7 +22,7 @@ namespace App.Data;
 public class MongoDbContext
 {
     private const int ProductArchiveLifetime = 30;
-    
+
     private readonly IMongoDatabase _database;
 
     /// <summary>
@@ -88,15 +88,15 @@ public class MongoDbContext
 
     public IMongoCollection<FavoriteSeller> FavoriteSellers =>
         _database.GetCollection<FavoriteSeller>("FavoriteSellers");
-    
+
     public IMongoCollection<Order> Orders => _database.GetCollection<Order>("Orders");
-        
+
     public IMongoCollection<ProductArchive> ProductArchives =>
         _database.GetCollection<ProductArchive>("ProductArchives");
-    
+
     public IMongoCollection<ProductMediaArchive> ProductMediaArchives =>
         _database.GetCollection<ProductMediaArchive>("ProductMediaArchives");
-    
+
     public IMongoCollection<ProductReviewArchive> ProductReviewArchives =>
         _database.GetCollection<ProductReviewArchive>("ProductReviewArchives");
 

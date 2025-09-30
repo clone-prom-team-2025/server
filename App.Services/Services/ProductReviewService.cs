@@ -1,4 +1,5 @@
 using App.Core.DTOs.Product.Review;
+using App.Core.DTOs.Store;
 using App.Core.Interfaces;
 using App.Core.Models.Product.Review;
 using AutoMapper;
@@ -13,21 +14,23 @@ namespace App.Services.Services;
 public class ProductReviewService(
     IProductReviewRepository repository,
     IMapper mapper,
-    IProductRepository productRepository, ILogger<ProductReviewService> logger) : IProductReviewService
+    IProductRepository productRepository,
+    ILogger<ProductReviewService> logger) : IProductReviewService
 {
+    private readonly ILogger<ProductReviewService> _logger = logger;
     private readonly IMapper _mapper = mapper;
     private readonly IProductRepository _productRepository = productRepository;
     private readonly IProductReviewRepository _repository = repository;
-    private readonly ILogger<ProductReviewService> _logger = logger;
 
     /// <summary>
-    /// Adds a comment to a product review. Creates a review if it does not exist.
-    /// Throws KeyNotFoundException if the product does not exist.
-    /// Throws InvalidOperationException if the comment already exists.
+    ///     Adds a comment to a product review. Creates a review if it does not exist.
+    ///     Throws KeyNotFoundException if the product does not exist.
+    ///     Throws InvalidOperationException if the comment already exists.
     /// </summary>
     public async Task AddCommentToReviewByProductId(string productId, ProductReviewCommentCreateDto comment)
     {
-        using (_logger.BeginScope("AddCommentToReviewByProductId")){
+        using (_logger.BeginScope("AddCommentToReviewByProductId"))
+        {
             _logger.LogInformation("AddCommentToReviewByProductId called");
             var product = await _productRepository.GetByIdAsync(ObjectId.Parse(productId));
             if (product == null)
@@ -50,18 +53,20 @@ public class ProductReviewService(
                 _logger.LogError("UpdateReviewAsync failed");
                 throw new InvalidOperationException("Update review failed");
             }
+
             _logger.LogInformation("UpdateReviewAsync success");
         }
     }
 
     /// <summary>
-    /// Removes a comment from a product review by product ID and user ID.
-    /// Throws KeyNotFoundException if the review does not exist.
-    /// Throws InvalidOperationException if the comment does not exist.
+    ///     Removes a comment from a product review by product ID and user ID.
+    ///     Throws KeyNotFoundException if the review does not exist.
+    ///     Throws InvalidOperationException if the comment does not exist.
     /// </summary>
     public async Task RemoveCommentFromReviewByProductId(string productId, string userId)
     {
-        using (_logger.BeginScope("RemoveCommentFromReviewByProductId")){
+        using (_logger.BeginScope("RemoveCommentFromReviewByProductId"))
+        {
             _logger.LogInformation("RemoveCommentFromReviewByProductId called");
             var review = await _repository.GetByProductId(ObjectId.Parse(productId));
             if (review == null)
@@ -78,18 +83,20 @@ public class ProductReviewService(
                 _logger.LogError("UpdateReviewAsync failed");
                 throw new InvalidOperationException("Update review failed");
             }
+
             _logger.LogInformation("UpdateReviewAsync success");
         }
     }
 
     /// <summary>
-    /// Retrieves the review for a specific product by product ID.
-    /// Calculates rating counts and average rating.
-    /// Throws KeyNotFoundException if the product or review does not exist.
+    ///     Retrieves the review for a specific product by product ID.
+    ///     Calculates rating counts and average rating.
+    ///     Throws KeyNotFoundException if the product or review does not exist.
     /// </summary>
     public async Task<ProductReviewDto?> GetReviewByProductId(string productId)
     {
-        using (_logger.BeginScope("GetReviewByProductId")) {
+        using (_logger.BeginScope("GetReviewByProductId"))
+        {
             _logger.LogInformation("GetReviewByProductId called");
             var review = await _repository.GetByProductId(ObjectId.Parse(productId));
             if (review == null)
@@ -119,13 +126,14 @@ public class ProductReviewService(
     }
 
     /// <summary>
-    /// Retrieves a review by its review ID.
-    /// Calculates rating counts and average rating.
-    /// Throws KeyNotFoundException if the review does not exist.
+    ///     Retrieves a review by its review ID.
+    ///     Calculates rating counts and average rating.
+    ///     Throws KeyNotFoundException if the review does not exist.
     /// </summary>
     public async Task<ProductReviewDto?> GetReviewById(string reviewId)
     {
-        using (_logger.BeginScope("GetReviewById")) {
+        using (_logger.BeginScope("GetReviewById"))
+        {
             _logger.LogInformation("GetReviewById called");
             var review = await _repository.GetReviewById(ObjectId.Parse(reviewId));
             if (review == null)
@@ -154,12 +162,13 @@ public class ProductReviewService(
     }
 
     /// <summary>
-    /// Clears all reviews for a product and resets the review collection.
-    /// Throws InvalidOperationException if deletion or creation fails.
+    ///     Clears all reviews for a product and resets the review collection.
+    ///     Throws InvalidOperationException if deletion or creation fails.
     /// </summary>
     public async Task ClearAllReviewsByProductId(string productId)
     {
-        using (_logger.BeginScope("ClearAllReviewsByProductId")){
+        using (_logger.BeginScope("ClearAllReviewsByProductId"))
+        {
             _logger.LogInformation("ClearAllReviewsByProductId called");
             var deleteResult = await _repository.DeleteReview(ObjectId.Parse(productId));
             if (!deleteResult)
@@ -170,19 +179,21 @@ public class ProductReviewService(
                 _logger.LogError("CreateReviewAsync failed");
                 throw new InvalidOperationException("Create review failed");
             }
+
             _logger.LogInformation("CreateReviewAsync success");
         }
     }
 
     /// <summary>
-    /// Adds or updates a reaction to a review comment by a specific user.
-    /// Throws KeyNotFoundException if the review or comment does not exist.
-    /// Throws InvalidOperationException if the update fails.
+    ///     Adds or updates a reaction to a review comment by a specific user.
+    ///     Throws KeyNotFoundException if the review or comment does not exist.
+    ///     Throws InvalidOperationException if the update fails.
     /// </summary>
     public async Task SetReactionToReviewComment(string productId, string commentUserId, string reactionUserId,
         bool reaction)
     {
-        using (_logger.BeginScope("SetReactionToReviewComment")){
+        using (_logger.BeginScope("SetReactionToReviewComment"))
+        {
             _logger.LogInformation("SetReactionToReviewComment called");
             var review = await _repository.GetByProductId(ObjectId.Parse(productId));
             if (review == null)
@@ -199,18 +210,20 @@ public class ProductReviewService(
                 _logger.LogError("UpdateReviewAsync failed");
                 throw new InvalidOperationException("Update review failed");
             }
+
             _logger.LogInformation("SetReactionToReviewComment success");
         }
     }
 
     /// <summary>
-    /// Removes a reaction from a review comment by a specific user.
-    /// Throws KeyNotFoundException if the review or comment does not exist.
-    /// Throws InvalidOperationException if the reaction is invalid or update fails.
+    ///     Removes a reaction from a review comment by a specific user.
+    ///     Throws KeyNotFoundException if the review or comment does not exist.
+    ///     Throws InvalidOperationException if the reaction is invalid or update fails.
     /// </summary>
     public async Task DeleteReactionToReviewComment(string productId, string commentUserId, string reactionUserId)
     {
-        using (_logger.BeginScope("DeleteReactionToReviewComment")){
+        using (_logger.BeginScope("DeleteReactionToReviewComment"))
+        {
             _logger.LogInformation("DeleteReactionToReviewComment called");
             var review = await _repository.GetByProductId(ObjectId.Parse(productId));
             if (review == null)
@@ -231,17 +244,18 @@ public class ProductReviewService(
                 _logger.LogError("UpdateReviewAsync failed");
                 throw new InvalidOperationException("Update review failed");
             }
+
             _logger.LogInformation("UpdateReviewAsync success");
         }
     }
 
     /// <summary>
-    /// Retrieves all comments for a specific product.
-    /// Throws KeyNotFoundException if the review or comments do not exist.
+    ///     Retrieves all comments for a specific product.
+    ///     Throws KeyNotFoundException if the review or comments do not exist.
     /// </summary>
     public async Task<IEnumerable<ProductReviewCommentDto>?> GetAllCommentsByProductId(string productId)
     {
-        using  (_logger.BeginScope("GetAllCommentsByProductId"))
+        using (_logger.BeginScope("GetAllCommentsByProductId"))
         {
             _logger.LogInformation("GetAllCommentsByProductId called");
             var review = await _repository.GetByProductId(ObjectId.Parse(productId));
@@ -266,5 +280,44 @@ public class ProductReviewService(
             _logger.LogInformation("GetAllCommentsByUserId success");
             return dtos;
         }
+    }
+
+    public async Task<StoreRatingDto> GetAllReviewsByStoreId(string storeId)
+    {
+        using var scope = _logger.BeginScope("GetAllReviewsByStoreId");
+        _logger.LogInformation("GetAllReviewsByStoreId called for storeId {StoreId}", storeId);
+
+        var reviews = await _repository.GetByStoreId(ObjectId.Parse(storeId));
+        if (!reviews.Any())
+            throw new KeyNotFoundException($"No reviews found for store {storeId}");
+
+        var dtos = _mapper.Map<List<ProductReviewDto>>(reviews);
+
+        var allComments = dtos.SelectMany(d => d.Comments).ToList();
+        _logger.LogInformation("Found {Count} comments for store {StoreId}", allComments.Count, storeId);
+
+        var ratings = new ProductReviewRatingListDto
+        {
+            OneStar = reviews.SelectMany(d => d.Comments).Count(c => c.Rating == 1),
+            TwoStar = reviews.SelectMany(d => d.Comments).Count(c => c.Rating == 2),
+            ThreeStar = reviews.SelectMany(d => d.Comments).Count(c => c.Rating == 3),
+            FourStar = reviews.SelectMany(d => d.Comments).Count(c => c.Rating == 4),
+            FiveStar = reviews.SelectMany(d => d.Comments).Count(c => c.Rating == 5)
+        };
+
+        var averageRating = allComments.Any()
+            ? Math.Round(allComments.Average(c => c.Rating), 1)
+            : 0.0;
+
+        var storeRatingDto = new StoreRatingDto
+        {
+            AverageRating = averageRating,
+            TotalReviews = allComments.Count,
+            Ratings = ratings,
+            Reviews = dtos
+        };
+
+        _logger.LogInformation("GetAllReviewsByStoreId completed successfully for storeId {StoreId}", storeId);
+        return storeRatingDto;
     }
 }

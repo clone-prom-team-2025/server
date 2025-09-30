@@ -6,9 +6,9 @@ namespace App.Services.Services;
 
 public class CleanSchedulerService : BackgroundService
 {
-    private readonly ILogger<CleanSchedulerService> _logger;
     private readonly IArchiveAndCleanupManager _archiveAndCleanupManager;
     private readonly int _intervalMinutes;
+    private readonly ILogger<CleanSchedulerService> _logger;
 
     public CleanSchedulerService(
         ILogger<CleanSchedulerService> logger,
@@ -18,7 +18,7 @@ public class CleanSchedulerService : BackgroundService
         _archiveAndCleanupManager = archiveAndCleanupManager;
         _intervalMinutes = 60;
     }
-    
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _logger.LogInformation("CleanSchedulerService started. Interval: {Interval} minutes", _intervalMinutes);

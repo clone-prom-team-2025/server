@@ -261,4 +261,17 @@ public class ProductReviewController : ControllerBase
             return Ok(result);
         }
     }
+
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> GetAllReviewsByStoreId(string storeId)
+    {
+        using (_logger.BeginScope("GetAllReviewsByStoreId"))
+        {
+            _logger.LogInformation("GetAllReviewsByStoreId action for StoreId={StoreId}", storeId);
+            var result = await _productReviewService.GetAllReviewsByStoreId(storeId);
+            _logger.LogInformation("GetAllReviewsByStoreId success for StoreId={StoreId}", storeId);
+            return Ok(result);
+        }
+    }
 }

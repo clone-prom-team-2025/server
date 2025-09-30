@@ -46,8 +46,10 @@ public class OrderController : ControllerBase
         using (_logger.BeginScope("BuyUnRegistered"))
         {
             _logger.LogInformation("BuyUnRegistered action");
-            await _orderService.BuyUnRegistered(buyUnRegisteredRequest.Products, buyUnRegisteredRequest.DeliveryPayment, buyUnRegisteredRequest.DeliveryTo, buyUnRegisteredRequest.Email,
-                buyUnRegisteredRequest.PhoneNumber, buyUnRegisteredRequest.FirstName, buyUnRegisteredRequest.LastName, buyUnRegisteredRequest.MiddleName);
+            await _orderService.BuyUnRegistered(buyUnRegisteredRequest.Products, buyUnRegisteredRequest.DeliveryPayment,
+                buyUnRegisteredRequest.DeliveryTo, buyUnRegisteredRequest.Email,
+                buyUnRegisteredRequest.PhoneNumber, buyUnRegisteredRequest.FirstName, buyUnRegisteredRequest.LastName,
+                buyUnRegisteredRequest.MiddleName);
             _logger.LogInformation("BuyUnRegistered success");
             return NoContent();
         }
@@ -183,7 +185,7 @@ public class OrderController : ControllerBase
         _logger.LogInformation("CancelOrdersByOrderNumber success");
         return NoContent();
     }
-    
+
     [HttpPost]
     public async Task<IActionResult> SendOrderActionCode(string email)
     {
@@ -203,7 +205,7 @@ public class OrderController : ControllerBase
         _logger.LogInformation("GetByEmailCode success");
         return Ok(result);
     }
-    
+
 
     [HttpPost]
     public async Task<IActionResult> CancelOrderByEmail(string email, string inputCode, string orderId)

@@ -12,8 +12,8 @@ namespace App.Api.Controllers;
 public class CategoryController : ControllerBase
 {
     private readonly ICategoryService _categoryService;
-    private readonly IMapper _mapper;
     private readonly ILogger<CategoryController> _logger;
+    private readonly IMapper _mapper;
 
     public CategoryController(ICategoryService categoryService, IMapper mapper, ILogger<CategoryController> logger)
     {
@@ -29,7 +29,8 @@ public class CategoryController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        using (_logger.BeginScope("GetAll")){
+        using (_logger.BeginScope("GetAll"))
+        {
             _logger.LogInformation("GetAll action");
             var categories = await _categoryService.GetAllAsync();
             if (categories == null || categories.Count == 0)
@@ -48,7 +49,8 @@ public class CategoryController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(string id)
     {
-        using (_logger.BeginScope("GetById")) {
+        using (_logger.BeginScope("GetById"))
+        {
             _logger.LogInformation("GetById action");
             var category = await _categoryService.GetByIdAsync(id);
             if (category == null)
@@ -67,7 +69,8 @@ public class CategoryController : ControllerBase
     [HttpGet("children/{parentId}")]
     public async Task<IActionResult> GetByParentId(string parentId)
     {
-        using (_logger.BeginScope("GetByParentId")) {
+        using (_logger.BeginScope("GetByParentId"))
+        {
             _logger.LogInformation("GetByParentId action");
             var children = await _categoryService.GetByParentIdAsync(parentId);
             if (children == null || children.Count == 0)
@@ -87,7 +90,8 @@ public class CategoryController : ControllerBase
     [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Create([FromBody] CategoryCreateDto categoryDto)
     {
-        using (_logger.BeginScope("Create")) {
+        using (_logger.BeginScope("Create"))
+        {
             _logger.LogInformation("Create action");
             await _categoryService.CreateAsync(categoryDto);
             _logger.LogInformation("Create success");
@@ -105,7 +109,8 @@ public class CategoryController : ControllerBase
     [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Update([FromBody] CategoryDto categoryDto)
     {
-        using (_logger.BeginScope("Update")) {
+        using (_logger.BeginScope("Update"))
+        {
             _logger.LogInformation("Update action");
             await _categoryService.UpdateAsync(categoryDto);
             _logger.LogInformation("Update success");
@@ -122,7 +127,8 @@ public class CategoryController : ControllerBase
     [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Delete(string id)
     {
-        using (_logger.BeginScope("Delete")) {
+        using (_logger.BeginScope("Delete"))
+        {
             _logger.LogInformation("Delete action");
             await _categoryService.DeleteAsync(id);
             _logger.LogInformation("Delete success");
@@ -139,7 +145,8 @@ public class CategoryController : ControllerBase
     [HttpGet("search")]
     public async Task<IActionResult> Search(string name)
     {
-        using (_logger.BeginScope("Search")) {
+        using (_logger.BeginScope("Search"))
+        {
             _logger.LogInformation("Search action");
             var results = await _categoryService.SearchAsync(name);
             if (results == null || results.Count == 0)
@@ -158,7 +165,8 @@ public class CategoryController : ControllerBase
     [HttpGet("full-tree")]
     public async Task<IActionResult> GetFullTree()
     {
-        using (_logger.BeginScope("GetFullTree")) {
+        using (_logger.BeginScope("GetFullTree"))
+        {
             _logger.LogInformation("GetFullTree action");
             var tree = await _categoryService.GetFullTreeAsync();
             if (tree == null)
@@ -177,7 +185,8 @@ public class CategoryController : ControllerBase
     [HttpGet("category-tree/{parentId}")]
     public async Task<IActionResult> GetCategoryTree(string parentId)
     {
-        using (_logger.BeginScope("GetCategoryTree")) {
+        using (_logger.BeginScope("GetCategoryTree"))
+        {
             _logger.LogInformation("GetCategoryTree action");
             var tree = await _categoryService.GetCategoryTreeAsync(parentId);
             if (tree == null)
@@ -196,7 +205,8 @@ public class CategoryController : ControllerBase
     [HttpGet("children-nodes/{parentId}")]
     public async Task<IActionResult> GetChildrenNodes(string parentId)
     {
-        using (_logger.BeginScope("GetChildrenNodes")) {
+        using (_logger.BeginScope("GetChildrenNodes"))
+        {
             _logger.LogInformation("GetChildrenNodes action");
             var children = await _categoryService.GetChildrenAsync(parentId);
             _logger.LogInformation("GetChildrenNodes success");
@@ -207,7 +217,8 @@ public class CategoryController : ControllerBase
     [HttpPost("many")]
     public async Task<IActionResult> CreateMany([FromBody] List<CategoryCreateDto> categoryList)
     {
-        using (_logger.BeginScope("CreateMany")) {
+        using (_logger.BeginScope("CreateMany"))
+        {
             _logger.LogInformation("CreateMany action");
             await _categoryService.CreateManyAsync(categoryList);
             _logger.LogInformation("CreateMany success");

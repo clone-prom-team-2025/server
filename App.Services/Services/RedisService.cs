@@ -8,8 +8,8 @@ namespace App.Services.Services;
 
 public class RedisService : IRedisService, IDisposable
 {
-    private readonly ConnectionMultiplexer _redis;
     private readonly IDatabase _db;
+    private readonly ConnectionMultiplexer _redis;
 
     public RedisService(IOptions<RedisSettings> options)
     {
@@ -24,6 +24,11 @@ public class RedisService : IRedisService, IDisposable
         _db = _redis.GetDatabase();
     }
 
+    public void Dispose()
+    {
+        _redis.Dispose();
+    }
+
     public async Task SetValueAsync(string key, string value, TimeSpan? expiry = null)
     {
         await _db.StringSetAsync(key, value, expiry);
@@ -33,7 +38,7 @@ public class RedisService : IRedisService, IDisposable
     {
         return await _db.StringGetAsync(key);
     }
-    
+
     public async Task SetObjectAsync<T>(string key, T obj, TimeSpan? expiry = null)
     {
         var json = RedisExtensions.Serialize(obj);
@@ -44,10 +49,5 @@ public class RedisService : IRedisService, IDisposable
     {
         var value = await _db.StringGetAsync(key);
         return value.HasValue ? RedisExtensions.Deserialize<T>(value!) : default;
-    }
-
-    public void Dispose()
-    {
-        _redis.Dispose();
     }
 }

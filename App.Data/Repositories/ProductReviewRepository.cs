@@ -1,6 +1,7 @@
 ﻿using App.Core.Interfaces;
 using App.Core.Models.Product;
 using App.Core.Models.Product.Review;
+using App.Core.Models.Store;
 using Microsoft.Extensions.Logging;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -12,6 +13,7 @@ public class ProductReviewRepository(MongoDbContext mongoDbContext, ILogger<Prod
 {
     private readonly IMongoCollection<Product> _productCollection = mongoDbContext.Products;
     private readonly IMongoCollection<ProductReview> _reviewCollection = mongoDbContext.ProductReviews;
+    private readonly IMongoCollection<Store> _storeCollection = mongoDbContext.Stores;
 
     public async Task<bool> CreateReview(ProductReview review)
     {
@@ -76,5 +78,21 @@ public class ProductReviewRepository(MongoDbContext mongoDbContext, ILogger<Prod
         );
 
         return await _reviewCollection.Find(filter).ToListAsync();
+    }
+
+    public async Task<List<ProductReview>> GetByStoreId(ObjectId storeId)
+    {
+        var productIds = await _productCollection
+            .Find(p => p.SellerId == storeId)
+            .Project(p => p.Id)
+            .ToListAsync();
+
+        if (!productIds.Any())
+            return [];
+
+        var filter = Builders<ProductReview>.Filter.In(r => r.ProductId, productIds);
+        var reviews = await _reviewCollection.Find(filter).ToListAsync();
+
+        return reviews;
     }
 }

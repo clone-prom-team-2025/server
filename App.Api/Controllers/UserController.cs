@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using System.Xml;
 using App.Core.Constants;
 using App.Core.DTOs.User;
 using App.Core.Interfaces;
@@ -330,7 +329,7 @@ public class UserController : ControllerBase
             return NoContent();
         }
     }
-    
+
     [HttpDelete]
     [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> DeleteUserRole(string userId, string role)

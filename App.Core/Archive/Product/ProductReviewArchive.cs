@@ -6,11 +6,10 @@ namespace App.Core.Archive.Product;
 
 public class ProductReviewArchive
 {
-    [BsonId]
-    public string Id { get; set; }
-    
+    [BsonId] public string Id { get; set; }
+
     public DateTime ArchivedAt { get; set; }
-    
+
     public ObjectId ProductReviewId { get; set; } = ObjectId.GenerateNewId();
 
     [BsonRepresentation(BsonType.ObjectId)]

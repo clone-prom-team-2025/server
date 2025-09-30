@@ -13,22 +13,22 @@ public class ArchiveProfile : Profile
     {
         CreateMap<ProductArchive, Product>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.ProductId));
-        
+
         CreateMap<Product, ProductArchive>()
             .ForMember(dest => dest.ProductId, opt => opt.MapFrom(src => src.Id));
-        
+
         CreateMap<ProductMediaArchive, ProductMedia>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.ProductMediaId));
-        
+
         CreateMap<ProductMedia, ProductMediaArchive>()
             .ForMember(dest => dest.ProductMediaId, opt => opt.MapFrom(src => src.Id));
-        
+
         CreateMap<ProductReviewArchive, ProductReview>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.ProductReviewId));
-        
+
         CreateMap<ProductReview, ProductReviewArchive>()
             .ForMember(dest => dest.ProductReviewId, opt => opt.MapFrom(src => src.Id));
-        
+
         CreateMap<ProductArchive, ProductArchiveDto>()
             .ForMember(d => d.ProductId, o => o.MapFrom(s => s.ProductId.ToString()))
             .ForMember(d => d.SellerId, o => o.MapFrom(s => s.SellerId.ToString()))

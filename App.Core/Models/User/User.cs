@@ -16,8 +16,8 @@ public class User
         CreatedAt = DateTime.UtcNow;
     }
 
-    public User(string username, string password, string email, BaseFile avatar, List<string> roles, 
-        string firstName, string lastName, string? phoneNumber = null, string? gender = null, 
+    public User(string username, string password, string email, BaseFile avatar, List<string> roles,
+        string firstName, string lastName, string? phoneNumber = null, string? gender = null,
         DateTime? dateOfBirth = null, string? middleName = null)
     {
         Id = ObjectId.GenerateNewId();
@@ -38,9 +38,9 @@ public class User
     [BsonId] public ObjectId Id { get; set; }
 
     public string FirstName { get; set; }
-    
+
     public string LastName { get; set; }
-    
+
     public string? MiddleName { get; set; }
 
     public string? PhoneNumber { get; set; }

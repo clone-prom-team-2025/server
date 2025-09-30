@@ -2,8 +2,8 @@ namespace App.Core.Utils;
 
 public class WebpDownloader
 {
-    private static readonly HttpClient HttpClient = new HttpClient();
-    
+    private static readonly HttpClient HttpClient = new();
+
     public static async Task<Stream> GetWebpStreamAsync(string url)
     {
         if (string.IsNullOrWhiteSpace(url))
@@ -13,5 +13,5 @@ public class WebpDownloader
         response.EnsureSuccessStatusCode();
 
         return await response.Content.ReadAsStreamAsync();
-    }  
+    }
 }

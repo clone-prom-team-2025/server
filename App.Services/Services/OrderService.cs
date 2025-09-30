@@ -21,7 +21,7 @@ using PuppeteerSharp.Media;
 namespace App.Services.Services;
 
 /// <summary>
-/// Service responsible for handling product purchases, payments, shipping, and order management.
+///     Service responsible for handling product purchases, payments, shipping, and order management.
 /// </summary>
 public class OrderService(
     IOrderRepository orderRepository,
@@ -37,22 +37,22 @@ public class OrderService(
     IEmailService emailService,
     IMemoryCache memoryCache) : IOrderService
 {
-    private readonly ILogger<OrderService> _logger = logger;
-    private readonly IMapper _mapper = mapper;
+    private static readonly SemaphoreSlim PdfSemaphore = new(2);
     private readonly IMemoryCache _cache = memoryCache;
-    private readonly IOrderRepository _orderRepository = orderRepository;
-    private readonly IStoreRepository _storeRepository = storeRepository;
-    private readonly IUserRepository _userRepository = userRepository;
-    private readonly IProductRepository _productRepository = productRepository;
-    private readonly IProductMediaRepository _productMediaRepository = productMediaRepository;
-    private readonly IFileService _fileService = fileService;
-    private readonly INotificationService _notificationService = notificationService;
     private readonly ICartRepository _cartRepository = cartRepository;
     private readonly IEmailService _emailService = emailService;
-    private static readonly SemaphoreSlim PdfSemaphore = new SemaphoreSlim(2);
-    
+    private readonly IFileService _fileService = fileService;
+    private readonly ILogger<OrderService> _logger = logger;
+    private readonly IMapper _mapper = mapper;
+    private readonly INotificationService _notificationService = notificationService;
+    private readonly IOrderRepository _orderRepository = orderRepository;
+    private readonly IProductMediaRepository _productMediaRepository = productMediaRepository;
+    private readonly IProductRepository _productRepository = productRepository;
+    private readonly IStoreRepository _storeRepository = storeRepository;
+    private readonly IUserRepository _userRepository = userRepository;
+
     /// <summary>
-    /// Creates new orders for a registered user based on the items in their cart.
+    ///     Creates new orders for a registered user based on the items in their cart.
     /// </summary>
     /// <param name="userId">The ID of the registered user placing the order.</param>
     /// <param name="deliveryPayment">The selected payment method.</param>
@@ -62,12 +62,12 @@ public class OrderService(
     /// <param name="lastName">Optional last name for the recipient.</param>
     /// <param name="middleName">Optional middle name for the recipient.</param>
     public async Task BuyRegistered(
-        string userId, 
-        DeliveryPayment deliveryPayment, 
+        string userId,
+        DeliveryPayment deliveryPayment,
         PointsOfDelivery deliveryTo,
-        string? phoneNumber, 
-        string? firstName, 
-        string? lastName, 
+        string? phoneNumber,
+        string? firstName,
+        string? lastName,
         string? middleName)
     {
         using var scope = _logger.BeginScope("BuyRegistered");
@@ -96,26 +96,28 @@ public class OrderService(
         }
 
         var orders = new List<Order>();
-        
+
         var bytes = new byte[10];
         RandomNumberGenerator.Fill(bytes);
-        string orderNumber = Convert.ToBase64String(bytes)
+        var orderNumber = Convert.ToBase64String(bytes)
             .Replace("+", "")
             .Replace("/", "")
             .Replace("=", "");
-        
+
         foreach (var cart in carts)
         {
             var product = await _productRepository.GetByIdAsync(cart.ProductId);
             if (product == null)
             {
-                _logger.LogWarning("Product {ProductId} not found for User {user}, Cart {cart}", cart.ProductId, userId, cart.Id.ToString());
+                _logger.LogWarning("Product {ProductId} not found for User {user}, Cart {cart}", cart.ProductId, userId,
+                    cart.Id.ToString());
                 throw new KeyNotFoundException($"{cart.ProductId} product not found");
             }
+
             if (product.Quantity < cart.Pcs)
                 throw new InvalidOperationException($"{cart.ProductId} not enough pcs");
         }
-        
+
         foreach (var cart in carts)
         {
             var product = await _productRepository.GetByIdAsync(cart.ProductId);
@@ -124,9 +126,9 @@ public class OrderService(
                 _logger.LogWarning("Product {ProductId} not found", cart.ProductId);
                 throw new KeyNotFoundException($"{cart.ProductId} product not found");
             }
-            
+
             var productMedia = await _productMediaRepository.GetByProductIdAsync(product.Id.ToString());
-            
+
             Stream? stream = null;
 
             if (productMedia?.Count > 0)
@@ -134,14 +136,14 @@ public class OrderService(
                 var firstUrl = productMedia.First().Files.SourceUrl;
                 stream = await WebpDownloader.GetWebpStreamAsync(firstUrl);
             }
-            
+
             var file = new BaseFile();
             if (stream != null)
                 (file.SourceUrl, file.CompressedUrl, file.SourceFileName, file.CompressedFileName) =
                     await _fileService.SaveImageAsync(stream, product.Id.ToString(), "orders", 100, 70);
 
             bool? payed = deliveryPayment != DeliveryPayment.AfterPayment ? true : null;
-            
+
             var buyInfo = new Order
             {
                 Id = ObjectId.GenerateNewId(),
@@ -161,7 +163,7 @@ public class OrderService(
                 OrderNumber = orderNumber,
                 CreatedAt = DateTime.UtcNow,
                 Payed = payed,
-                
+
                 MiniProductsInfo = new MiniProductInfo
                 {
                     ProductId = product.Id,
@@ -169,7 +171,7 @@ public class OrderService(
                     Price = product.Price,
                     Image = file
                 },
-                Pcs = cart.Pcs,
+                Pcs = cart.Pcs
             };
 
             product.Quantity -= cart.Pcs;
@@ -183,7 +185,8 @@ public class OrderService(
             var updateResult = await _productRepository.UpdateAsync(product);
             if (!updateResult)
             {
-                _logger.LogWarning("Failed to update product {ProductId} for User {user}, Cart {cart}", product.Id, userId, cart.Id.ToString());
+                _logger.LogWarning("Failed to update product {ProductId} for User {user}, Cart {cart}", product.Id,
+                    userId, cart.Id.ToString());
                 foreach (var created in orders)
                 {
                     await _orderRepository.DeleteAsync(created.Id);
@@ -200,9 +203,10 @@ public class OrderService(
                         await _productRepository.UpdateAsync(prodToRestore);
                     }
                 }
+
                 throw new InvalidOperationException($"Failed to buy product {product.Id}");
             }
-            
+
             orders.Add(buyInfo);
         }
 
@@ -210,16 +214,16 @@ public class OrderService(
         await _cartRepository.DeleteByUserIdAsync(parsedUserId);
         var msg = $"Дякуємо за покупку! Очікуйте підтвердження від {(orders.Count == 1 ? "продавця" : "продавців")}";
 
-        var notification = new NotificationCreateDto()
+        var notification = new NotificationCreateDto
         {
             Type = NotificationType.Info,
             Message = msg,
             From = null,
             To = userId,
-            IsHighPriority = false,
+            IsHighPriority = false
         };
         await _notificationService.SendNotificationAsync(notification);
-        
+
         _logger.LogInformation("Start sending email to {Email}", user.Email);
         if (deliveryPayment != DeliveryPayment.AfterPayment) await SendEmailPayCard(user.Email, orders);
         else await SendEmailAfterPayment(user.Email, orderNumber);
@@ -227,9 +231,9 @@ public class OrderService(
 
         _logger.LogInformation("BuyRegistered successfully completed for user {UserId}", userId);
     }
-    
+
     /// <summary>
-    /// Creates new orders for an unregistered user (guest checkout).
+    ///     Creates new orders for an unregistered user (guest checkout).
     /// </summary>
     /// <param name="products">Dictionary of product IDs and quantities to purchase.</param>
     /// <param name="deliveryPayment">The selected payment method.</param>
@@ -241,17 +245,17 @@ public class OrderService(
     /// <param name="middleName">Optional middle name of the recipient.</param>
     public async Task BuyUnRegistered(
         Dictionary<string, int> products,
-        DeliveryPayment deliveryPayment, 
+        DeliveryPayment deliveryPayment,
         PointsOfDelivery deliveryTo,
         string email,
-        string phoneNumber, 
-        string firstName, 
-        string lastName, 
+        string phoneNumber,
+        string firstName,
+        string lastName,
         string? middleName)
     {
         using var scope = _logger.BeginScope("BuyRegistered");
         _logger.LogInformation("BuyUnRegistered called");
-        
+
         if (string.IsNullOrWhiteSpace(phoneNumber))
         {
             _logger.LogWarning("Phone number missing");
@@ -259,14 +263,14 @@ public class OrderService(
         }
 
         var orders = new List<Order>();
-        
+
         var bytes = new byte[10];
         RandomNumberGenerator.Fill(bytes);
-        string orderNumber = Convert.ToBase64String(bytes)
+        var orderNumber = Convert.ToBase64String(bytes)
             .Replace("+", "")
             .Replace("/", "")
             .Replace("=", "");
-        
+
         foreach (var productId in products.Keys)
         {
             var product = await _productRepository.GetByIdAsync(ObjectId.Parse(productId));
@@ -275,10 +279,11 @@ public class OrderService(
                 _logger.LogWarning("Product {ProductId} not found", productId);
                 throw new KeyNotFoundException($"{productId} product not found");
             }
+
             if (product.Quantity < 1)
                 throw new InvalidOperationException($"{productId} not enough pcs");
         }
-        
+
         foreach (var prod in products)
         {
             var product = await _productRepository.GetByIdAsync(ObjectId.Parse(prod.Key));
@@ -287,9 +292,9 @@ public class OrderService(
                 _logger.LogWarning("Product {ProductId} not found", prod.Key);
                 throw new KeyNotFoundException($"{prod.Key} product not found");
             }
-            
+
             var productMedia = await _productMediaRepository.GetByProductIdAsync(product.Id.ToString());
-            
+
             Stream? stream = null;
 
             if (productMedia?.Count > 0)
@@ -297,14 +302,14 @@ public class OrderService(
                 var firstUrl = productMedia.First().Files.SourceUrl;
                 stream = await WebpDownloader.GetWebpStreamAsync(firstUrl);
             }
-            
+
             var file = new BaseFile();
             if (stream != null)
                 (file.SourceUrl, file.CompressedUrl, file.SourceFileName, file.CompressedFileName) =
                     await _fileService.SaveImageAsync(stream, product.Id.ToString(), "orders", 100, 70);
 
             bool? payed = deliveryPayment != DeliveryPayment.AfterPayment ? true : null;
-            
+
             var buyInfo = new Order
             {
                 Id = ObjectId.GenerateNewId(),
@@ -324,7 +329,7 @@ public class OrderService(
                 OrderNumber = orderNumber,
                 CreatedAt = DateTime.UtcNow,
                 Payed = payed,
-                
+
                 MiniProductsInfo = new MiniProductInfo
                 {
                     ProductId = product.Id,
@@ -332,7 +337,7 @@ public class OrderService(
                     Price = product.Price,
                     Image = file
                 },
-                Pcs = prod.Value,
+                Pcs = prod.Value
             };
 
             product.Quantity -= prod.Value;
@@ -363,14 +368,15 @@ public class OrderService(
                         await _productRepository.UpdateAsync(prodToRestore);
                     }
                 }
+
                 throw new InvalidOperationException($"Failed to buy product {product.Id}");
             }
-            
+
             orders.Add(buyInfo);
         }
 
         await _orderRepository.CreateManyAsync(orders);
-        
+
         if (deliveryPayment != DeliveryPayment.AfterPayment) await SendEmailPayCard(email, orders);
         else await SendEmailAfterPayment(email, orderNumber);
 
@@ -378,7 +384,7 @@ public class OrderService(
     }
 
     /// <summary>
-    /// Retrieves available delivery and payment options for the given user's cart.
+    ///     Retrieves available delivery and payment options for the given user's cart.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     public async Task<DeliveryAndPaymentDto> GetDeliveryTypeAsync(string userId)
@@ -393,14 +399,14 @@ public class OrderService(
             _logger.LogWarning("User {UserId} not found", parsedUserId);
             throw new KeyNotFoundException("User not found");
         }
-        
+
         var carts = await _cartRepository.GetByUserIdAsync(parsedUserId);
         if (carts == null || carts.Count == 0)
         {
             _logger.LogWarning("Cart not found for user {UserId}", parsedUserId);
             throw new KeyNotFoundException("Cart not found");
         }
-        
+
         ProductDeliveryType? commonDeliveryType = null;
         PaymentOptions? commonPaymentOptions = null;
 
@@ -423,12 +429,13 @@ public class OrderService(
             else
                 commonPaymentOptions &= product.PaymentOptions;
         }
-        
+
         if (commonDeliveryType == 0)
         {
             _logger.LogWarning("No common delivery options found for user {UserId}", userId);
             throw new InvalidOperationException("No common delivery options available for the products in the cart.");
         }
+
         if (commonPaymentOptions == 0)
         {
             _logger.LogWarning("No common payment options found for user {UserId}", userId);
@@ -441,9 +448,9 @@ public class OrderService(
             PaymentOptions = commonPaymentOptions ?? 0
         };
     }
-    
+
     /// <summary>
-    /// Retrieves all orders placed by a specific user.
+    ///     Retrieves all orders placed by a specific user.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     public async Task<IEnumerable<OrderDto>> GetByUserId(string userId)
@@ -454,9 +461,9 @@ public class OrderService(
         _logger.LogInformation("Getting buy infos successfully for user {UserId}", userId);
         return _mapper.Map<IEnumerable<OrderDto>>(result);
     }
-    
+
     /// <summary>
-    /// Retrieves all orders placed by a user, grouped by order number.
+    ///     Retrieves all orders placed by a user, grouped by order number.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     public async Task<IEnumerable<GroupedOrders>> GetByUserIdGrouped(string userId)
@@ -472,13 +479,13 @@ public class OrderService(
                 OrderNumber = g.Key,
                 Orders = g.ToList()
             });
-        
+
         _logger.LogInformation("Getting buy infos successfully for user {UserId}", userId);
         return grouped;
     }
 
     /// <summary>
-    /// Retrieves all orders for the store that require acceptance (not yet confirmed).
+    ///     Retrieves all orders for the store that require acceptance (not yet confirmed).
     /// </summary>
     /// <param name="userId">The ID of the store owner user.</param>
     public async Task<IEnumerable<OrderDto>> GetByStoreNeedToAccept(string userId)
@@ -498,13 +505,14 @@ public class OrderService(
             _logger.LogWarning("Order not found");
             return [];
         }
+
         var filteredBuyInfos = orders.Where(b => !b.Confirmed);
         _logger.LogInformation("Getting buy infos successfully for user {UserId}", userId);
         return _mapper.Map<IEnumerable<OrderDto>>(filteredBuyInfos);
     }
-    
+
     /// <summary>
-    /// Retrieves all accepted orders for the store associated with the given user.
+    ///     Retrieves all accepted orders for the store associated with the given user.
     /// </summary>
     /// <param name="userId">The unique identifier of the user who owns the store.</param>
     /// <exception cref="KeyNotFoundException">Thrown when the store is not found.</exception>
@@ -525,14 +533,15 @@ public class OrderService(
             _logger.LogWarning("Order not found");
             return [];
         }
+
         var filteredBuyInfos = orders.Where(b => b.Confirmed);
         _logger.LogInformation("Getting buy infos successfully for user {UserId}", userId);
         return _mapper.Map<IEnumerable<OrderDto>>(filteredBuyInfos);
     }
 
     /// <summary>
-    /// Rejects a specific order with a provided reason. 
-    /// Sends notifications and emails if the order was registered.
+    ///     Rejects a specific order with a provided reason.
+    ///     Sends notifications and emails if the order was registered.
     /// </summary>
     /// <param name="userId">The unique identifier of the store owner rejecting the order.</param>
     /// <param name="orderId">The unique identifier of the order to reject.</param>
@@ -549,7 +558,7 @@ public class OrderService(
             _logger.LogWarning("Store not found for User {user}", userId);
             throw new KeyNotFoundException("Store not found");
         }
-        
+
         var order = await _orderRepository.GetByIdAsync(ObjectId.Parse(orderId));
         if (order == null)
         {
@@ -564,57 +573,61 @@ public class OrderService(
         }
 
         if (order.Status is not (DeliveryStatus.AwaitingConfirmation or DeliveryStatus.WaitingForShipment))
-        {
-            _logger.LogWarning("User {userId} tried reject order but status is not AwaitingConfirmation or WaitingForShipment", userId);
-        }
+            _logger.LogWarning(
+                "User {userId} tried reject order but status is not AwaitingConfirmation or WaitingForShipment",
+                userId);
 
         order.Confirmed = false;
         order.Status = DeliveryStatus.Declined;
         order.SellerMessage = reason;
-        
+
         var result = await _orderRepository.UpdateAsync(order);
         if (!result)
         {
             _logger.LogWarning("Failed to update order");
-            throw new InvalidOperationException($"Failed to update order");
+            throw new InvalidOperationException("Failed to update order");
         }
+
         _logger.LogInformation("Rejected order {OrderId}", order.Id);
-        
+
         if (order.Registered)
         {
-            var notification = new NotificationCreateDto()
+            var notification = new NotificationCreateDto
             {
                 Type = NotificationType.Info,
-                Message = $"Підзамовлення #{order.Id.ToString()} у складі замовлення #{order.OrderNumber} скасовано продавцем! Причина: {reason}",
+                Message =
+                    $"Підзамовлення #{order.Id.ToString()} у складі замовлення #{order.OrderNumber} скасовано продавцем! Причина: {reason}",
                 From = store.Name,
                 To = order.UserId.ToString(),
-                IsHighPriority = false,
+                IsHighPriority = true
             };
             await _notificationService.SendNotificationAsync(notification);
         }
+
         var assembly = Assembly.GetExecutingAssembly();
-        await using var streamOrderEmail = assembly.GetManifestResourceStream("App.Services.EmailTemplates.OrderCanceled.html");
+        await using var streamOrderEmail =
+            assembly.GetManifestResourceStream("App.Services.EmailTemplates.OrderCanceled.html");
         using var readerOrderEmail = new StreamReader(streamOrderEmail!);
         var htmlOrderEmail = await readerOrderEmail.ReadToEndAsync();
         var readyOrderEmail = htmlOrderEmail.Replace("__ORDERID__", order.OrderNumber)
             .Replace("__ORDERID2__", order.Id.ToString())
             .Replace("__TRACK__", order.TrackingNumber)
             .Replace("__COMMENT__", reason);
-        
-        var mail = new EmailMessage()
+
+        var mail = new EmailMessage
         {
             From = "no-reply@sellpoint.pp.ua",
             To = [order.Email],
             Subject = "Ваше замовлення відхилене",
             HtmlBody = readyOrderEmail
         };
-        
+
         await _emailService.SendEmailAsync(mail);
     }
 
     /// <summary>
-    /// Cancels a specific order for a user. 
-    /// Sends an email notification to the user after successful cancellation.
+    ///     Cancels a specific order for a user.
+    ///     Sends an email notification to the user after successful cancellation.
     /// </summary>
     /// <param name="userId">The unique identifier of the user canceling the order.</param>
     /// <param name="orderId">The unique identifier of the order to cancel.</param>
@@ -625,14 +638,14 @@ public class OrderService(
     {
         using var scope = _logger.BeginScope("CancelOrder");
         _logger.LogInformation("CancelOrder called for userId {UserId}", userId);
-        
+
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
         if (user == null)
         {
             _logger.LogWarning("User not found for User {user}", userId);
             throw new KeyNotFoundException("User not found");
         }
-        
+
         var order = await _orderRepository.GetByIdAsync(ObjectId.Parse(orderId));
         if (order == null)
         {
@@ -646,27 +659,29 @@ public class OrderService(
             throw new AccessDeniedException("It's not your order");
         }
 
-        if (order.Status is (DeliveryStatus.Canceled or DeliveryStatus.Declined or DeliveryStatus.Received))
-        {
-            _logger.LogWarning("User {userId} tried cancel order but status is not AwaitingConfirmation or WaitingForShipment", userId);
-        }
+        if (order.Status is DeliveryStatus.Canceled or DeliveryStatus.Declined or DeliveryStatus.Received)
+            _logger.LogWarning(
+                "User {userId} tried cancel order but status is not AwaitingConfirmation or WaitingForShipment",
+                userId);
 
         order.Confirmed = false;
         order.Status = DeliveryStatus.Canceled;
-        
+
         var result = await _orderRepository.UpdateAsync(order);
         if (!result)
         {
             _logger.LogWarning("Failed to update order");
-            throw new InvalidOperationException($"Failed to update order");
+            throw new InvalidOperationException("Failed to update order");
         }
-        
+
         var assembly = Assembly.GetExecutingAssembly();
-        await using var streamOrderEmail = assembly.GetManifestResourceStream("App.Services.EmailTemplates.OrderCanceledByUser.html");
+        await using var streamOrderEmail =
+            assembly.GetManifestResourceStream("App.Services.EmailTemplates.OrderCanceledByUser.html");
         using var readerOrderEmail = new StreamReader(streamOrderEmail!);
         var htmlOrderEmail = await readerOrderEmail.ReadToEndAsync();
-        var readyOrderEmailHtml = htmlOrderEmail.Replace("__ORDERID__", order.OrderNumber).Replace("__ORDERID2__", order.Id.ToString());
-        var mail = new EmailMessage()
+        var readyOrderEmailHtml = htmlOrderEmail.Replace("__ORDERID__", order.OrderNumber)
+            .Replace("__ORDERID2__", order.Id.ToString());
+        var mail = new EmailMessage
         {
             From = "no-reply@sellpoint.pp.ua",
             To = [user.Email],
@@ -674,6 +689,19 @@ public class OrderService(
             HtmlBody = readyOrderEmailHtml
         };
         await _emailService.SendEmailAsync(mail);
+
+        var msg =
+            "Ви скасували замовлення. Якщо ви здійснили оплату карткою онлайн, кошти будуть повернені протягом 7 робочих днів.";
+
+        var notification = new NotificationCreateDto
+        {
+            Type = NotificationType.Info,
+            Message = msg,
+            From = null,
+            To = userId,
+            IsHighPriority = true
+        };
+        await _notificationService.SendNotificationAsync(notification);
 
         _logger.LogInformation("Canceled order {OrderId}", order.Id);
     }
@@ -698,28 +726,31 @@ public class OrderService(
                     _logger.LogWarning("Order {OrderId} not found for email {Email}", orderId, email);
                     throw new AccessDeniedException("It's not your order");
                 }
-                
-                if (order.Status is (DeliveryStatus.Canceled or DeliveryStatus.Declined or DeliveryStatus.Received))
+
+                if (order.Status is DeliveryStatus.Canceled or DeliveryStatus.Declined or DeliveryStatus.Received)
                 {
-                    _logger.LogWarning("Tried cancel order but status is not AwaitingConfirmation or WaitingForShipment");
+                    _logger.LogWarning(
+                        "Tried cancel order but status is not AwaitingConfirmation or WaitingForShipment");
                     throw new InvalidOperationException("Order cannot be canceled");
                 }
 
                 order.Status = DeliveryStatus.Canceled;
-                
+
                 var result = await _orderRepository.UpdateAsync(order);
                 if (!result)
                 {
                     _logger.LogWarning("Failed to update order");
-                    throw new InvalidOperationException($"Failed to update order");
+                    throw new InvalidOperationException("Failed to update order");
                 }
-                
+
                 var assembly = Assembly.GetExecutingAssembly();
-                await using var streamOrderEmail = assembly.GetManifestResourceStream("App.Services.EmailTemplates.OrderCanceledByUser.html");
+                await using var streamOrderEmail =
+                    assembly.GetManifestResourceStream("App.Services.EmailTemplates.OrderCanceledByUser.html");
                 using var readerOrderEmail = new StreamReader(streamOrderEmail!);
                 var htmlOrderEmail = await readerOrderEmail.ReadToEndAsync();
-                var readyOrderEmailHtml = htmlOrderEmail.Replace("__ORDERID__", order.OrderNumber).Replace("__ORDERID2__", order.Id.ToString());
-                var mail = new EmailMessage()
+                var readyOrderEmailHtml = htmlOrderEmail.Replace("__ORDERID__", order.OrderNumber)
+                    .Replace("__ORDERID2__", order.Id.ToString());
+                var mail = new EmailMessage
                 {
                     From = "no-reply@sellpoint.pp.ua",
                     To = [email],
@@ -730,13 +761,14 @@ public class OrderService(
                 _logger.LogInformation("Canceled order {OrderId}", order.Id);
                 return;
             }
+
         _logger.LogWarning("Invalid code provided for email {Email}", email);
         throw new InvalidOperationException("Invalid code");
     }
-    
+
     /// <summary>
-    /// Cancels all orders by a specific order number for a given user. 
-    /// Sends an email notification with details of canceled orders.
+    ///     Cancels all orders by a specific order number for a given user.
+    ///     Sends an email notification with details of canceled orders.
     /// </summary>
     /// <param name="userId">The unique identifier of the user canceling the orders.</param>
     /// <param name="orderNumber">The order number that groups multiple orders.</param>
@@ -747,93 +779,113 @@ public class OrderService(
     {
         using var scope = _logger.BeginScope("CancelOrder");
         _logger.LogInformation("CancelOrder called for userId {UserId}", userId);
-        
+
         var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
         if (user == null)
         {
             _logger.LogWarning("User not found for User {user}", userId);
             throw new KeyNotFoundException("User not found");
         }
-        
+
         var orders = await _orderRepository.GetByOrderNumberAsync(orderNumber);
         if (orders == null || orders.Count == 0)
         {
             _logger.LogWarning("Order {order} not found for User {user}", orderNumber, userId);
             throw new KeyNotFoundException("Order not found");
         }
+
         foreach (var order in orders)
         {
             if (order.UserId == null || order.UserId.ToString() != userId)
             {
-                _logger.LogWarning("User {userId} does not own order {order} and tried to cancel order", userId, order.Id.ToString());
+                _logger.LogWarning("User {userId} does not own order {order} and tried to cancel order", userId,
+                    order.Id.ToString());
                 throw new AccessDeniedException("It's not your order");
             }
 
-            if (order.Status is (DeliveryStatus.Canceled or DeliveryStatus.Declined or DeliveryStatus.Received))
+            if (order.Status is DeliveryStatus.Canceled or DeliveryStatus.Declined or DeliveryStatus.Received)
             {
-                _logger.LogWarning("User {userId} tried cancel order but status is not AwaitingConfirmation or WaitingForShipment", userId);
+                _logger.LogWarning(
+                    "User {userId} tried cancel order but status is not AwaitingConfirmation or WaitingForShipment",
+                    userId);
                 continue;
             }
 
             order.Confirmed = false;
             order.Status = DeliveryStatus.Canceled;
-        
+
             var result = await _orderRepository.UpdateAsync(order);
             if (!result)
             {
                 _logger.LogWarning("Failed to update order");
-                throw new InvalidOperationException($"Failed to update order");
+                throw new InvalidOperationException("Failed to update order");
             }
+
             _logger.LogInformation("Canceled order {OrderId}", order.Id);
         }
-        
+
         var assembly = Assembly.GetExecutingAssembly();
-        await using var streamOrderEmail = assembly.GetManifestResourceStream("App.Services.EmailTemplates.OrderCanceledByUser.html");
+        await using var streamOrderEmail =
+            assembly.GetManifestResourceStream("App.Services.EmailTemplates.OrderCanceledByUser.html");
         using var readerOrderEmail = new StreamReader(streamOrderEmail!);
         var htmlOrderEmail = await readerOrderEmail.ReadToEndAsync();
-        var readyOrderEmailHtml = htmlOrderEmail.Replace("__ORDERID__", orders.First().OrderNumber).Replace("__ORDERID2__", string.Join(", ", orders.Select(o => o.Id.ToString())));
-        var mail = new EmailMessage()
+        var readyOrderEmailHtml = htmlOrderEmail.Replace("__ORDERID__", orders.First().OrderNumber)
+            .Replace("__ORDERID2__", string.Join(", ", orders.Select(o => o.Id.ToString())));
+        var mail = new EmailMessage
         {
             From = "no-reply@sellpoint.pp.ua",
             To = [user.Email],
             Subject = "Ваше замовлення скасоване",
             HtmlBody = readyOrderEmailHtml
         };
+
+        var msg =
+            "Ви скасували замовлення. Якщо ви здійснили оплату карткою онлайн, кошти будуть повернені протягом 7 робочих днів.";
+
+        var notification = new NotificationCreateDto
+        {
+            Type = NotificationType.Info,
+            Message = msg,
+            From = null,
+            To = userId,
+            IsHighPriority = true
+        };
+        await _notificationService.SendNotificationAsync(notification);
         await _emailService.SendEmailAsync(mail);
     }
 
     /// <summary>
-    /// Sends a verification code to the specified email for retrieving orders.
+    ///     Sends a verification code to the specified email for retrieving orders.
     /// </summary>
     /// <param name="email">The email address to which the verification code will be sent.</param>
     public async Task SendOrderActionCode(string email)
     {
         using var scope = _logger.BeginScope("SendOrderActionCode");
         _logger.LogInformation("SendOrderActionCode called for email {Email}", email);
-        
+
         var code = CodeGenerator.GenerateCode(6);
         var assembly = Assembly.GetExecutingAssembly();
         await using var stream = assembly.GetManifestResourceStream("App.Services.EmailTemplates.EmailCode.html");
         using var reader = new StreamReader(stream!);
         var html = await reader.ReadToEndAsync();
         var readyEmail = html.Replace("__CODE__", code).Replace("__TIME__", "15");
-        
+
         _cache.Set("verify-orders-action:" + email, code, TimeSpan.FromMinutes(15));
-        
-        var mail = new EmailMessage()
+
+        var mail = new EmailMessage
         {
             From = "no-reply@sellpoint.pp.ua",
             To = [email],
             Subject = "Підтвердіть дію",
             HtmlBody = readyEmail
         };
-        
+
         await _emailService.SendEmailAsync(mail);
         _logger.LogInformation("SendOrderActionCode successfully completed for email {Email}", email);
     }
 
     /// <summary>
-    /// Retrieves grouped orders by email after validating the verification code.
+    ///     Retrieves grouped orders by email after validating the verification code.
     /// </summary>
     /// <param name="email">The email address associated with the orders.</param>
     /// <param name="inputCode">The verification code entered by the user.</param>
@@ -841,9 +893,9 @@ public class OrderService(
     {
         using var scope = _logger.BeginScope("GetByEmailCode");
         _logger.LogInformation("GetByEmailCode called for email {Email}", email);
-        
+
         var cacheKey = $"verify-orders-action:{email}";
-        
+
         if (_cache.TryGetValue(cacheKey, out string? storedCode))
             if (string.Equals(storedCode, inputCode, StringComparison.OrdinalIgnoreCase))
             {
@@ -856,16 +908,16 @@ public class OrderService(
                         OrderNumber = g.Key,
                         Orders = g.ToList()
                     });
-        
+
                 _logger.LogInformation("Getting buy infos successfully for email {email}", email);
                 return grouped;
             }
-        
+
         throw new InvalidOperationException("Invalid code");
     }
 
     /// <summary>
-    /// Accepts a specific order by marking it as confirmed and assigning a tracking number.
+    ///     Accepts a specific order by marking it as confirmed and assigning a tracking number.
     /// </summary>
     /// <param name="userId">The ID of the user (seller) performing the acceptance.</param>
     /// <param name="buyInfoId">The ID of the order to be accepted.</param>
@@ -879,7 +931,7 @@ public class OrderService(
             _logger.LogWarning("Store not found for User {userId}", userId);
             throw new KeyNotFoundException("Store not found");
         }
-        
+
         var order = await _orderRepository.GetByIdAsync(ObjectId.Parse(buyInfoId));
         if (order == null)
         {
@@ -892,7 +944,7 @@ public class OrderService(
             _logger.LogInformation("Order already confirmed");
             return;
         }
-        
+
         order.Confirmed = true;
         order.Status = DeliveryStatus.WaitingForShipment;
         var trackNumber = Guid.NewGuid().ToString("N");
@@ -902,48 +954,53 @@ public class OrderService(
         if (!result)
         {
             _logger.LogWarning("Failed to update order");
-            throw new InvalidOperationException($"Failed to update order");
+            throw new InvalidOperationException("Failed to update order");
         }
 
 
         if (order.Registered)
         {
-            var notification = new NotificationCreateDto()
+            var notification = new NotificationCreateDto
             {
                 Type = NotificationType.Info,
-                Message = $"Підзамовлення #{order.Id.ToString()} у складі замовлення #{order.OrderNumber} підтверджено продавцем!",
+                Message =
+                    $"Підзамовлення #{order.Id.ToString()} у складі замовлення #{order.OrderNumber} підтверджено продавцем!",
                 From = store.Name,
                 To = order.UserId.ToString(),
-                IsHighPriority = false,
+                IsHighPriority = false
             };
             await _notificationService.SendNotificationAsync(notification);
         }
+
         var assembly = Assembly.GetExecutingAssembly();
-        await using var streamOrderEmail = assembly.GetManifestResourceStream("App.Services.EmailTemplates.OrderConfirmed.html");
+        await using var streamOrderEmail =
+            assembly.GetManifestResourceStream("App.Services.EmailTemplates.OrderConfirmed.html");
         using var readerOrderEmail = new StreamReader(streamOrderEmail!);
         var htmlOrderEmail = await readerOrderEmail.ReadToEndAsync();
         var readyOrderEmail = htmlOrderEmail.Replace("__ORDERID__", order.OrderNumber)
             .Replace("__ORDERID2__", order.Id.ToString())
             .Replace("__TRACK__", order.TrackingNumber);
-        
-        var mail = new EmailMessage()
+
+        var mail = new EmailMessage
         {
             From = "no-reply@sellpoint.pp.ua",
             To = [order.Email],
             Subject = "Ваше замовлення прийняте",
             HtmlBody = readyOrderEmail
         };
-        
+
         await _emailService.SendEmailAsync(mail);
         _logger.LogInformation("Order accepted");
     }
 
     private async Task SendEmailAfterPayment(string email, string orderNumber)
     {
-        _logger.LogInformation("SendEmailAfterPayment started for email {Email} and order {OrderNumber}", email, orderNumber);
+        _logger.LogInformation("SendEmailAfterPayment started for email {Email} and order {OrderNumber}", email,
+            orderNumber);
 
         var assembly = Assembly.GetExecutingAssembly();
-        await using var streamOrderEmail = assembly.GetManifestResourceStream("App.Services.EmailTemplates.SuccessOrderAfterPayment.html");
+        await using var streamOrderEmail =
+            assembly.GetManifestResourceStream("App.Services.EmailTemplates.SuccessOrderAfterPayment.html");
         if (streamOrderEmail == null)
         {
             _logger.LogWarning("Email template 'SuccessOrderAfterPayment.html' not found in assembly resources.");
@@ -956,7 +1013,7 @@ public class OrderService(
 
         _logger.LogInformation("Email HTML prepared for order {OrderNumber}", orderNumber);
 
-        var mail = new EmailMessage()
+        var mail = new EmailMessage
         {
             From = "no-reply@sellpoint.pp.ua",
             To = [email],
@@ -976,13 +1033,11 @@ public class OrderService(
             return;
         }
 
-        _logger.LogInformation("SendEmailPayCard started for email {Email} with {OrderCount} items", email, order.Count);
+        _logger.LogInformation("SendEmailPayCard started for email {Email} with {OrderCount} items", email,
+            order.Count);
 
         decimal totalPrice = 0;
-        foreach (var orderItem in order)
-        {
-            totalPrice += orderItem.TotalPrice;
-        }
+        foreach (var orderItem in order) totalPrice += orderItem.TotalPrice;
         _logger.LogInformation("Total price calculated: {TotalPrice}", totalPrice);
 
         var htmlRows = new List<string>();
@@ -1027,7 +1082,8 @@ public class OrderService(
         var htmlOrder = await readerOrder.ReadToEndAsync();
         var readyOrderHtml = htmlOrder
             .Replace("__ORDERID__", order.First().OrderNumber)
-            .Replace("__ORDERTO__", order.First().DeliveryToInfo.Region + ", " + order.First().DeliveryToInfo.Settlement)
+            .Replace("__ORDERTO__",
+                order.First().DeliveryToInfo.Region + ", " + order.First().DeliveryToInfo.Settlement)
             .Replace("__ADDRESS__", order.First().DeliveryToInfo.Address)
             .Replace("__FINALPRICE__", totalPrice.ToString("F2"))
             .Replace("__BONUS__", "0")
@@ -1035,21 +1091,23 @@ public class OrderService(
             .Replace("__DATE__", date)
             .Replace("__PRODUCTS__", productsHtml);
 
-        _logger.LogInformation("Order HTML prepared for PDF generation for order {OrderNumber}", order.First().OrderNumber);
+        _logger.LogInformation("Order HTML prepared for PDF generation for order {OrderNumber}",
+            order.First().OrderNumber);
 
         _logger.LogInformation("Starting PDF generation for order {OrderNumber}", order.First().OrderNumber);
         var file = await GenerateOrderPdfAsync(order, readyOrderHtml);
         _logger.LogInformation("PDF generation completed for order {OrderNumber}", order.First().OrderNumber);
 
-        await using var streamOrderEmail = assembly.GetManifestResourceStream("App.Services.EmailTemplates.SuccessOrderWithCard.html");
+        await using var streamOrderEmail =
+            assembly.GetManifestResourceStream("App.Services.EmailTemplates.SuccessOrderWithCard.html");
         using var readerOrderEmail = new StreamReader(streamOrderEmail!);
         var htmlOrderEmail = await readerOrderEmail.ReadToEndAsync();
         var readyOrderEmailHtml = htmlOrderEmail.Replace("__ORDERID__", order.First().OrderNumber);
 
-        var mail = new EmailMessage()
+        var mail = new EmailMessage
         {
             From = "no-reply@sellpoint.pp.ua",
-            To = [ email ],
+            To = [email],
             Subject = "Ваше замовлення зареєстроване",
             HtmlBody = readyOrderEmailHtml
         };
@@ -1057,7 +1115,8 @@ public class OrderService(
         _logger.LogDebug("Order HTML for logging: {ReadyOrderHtml}", readyOrderHtml);
 
         await _emailService.SendEmailAsync(mail, file, $"Замовлення{order.First().OrderNumber}.pdf");
-        _logger.LogInformation("Email with PDF successfully sent to {Email} for order {OrderNumber}", email, order.First().OrderNumber);
+        _logger.LogInformation("Email with PDF successfully sent to {Email} for order {OrderNumber}", email,
+            order.First().OrderNumber);
     }
 
     private async Task<byte[]> GenerateOrderPdfAsync(IEnumerable<Order> order, string readyOrderHtml)
@@ -1080,7 +1139,7 @@ public class OrderService(
         {
             var browserFetcher = new BrowserFetcher();
             await browserFetcher.DownloadAsync();
-            
+
             var launchOptions = new LaunchOptions
             {
                 Headless = true,
@@ -1125,7 +1184,7 @@ public class OrderService(
             _logger.LogDebug("Released PDF semaphore for order {OrderId}", orderId);
         }
     }
-    
+
     private void SaveVerificationCode(string email, string code, int expires)
     {
         var cacheEntryOptions = new MemoryCacheEntryOptions()

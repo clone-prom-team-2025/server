@@ -13,9 +13,9 @@ namespace App.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
-    ILogger<AuthController> _logger;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService authService,  ILogger<AuthController> logger)
+    public AuthController(IAuthService authService, ILogger<AuthController> logger)
     {
         _authService = authService;
         _logger = logger;
@@ -24,7 +24,8 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromForm] LoginDto loginDto)
     {
-        using (_logger.BeginScope("Login")) {
+        using (_logger.BeginScope("Login"))
+        {
             _logger.LogInformation("Login action");
             var deviceInfo = DeviceInfoHelper.GetDeviceInfo(Request);
 
@@ -40,7 +41,8 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromForm] RegisterDto registerDto)
     {
-        using (_logger.BeginScope("Register")) {
+        using (_logger.BeginScope("Register"))
+        {
             _logger.LogInformation("Register action");
             var deviceInfo = DeviceInfoHelper.GetDeviceInfo(Request);
             var result = await _authService.RegisterAsync(registerDto, deviceInfo);
@@ -50,7 +52,7 @@ public class AuthController : ControllerBase
             return Ok(result);
         }
     }
-    
+
     [HttpPost("google-login")]
     public async Task<IActionResult> GoogleLogin(string token)
     {
@@ -77,7 +79,8 @@ public class AuthController : ControllerBase
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
-        using (_logger.BeginScope("Logout")) {
+        using (_logger.BeginScope("Logout"))
+        {
             _logger.LogInformation("Logout action");
             var sessionId = User.FindFirstValue(ClaimTypes.Sid);
             if (string.IsNullOrEmpty(sessionId))
@@ -94,12 +97,13 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<IActionResult> GetActiveSessions()
     {
-        using (_logger.BeginScope("GetActiveSessions")) {
+        using (_logger.BeginScope("GetActiveSessions"))
+        {
             _logger.LogInformation("GetActiveSessions action");
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null)
                 return BadRequest();
-            
+
             _logger.LogInformation("GetActiveSessions success");
             return Ok(await _authService.GetActiveSessions(userId));
         }
@@ -109,7 +113,8 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<IActionResult> RevokeSession(string sessionId)
     {
-        using (_logger.BeginScope("RevokeSession")) {
+        using (_logger.BeginScope("RevokeSession"))
+        {
             _logger.LogInformation("RevokeSession action");
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null)
@@ -126,7 +131,8 @@ public class AuthController : ControllerBase
     [HttpPost("send-email-verification-code")]
     public async Task<IActionResult> SendEmailVerificationCode()
     {
-        using (_logger.BeginScope("SendEmailVerificationCode")) {
+        using (_logger.BeginScope("SendEmailVerificationCode"))
+        {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized("Session ID not found in token");
@@ -142,7 +148,8 @@ public class AuthController : ControllerBase
     [HttpGet("verify-email-code")]
     public async Task<IActionResult> VerifyEmailCode(string code)
     {
-        using (_logger.BeginScope("VerifyEmailCode")) {
+        using (_logger.BeginScope("VerifyEmailCode"))
+        {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized("Session ID not found in token");
@@ -171,7 +178,8 @@ public class AuthController : ControllerBase
     [HttpPost("send-password-reset-code")]
     public async Task<IActionResult> SendPasswordResetCode(string login)
     {
-        using  (_logger.BeginScope("SendPasswordResetCode")) {
+        using (_logger.BeginScope("SendPasswordResetCode"))
+        {
             _logger.LogInformation("SendPasswordResetCode action");
             var result = await _authService.SendPasswordReset(login);
             if (result == null)
@@ -184,7 +192,8 @@ public class AuthController : ControllerBase
     [HttpGet("verify-password-reset-code")]
     public async Task<IActionResult> VerifyPasswordResetCode(string resetToken, string code)
     {
-        using (_logger.BeginScope("VerifyPasswordResetCode")) {
+        using (_logger.BeginScope("VerifyPasswordResetCode"))
+        {
             _logger.LogInformation("VerifyPasswordResetCode action");
             var result = await _authService.VerifyPasswordCodeAsync(resetToken, code);
             if (result == null)
@@ -197,7 +206,8 @@ public class AuthController : ControllerBase
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword(string password, string accessCode)
     {
-        using (_logger.BeginScope("ResetPassword")) {
+        using (_logger.BeginScope("ResetPassword"))
+        {
             _logger.LogInformation("ResetPassword action");
             await _authService.ResetPassword(password, accessCode);
             _logger.LogInformation("ResetPassword success");

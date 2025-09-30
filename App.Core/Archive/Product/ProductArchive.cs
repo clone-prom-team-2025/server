@@ -8,17 +8,16 @@ namespace App.Core.Archive.Product;
 
 public class ProductArchive
 {
-    [BsonId]
-    public string Id { get; set; } = string.Empty;
-    
+    [BsonId] public string Id { get; set; } = string.Empty;
+
     public DateTime ArchivedAt { get; set; }
-    
+
     public ObjectId ProductId { get; set; } = ObjectId.GenerateNewId();
-    
+
     public string Name { get; set; } = string.Empty;
-    
+
     public List<ObjectId> CategoryPath { get; set; } = [];
-    
+
     public List<ProductFeature> Features { get; set; } = [];
 
     public decimal Price { get; set; }
@@ -36,6 +35,6 @@ public class ProductArchive
     public int Quantity { get; set; }
 
     public ProductDeliveryType DeliveryType { get; set; }
-    
-    public ProductDimensions ProductDimensions { get; set; } = new ProductDimensions();
+
+    public ProductDimensions ProductDimensions { get; set; } = new();
 }

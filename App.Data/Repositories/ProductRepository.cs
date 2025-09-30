@@ -241,6 +241,19 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         return await _products.Find(filter).Limit(1).AnyAsync();
     }
 
+    public async Task<IEnumerable<Product>> GetRandomProductsAsync(int page, int pageSize)
+    {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 10;
+
+        var pipeline = _products.Aggregate()
+            .AppendStage<Product>("{$sample: { size: 1000 }}")
+            .Skip((page - 1) * pageSize)
+            .Limit(pageSize);
+
+        return await pipeline.ToListAsync();
+    }
+
     private List<FilterDefinition<Product>> FormFilter(ProductFilterRequest filter)
     {
         var builder = Builders<Product>.Filter;
@@ -256,7 +269,6 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
             filters.Add(builder.Lte(p => p.Price, filter.PriceMax.Value));
 
         foreach (var kv in filter.Include)
-        {
             if (kv.Value is { Count: > 0 })
             {
                 var valueFilters = kv.Value.Select(val =>
@@ -267,10 +279,8 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 
                 filters.Add(builder.Or(valueFilters));
             }
-        }
 
         foreach (var kv in filter.Exclude)
-        {
             if (kv.Value is { Count: > 0 })
             {
                 var valueFilters = kv.Value.Select(val =>
@@ -281,7 +291,6 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 
                 filters.Add(builder.Not(builder.Or(valueFilters)));
             }
-        }
 
         return filters;
     }
@@ -313,18 +322,4 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 
         return text.Length;
     }
-    
-    public async Task<IEnumerable<Product>> GetRandomProductsAsync(int page, int pageSize)
-    {
-        if (page < 1) page = 1;
-        if (pageSize < 1) pageSize = 10;
-
-        var pipeline = _products.Aggregate()
-            .AppendStage<Product>("{$sample: { size: 1000 }}")
-            .Skip((page - 1) * pageSize)
-            .Limit(pageSize);
-
-        return await pipeline.ToListAsync();
-    }
-
 }
