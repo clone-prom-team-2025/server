@@ -134,8 +134,8 @@ public class FileService : IFileService
         var conversionWebm = FFmpeg.Conversions.New()
             .AddParameter($"-i \"{inputPath}\"", ParameterPosition.PreInput)
             .AddParameter("-vf scale='min(1280,iw)':'min(720,ih)'")
-            .AddParameter("-c:v libvpx -b:v 2M")
-            .AddParameter("-c:a libvorbis -b:a 128k")
+            .AddParameter("-c:v libvpx -crf 10 -b:v 0")
+            .AddParameter("-c:a libvorbis -b:a 192k")
             .SetOutput(outputWebmPath);
 
         await conversionWebm.Start();

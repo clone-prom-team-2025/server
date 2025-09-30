@@ -127,7 +127,7 @@ public class ProductMediaService(
     /// <param name="productId">The ID of the product.</param>
     /// <param name="userId">Id of store owner/manager/admin</param>
     /// <returns>List of newly added media DTOs.</returns>
-    public async Task<List<ProductMediaDto>?> SyncMediaFromTempFilesAsync(List<FileArrayItemDto> files,
+    public async Task SyncMediaFromTempFilesAsync(List<FileArrayItemDto> files,
         string productId, string userId)
     {
         using (_logger.BeginScope("SyncMediaFromTempFilesAsync"))
@@ -191,7 +191,6 @@ public class ProductMediaService(
             }
 
             _logger.LogInformation("SyncMediaFromTempFilesAsync success");
-            return result;
         }
     }
 

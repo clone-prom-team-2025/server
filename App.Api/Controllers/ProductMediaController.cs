@@ -1,9 +1,12 @@
 using System.Security.Claims;
 using App.Core.Constants;
 using App.Core.DTOs;
+using App.Core.Enums;
+using App.Core.Interfaces;
 using App.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Bson;
 
 namespace App.Api.Controllers;
 
@@ -13,11 +16,13 @@ public class ProductMediaController : ControllerBase
 {
     private readonly ILogger<ProductMediaController> _logger;
     private readonly IProductMediaService _productMediaService;
+    private readonly IProductRepository _productRepository;
 
-    public ProductMediaController(IProductMediaService productMediaService, ILogger<ProductMediaController> logger)
+    public ProductMediaController(IProductMediaService productMediaService, ILogger<ProductMediaController> logger, IProductRepository productRepository)
     {
         _productMediaService = productMediaService;
         _logger = logger;
+        _productRepository = productRepository;
     }
 
     [HttpGet]
@@ -80,12 +85,17 @@ public class ProductMediaController : ControllerBase
             var userId = HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
             _logger.LogInformation("SyncProductMediaAsync action");
 
+            if (!await _productRepository.ExistById(ObjectId.Parse(productId)))
+            {
+                _logger.LogWarning("Product not found");
+                return NotFound("Product not found.");  
+            }
+
             if (files.Length == 0)
                 return BadRequest("No files uploaded.");
 
             var tempDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "temp");
-            if (!Directory.Exists(tempDir))
-                Directory.CreateDirectory(tempDir);
+            Directory.CreateDirectory(tempDir);
 
             List<FileArrayItemDto> filesDto = [];
 
@@ -95,9 +105,20 @@ public class ProductMediaController : ControllerBase
                 if (file.Length > 0)
                 {
                     var tempFilePath = Path.Combine(tempDir, Path.GetRandomFileName());
-                    using (var stream = new FileStream(tempFilePath, FileMode.Create))
+                    await using (var stream = new FileStream(tempFilePath, FileMode.Create))
                     {
                         await file.CopyToAsync(stream);
+                    }
+
+                    if (i == 0)
+                    {
+                        await using var checkStream = new FileStream(tempFilePath, FileMode.Open, FileAccess.Read);
+                        var mediaType = MediaInspector.GetMediaType(checkStream, file.FileName);
+                        if (mediaType == MediaType.Video)
+                        {
+                            System.IO.File.Delete(tempFilePath);
+                            return BadRequest("The first media must be an image, not a video.");
+                        }
                     }
 
                     filesDto.Add(new FileArrayItemDto
@@ -109,30 +130,33 @@ public class ProductMediaController : ControllerBase
                 }
             }
 
-            try
+            _ = Task.Run(async () =>
             {
-                var result = await _productMediaService.SyncMediaFromTempFilesAsync(filesDto, productId, userId);
-                _logger.LogInformation("SyncProductMediaAsync success");
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in SyncProductMediaAsync");
-                return BadRequest(ex.Message);
-            }
-            finally
-            {
-                foreach (var file in filesDto)
-                    if (!string.IsNullOrWhiteSpace(file.Url) && System.IO.File.Exists(file.Url))
-                        try
+                try
+                {
+                    await _productMediaService.SyncMediaFromTempFilesAsync(filesDto, productId, userId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error in background SyncMediaFromTempFilesAsync");
+                }
+                finally
+                {
+                    foreach (var file in filesDto)
+                    {
+                        if (!string.IsNullOrWhiteSpace(file.Url) && System.IO.File.Exists(file.Url))
                         {
-                            System.IO.File.Delete(file.Url);
+                            try { System.IO.File.Delete(file.Url); }
+                            catch (Exception deleteEx)
+                            {
+                                _logger.LogWarning(deleteEx, $"Failed to delete temp file {file.Url}");
+                            }
                         }
-                        catch (Exception deleteEx)
-                        {
-                            _logger.LogWarning(deleteEx, $"Failed to delete temp file {file.Url}");
-                        }
-            }
+                    }
+                }
+            });
+
+            return Accepted(new { Message = "Media is being processed in background" });
         }
     }
 }
