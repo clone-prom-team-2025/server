@@ -58,6 +58,7 @@ builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("Mo
 // --- File storage settings
 builder.Services.Configure<FileStorageOptions>(builder.Configuration.GetSection("FileStorage"));
 builder.Services.Configure<MinIOOptions>(builder.Configuration.GetSection("CloudflareR2"));
+builder.Services.Configure<GoogleAuthOptions>(builder.Configuration.GetSection("GoogleAuth"));
 builder.Services.Configure<ProductMediaKeys>(builder.Configuration.GetSection("ProductMediaKeys"));
 
 // --- Auth sessions settings ---

@@ -32,7 +32,8 @@ public class AuthService(
     ISessionHubNotifier sessionHubNotifier,
     IFavoriteSellerRepository favoriteSellerRepository,
     IFavoriteProductRepository favoriteProductRepository,
-    ILogger<AuthService> logger)
+    ILogger<AuthService> logger,
+    IOptions<GoogleAuthOptions> googleOptions)
     : IAuthService
 {
     private static readonly Random Random = new();
@@ -47,18 +48,24 @@ public class AuthService(
     private readonly ISessionHubNotifier _sessionHubNotifier = sessionHubNotifier;
     private readonly IUserSessionRepository _sessionRepository = sessionRepository;
     private readonly IUserRepository _userRepository = userRepository;
+    private readonly GoogleAuthOptions _googleAuthOptions = googleOptions.Value;
 
     public async Task<string?> LoginWithGoogleAsync(string idToken, DeviceInfo deviceInfo)
     {
         GoogleJsonWebSignature.Payload payload;
+        var validationSettings = new GoogleJsonWebSignature.ValidationSettings
+        {
+            Audience = [_googleAuthOptions.SecretKey]
+        };
         try
         {
-            payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
+            payload = await GoogleJsonWebSignature.ValidateAsync(idToken, validationSettings);
         }
-        catch (Exception)
+        catch (InvalidJwtException ex)
         {
-            throw new UnauthorizedAccessException("Invalid Google token");
+            throw new UnauthorizedAccessException("Invalid Google token", ex);
         }
+
 
         var email = payload.Email;
         var firstName = payload.GivenName;
