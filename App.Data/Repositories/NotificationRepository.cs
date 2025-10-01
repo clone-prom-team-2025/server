@@ -1,6 +1,7 @@
 using App.Core.Interfaces;
 using App.Core.Models.Notification;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 
 namespace App.Data.Repositories;
@@ -29,30 +30,97 @@ public class NotificationRepository(MongoDbContext context) : INotificationRepos
 
     public async Task<List<Notification>?> GetSeenNotificationsAsync(ObjectId userId)
     {
-        var pipeline = _notifications.Aggregate()
-            .Lookup<Notification, NotificationSeen, NotificationWithSeen>(
-                _seenNotifications,
-                n => n.Id,
-                s => s.NotificationId,
-                r => r.SeenInfo)
-            .Match(n => n.SeenInfo.Any(s => s.UserId == userId));
+        var lookup = new BsonDocument
+        {
+            {
+                "$lookup", new BsonDocument
+                {
+                    { "from", _seenNotifications.CollectionNamespace.CollectionName },
+                    { "localField", "_id" },
+                    { "foreignField", "NotificationId" },
+                    { "as", "SeenInfo" }
+                }
+            }
+        };
 
-        var result = await pipeline.ToListAsync();
-        return result.Cast<Notification>().ToList();
+        var match = new BsonDocument
+        {
+            {"$match", new BsonDocument
+                {
+                    { "To", userId },
+                    { "SeenInfo.UserId", userId }
+                }
+            }
+        };
+
+        var project = new BsonDocument
+        {
+            {
+                "$project", new BsonDocument
+                {
+                    { "SeenInfo", 0 }
+                }
+            }
+        };
+
+        var pipeline = new[] { lookup, match, project };
+
+        var docs = await _notifications.Aggregate<BsonDocument>(pipeline).ToListAsync();
+        return docs.Select(d => BsonSerializer.Deserialize<Notification>(d)).ToList();
     }
 
     public async Task<List<Notification>?> GetUnseenNotificationsAsync(ObjectId userId)
     {
-        var pipeline = _notifications.Aggregate()
-            .Lookup<Notification, NotificationSeen, NotificationWithSeen>(
-                _seenNotifications,
-                n => n.Id,
-                s => s.NotificationId,
-                r => r.SeenInfo)
-            .Match(n => n.SeenInfo.All(s => s.UserId != userId));
+        var lookup = new BsonDocument
+        {
+            {
+                "$lookup", new BsonDocument
+                {
+                    { "from", _seenNotifications.CollectionNamespace.CollectionName },
+                    { "localField", "_id" },
+                    { "foreignField", "NotificationId" },
+                    { "as", "SeenInfo" }
+                }
+            }
+        };
 
-        var result = await pipeline.ToListAsync();
-        return result.Cast<Notification>().ToList();
+        var match = new BsonDocument
+        {
+            {
+                "$match", new BsonDocument
+                {
+                    { "To", userId },
+                    {
+                        "$expr", new BsonDocument
+                        {
+                            {
+                                "$not", new BsonDocument
+                                {
+                                    {
+                                        "$in", new BsonArray { new BsonObjectId(userId), "$SeenInfo.UserId" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        var project = new BsonDocument
+        {
+            {
+                "$project", new BsonDocument
+                {
+                    { "SeenInfo", 0 }
+                }
+            }
+        };
+
+        var pipeline = new[] { lookup, match, project };
+
+        var docs = await _notifications.Aggregate<BsonDocument>(pipeline).ToListAsync();
+        return docs.Select(d => BsonSerializer.Deserialize<Notification>(d)).ToList();
     }
 
     public async Task CreateNotificationAsync(Notification notification)
@@ -113,17 +181,43 @@ public class NotificationRepository(MongoDbContext context) : INotificationRepos
 
     public async Task<bool> HasSeenNotificationAsync(ObjectId userId, ObjectId notificationId)
     {
-        var pipeline = _notifications.Aggregate()
-            .Lookup<Notification, NotificationSeen, NotificationWithSeen>(
-                _seenNotifications,
-                n => n.Id,
-                s => s.NotificationId,
-                r => r.SeenInfo
-            )
-            .Match(n => n.Id == notificationId && n.SeenInfo.All(s => s.UserId != userId));
+        var lookup = new BsonDocument
+        {
+            {
+                "$lookup", new BsonDocument
+                {
+                    { "from", _seenNotifications.CollectionNamespace.CollectionName },
+                    { "localField", "_id" },
+                    { "foreignField", "NotificationId" },
+                    { "as", "SeenInfo" }
+                }
+            }
+        };
 
-        var exists = await pipeline.AnyAsync();
+        var match = new BsonDocument
+        {
+            {
+                "$match", new BsonDocument
+                {
+                    { "_id", notificationId },
+                    {
+                        "SeenInfo", new BsonDocument
+                        {
+                            {
+                                "$not", new BsonDocument
+                                {
+                                    { "$elemMatch", new BsonDocument("UserId", userId) }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
 
+        var pipeline = new[] { lookup, match };
+
+        var exists = await _notifications.Aggregate<BsonDocument>(pipeline).AnyAsync();
         return exists;
     }
 

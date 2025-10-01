@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using App.Core.DTOs.Product;
 using App.Core.Interfaces;
-using App.Core.Models.Product;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,10 +10,10 @@ namespace App.Api.Controllers;
 [Route("api/[controller]")]
 public class ProductController : ControllerBase
 {
-    private readonly IProductService _productService;
     private readonly ILogger<ProductController> _logger;
+    private readonly IProductService _productService;
 
-    public ProductController(IProductService productService,  ILogger<ProductController> logger)
+    public ProductController(IProductService productService, ILogger<ProductController> logger)
     {
         _productService = productService;
         _logger = logger;
@@ -23,7 +22,8 @@ public class ProductController : ControllerBase
     [HttpPost("get-all")]
     public async Task<IActionResult> GetAll(ProductFilterRequestDto filter)
     {
-        using (_logger.BeginScope("GetAll")){
+        using (_logger.BeginScope("GetAll"))
+        {
             _logger.LogInformation("GetAll action");
             var products = await _productService.GetAllAsync(filter);
             if (products == null || products.Products.Count == 0)
@@ -35,9 +35,10 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("get-by-id/{id}")]
-    public async Task<ActionResult<ProductDto?>> GetByIdAsync(string id)
+    public async Task<IActionResult> GetByIdAsync(string id)
     {
-        using (_logger.BeginScope("GetById")) {
+        using (_logger.BeginScope("GetById"))
+        {
             _logger.LogInformation("GetById action");
             var product = await _productService.GetByIdAsync(id);
             _logger.LogInformation("GetById success");
@@ -46,10 +47,11 @@ public class ProductController : ControllerBase
     }
 
     [HttpPost("get-by-name/{name}")]
-    public async Task<ActionResult<ProductFilterResponseDto?>> GetByNameAsync(string name,
+    public async Task<IActionResult> GetByNameAsync(string name,
         ProductFilterRequestDto filter)
     {
-        using (_logger.BeginScope("GetByName")) {
+        using (_logger.BeginScope("GetByName"))
+        {
             _logger.LogInformation("GetByName action");
             var products = await _productService.GetByNameAsync(name, filter);
             if (products == null || products.Products.Count == 0)
@@ -63,7 +65,8 @@ public class ProductController : ControllerBase
     public async Task<IActionResult> GetBySellerIdAsync(string sellerId,
         ProductFilterRequestDto filter)
     {
-        using  (_logger.BeginScope("GetBySellerId")) {
+        using (_logger.BeginScope("GetBySellerId"))
+        {
             var products = await _productService.GetBySellerIdAsync(sellerId, filter);
             if (products == null || products.Products.Count == 0)
                 return NotFound();
@@ -76,7 +79,8 @@ public class ProductController : ControllerBase
     [Authorize]
     public async Task<IActionResult> CreateAsync([FromBody] ProductCreateDto productDto)
     {
-        using (_logger.BeginScope("Create")) {
+        using (_logger.BeginScope("Create"))
+        {
             _logger.LogInformation("Create action");
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null) return BadRequest();
@@ -89,9 +93,10 @@ public class ProductController : ControllerBase
 
     [HttpPut]
     [Authorize]
-    public async Task<ActionResult<ProductDto?>> UpdateAsync(UpdateProductDto productDto)
+    public async Task<IActionResult> UpdateAsync(UpdateProductDto productDto)
     {
-        using (_logger.BeginScope("Update")) {
+        using (_logger.BeginScope("Update"))
+        {
             _logger.LogInformation("Update action");
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null) return BadRequest();
@@ -103,9 +108,10 @@ public class ProductController : ControllerBase
 
     [HttpDelete]
     [Authorize]
-    public async Task<ActionResult> DeleteAsync(string id)
+    public async Task<IActionResult> DeleteAsync(string id)
     {
-        using (_logger.BeginScope("Delete")) {
+        using (_logger.BeginScope("Delete"))
+        {
             _logger.LogInformation("Delete action");
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null) return BadRequest();
@@ -117,9 +123,10 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("search")]
-    public async Task<ActionResult<List<ProductSearchResult>?>> SearchByNameAsync(string name)
+    public async Task<IActionResult> SearchByNameAsync(string name)
     {
-        using (_logger.BeginScope("SearchByName")) {
+        using (_logger.BeginScope("SearchByName"))
+        {
             _logger.LogInformation("SearchByNameAsync action");
             var search = await _productService.SearchByNameAsync(name);
             _logger.LogInformation("SearchByNameAsync success");
@@ -128,13 +135,44 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("random")]
-    public async Task<ActionResult<ProductDto?>> GetRandomAsync(int page, int pageSize)
+    public async Task<IActionResult> GetRandomAsync(int page, int pageSize)
     {
-        using (_logger.BeginScope("GetRandom")) {
+        using (_logger.BeginScope("GetRandom"))
+        {
             _logger.LogInformation("GetRandomAsync action");
             var result = await _productService.GetRandomProductsAsync(page, pageSize);
             _logger.LogInformation("GetRandomAsync success");
             return Ok(result);
-        } 
+        }
+    }
+
+    [HttpPost("restore")]
+    [Authorize]
+    public async Task<IActionResult> Restore(string productId)
+    {
+        using (_logger.BeginScope("Restore"))
+        {
+            _logger.LogInformation("Restore action");
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return BadRequest();
+            await _productService.RestoreAsync(productId, userId);
+            _logger.LogInformation("Restore success");
+            return NoContent();
+        }
+    }
+
+    [HttpGet("get-archived")]
+    [Authorize]
+    public async Task<IActionResult> GetArchivedByUserIdAsync()
+    {
+        using (_logger.BeginScope("GetArchivedByUserIdAsync"))
+        {
+            _logger.LogInformation("GetArchivedByUserIdAsync action");
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return BadRequest();
+            var result = await _productService.GetArchivedByUserIdAsync(userId);
+            _logger.LogInformation("GetArchivedByUserIdAsync success");
+            return Ok(result);
+        }
     }
 }

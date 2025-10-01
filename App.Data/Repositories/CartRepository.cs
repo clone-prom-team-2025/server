@@ -44,12 +44,9 @@ public class CartRepository(MongoDbContext mongoDbContext) : ICartRepository
         return result.IsAcknowledged;
     }
 
-    public async Task<bool> DeleteAsync(ObjectId id, ObjectId userId)
+    public async Task<bool> DeleteAsync(ObjectId id)
     {
-        var filter = Builders<Cart>.Filter.And(
-            Builders<Cart>.Filter.Eq(c => c.Id, id),
-            Builders<Cart>.Filter.Eq(c => c.UserId, userId)
-        );
+        var filter = Builders<Cart>.Filter.Eq(c => c.Id, id);
 
         var result = await _carts.DeleteOneAsync(filter);
 
@@ -84,7 +81,7 @@ public class CartRepository(MongoDbContext mongoDbContext) : ICartRepository
     {
         var filter = Builders<Cart>.Filter.Eq(c => c.UserId, userId);
 
-        var result = await _carts.DeleteOneAsync(filter);
+        var result = await _carts.DeleteManyAsync(filter);
 
         if (!result.IsAcknowledged || result.DeletedCount == 0) return false;
 

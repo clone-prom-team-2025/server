@@ -9,7 +9,7 @@ using MongoDB.Bson;
 namespace App.Services.Services;
 
 /// <summary>
-/// Service responsible for managing user carts, including adding, removing, updating, and retrieving cart items.
+///     Service responsible for managing user carts, including adding, removing, updating, and retrieving cart items.
 /// </summary>
 public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger<CartService> logger) : ICartService
 {
@@ -18,7 +18,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
     private readonly IMapper _mapper = mapper;
 
     /// <summary>
-    /// Adds a product to the user's cart.
+    ///     Adds a product to the user's cart.
     /// </summary>
     /// <param name="dto">The cart creation data.</param>
     /// <param name="userId">The ID of the user.</param>
@@ -48,16 +48,16 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
     }
 
     /// <summary>
-    /// Removes a product from the user's cart by cart ID.
+    ///     Removes a product from the user's cart by cart ID.
     /// </summary>
     /// <param name="id">The cart item ID.</param>
     /// <param name="userId">The ID of the user.</param>
-    public async Task RemoveAsync(string id, string userId)
+    public async Task RemoveAsync(string id)
     {
-        using (_logger.BeginScope("RemoveAsync: id={id}, UserId={userId}", id, userId))
+        using (_logger.BeginScope("RemoveAsync: id={id}", id))
         {
-            _logger.LogInformation("RemoveAsync called with id={id}, UserId={userId}", id, userId);
-            var result = await _cartRepository.DeleteAsync(ObjectId.Parse(id), ObjectId.Parse(userId));
+            _logger.LogInformation("RemoveAsync called with id={id}", id);
+            var result = await _cartRepository.DeleteAsync(ObjectId.Parse(id));
             if (!result)
             {
                 _logger.LogError("RemoveAsync: Failed to delete cart");
@@ -69,7 +69,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
     }
 
     /// <summary>
-    /// Clears all cart items for a specific user.
+    ///     Clears all cart items for a specific user.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     public async Task ClearAsync(string userId)
@@ -89,7 +89,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
     }
 
     /// <summary>
-    /// Changes the quantity of a cart item.
+    ///     Changes the quantity of a cart item.
     /// </summary>
     /// <param name="id">The cart item ID.</param>
     /// <param name="pcs">The new quantity.</param>
@@ -115,7 +115,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
             if (pcs <= 0)
             {
                 _logger.LogInformation("ChangePcsAsync: Pcs is equal or less than 0, deleting cart");
-                var resultDelete = await _cartRepository.DeleteAsync(ObjectId.Parse(id), ObjectId.Parse(userId));
+                var resultDelete = await _cartRepository.DeleteAsync(ObjectId.Parse(id));
                 if (!resultDelete)
                 {
                     _logger.LogError("ChangePcsAsync: Failed to update cart");
@@ -138,7 +138,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
     }
 
     /// <summary>
-    /// Retrieves all cart items from the database.
+    ///     Retrieves all cart items from the database.
     /// </summary>
     public async Task<IEnumerable<CartDto>?> GetAllAsync()
     {
@@ -158,7 +158,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
     }
 
     /// <summary>
-    /// Retrieves a cart item by its ID.
+    ///     Retrieves a cart item by its ID.
     /// </summary>
     /// <param name="id">The cart item ID.</param>
     public async Task<CartDto?> GetByIdAsync(string id)
@@ -179,7 +179,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
     }
 
     /// <summary>
-    /// Retrieves all cart items for a specific user.
+    ///     Retrieves all cart items for a specific user.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     public async Task<IEnumerable<CartDto>?> GetByUserIdAsync(string userId)
@@ -200,7 +200,7 @@ public class CartService(ICartRepository cartRepository, IMapper mapper, ILogger
     }
 
     /// <summary>
-    /// Checks if a product is already in the user's cart.
+    ///     Checks if a product is already in the user's cart.
     /// </summary>
     /// <param name="productId">The ID of the product.</param>
     /// <param name="userId">The ID of the user.</param>

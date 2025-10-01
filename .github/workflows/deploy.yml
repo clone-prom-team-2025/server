@@ -34,14 +34,17 @@ jobs:
             --arg smtp_np "$SMTP_NOREPLY_PASS" \
             --arg smtp_su "$SMTP_SUPPORT_USER" \
             --arg smtp_sp "$SMTP_SUPPORT_PASS" \
+            --arg gsecret "$GOOGLE_SECRET" \
             '.MongoDb.ConnectionString=$mongo |
              .CloudflareR2.AccessKey=$cfkey |
              .CloudflareR2.SecretKey=$cfsecret |
              .EmailSettings.Accounts.NoReply.Username=$smtp_nu |
              .EmailSettings.Accounts.NoReply.Password=$smtp_np |
              .EmailSettings.Accounts.Support.Username=$smtp_su |
-             .EmailSettings.Accounts.Support.Password=$smtp_sp' \
-             appsettings.json > tmp.json && mv tmp.json appsettings.json
+             .EmailSettings.Accounts.Support.Password=$smtp_sp |
+             .GoogleAuth = { SecretKey: $gsecret }' \
+            appsettings.json > tmp.json && mv tmp.json appsettings.json
+  
         env:
           MONGO_CONN: ${{ secrets.MONGO_CONN }}
           CLOUDFLARE_KEY: ${{ secrets.CLOUDFLARE_KEY }}
@@ -50,7 +53,7 @@ jobs:
           SMTP_NOREPLY_PASS: ${{ secrets.SMTP_NOREPLY_PASS }}
           SMTP_SUPPORT_USER: ${{ secrets.SMTP_SUPPORT_USER }}
           SMTP_SUPPORT_PASS: ${{ secrets.SMTP_SUPPORT_PASS }}
-
+          GOOGLE_SECRET: ${{ secrets.GOOGLE_SECRET }}
 
       - name: Build and push Docker image
         run: |

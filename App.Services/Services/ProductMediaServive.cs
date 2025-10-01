@@ -4,7 +4,6 @@ using App.Core.Enums;
 using App.Core.Interfaces;
 using App.Core.Models.FileStorage;
 using App.Core.Models.Product;
-using App.Core.Models.Store;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -31,20 +30,21 @@ public class ProductMediaService(
     /// </summary>
     private readonly IFileService _fileService = fileService;
 
+    private readonly ILogger<ProductMediaService> _logger = logger;
+
     /// <summary>
     ///     AutoMapper instance for converting between entities and DTOs.
     /// </summary>
     private readonly IMapper _mapper = mapper;
 
     private readonly ProductMediaKeys _productMediaKeys = productMediaKeys.Value;
+    private readonly IProductRepository _productRepository = productRepository;
 
     /// <summary>
     ///     Repository interface for accessing product media data from the database.
     /// </summary>
     private readonly IProductMediaRepository _repository = repository;
 
-    private readonly ILogger<ProductMediaService> _logger = logger;
-    private readonly IProductRepository _productRepository = productRepository;
     private readonly IStoreRepository _storeRepository = storeRepository;
     private readonly IUserRepository _userRepository = userRepository;
 
@@ -54,7 +54,8 @@ public class ProductMediaService(
     /// <returns>List of <see cref="ProductMediaDto" /> or null if none found.</returns>
     public async Task<List<ProductMediaDto>?> GetAll()
     {
-        using (_logger.BeginScope("GetAll")){
+        using (_logger.BeginScope("GetAll"))
+        {
             _logger.LogInformation("GetAll called");
             var media = await _repository.GetAll();
             if (media == null || media.Count == 0) return [];
@@ -72,27 +73,19 @@ public class ProductMediaService(
     /// <param name="order">Ordering position of the media among other media for the same product.</param>
     public async Task<ProductMediaDto> PushMediaAsync(string productId, Stream stream, string fileName, int order)
     {
-        using (_logger.BeginScope("PushMediaAsync")){
+        using (_logger.BeginScope("PushMediaAsync"))
+        {
             _logger.LogInformation("PushMediaAsync called");
-            // if (!MediaInspector.IsSafeMedia(stream, fileName))
-            //     throw new InvalidOperationException("Invalid or potentially harmful file");
 
             var type = MediaInspector.GetMediaType(stream, fileName);
 
-            BaseFile file = new();
-
-            if (type == MediaType.Image)
-                (file.SourceUrl, file.CompressedUrl, file.SourceFileName, file.CompressedFileName) =
-                    await _fileService.SaveImageAsync(stream, fileName, _productMediaKeys.Image);
-            else if (type == MediaType.Video)
-                (file.SourceUrl, file.SourceFileName) =
-                    await _fileService.SaveVideoAsync(stream, fileName, _productMediaKeys.Video);
-            else
-                throw new InvalidOperationException("Unsupported media type");
-
             var medias = await _repository.GetByProductIdAsync(productId);
+
             if (medias == null || medias.Count == 0)
             {
+                if (type != MediaType.Image)
+                    throw new InvalidOperationException("The first media must be an image.");
+
                 order = 0;
             }
             else
@@ -100,6 +93,17 @@ public class ProductMediaService(
                 medias = medias.OrderByDescending(m => m.Order).ToList();
                 order = medias.First().Order + 1;
             }
+
+            BaseFile file = new();
+
+            if (type == MediaType.Image)
+                (file.SourceUrl, file.CompressedUrl, file.SourceFileName, file.CompressedFileName) =
+                    await _fileService.SaveImageAsync(stream, fileName, _productMediaKeys.Image, 80, 40);
+            else if (type == MediaType.Video)
+                (file.SourceUrl, file.SourceFileName) =
+                    await _fileService.SaveVideoAsync(stream, fileName, _productMediaKeys.Video);
+            else
+                throw new InvalidOperationException("Unsupported media type");
 
             var media = new ProductMedia(
                 ObjectId.Parse(productId),
@@ -123,21 +127,23 @@ public class ProductMediaService(
     /// <param name="productId">The ID of the product.</param>
     /// <param name="userId">Id of store owner/manager/admin</param>
     /// <returns>List of newly added media DTOs.</returns>
-    public async Task<List<ProductMediaDto>?> SyncMediaFromTempFilesAsync(List<FileArrayItemDto> files,
+    public async Task SyncMediaFromTempFilesAsync(List<FileArrayItemDto> files,
         string productId, string userId)
     {
-        using (_logger.BeginScope("SyncMediaFromTempFilesAsync")){
+        using (_logger.BeginScope("SyncMediaFromTempFilesAsync"))
+        {
             _logger.LogInformation("SyncMediaFromTempFilesAsync called");
             // foreach (var file in files)
             //     if (!MediaInspector.IsSafeMedia(file.Stream, file.FileName))
             //         throw new InvalidOperationException("Invalid or potentially harmful file");
-            
+
             var product = await _productRepository.GetByIdAsync(ObjectId.Parse(productId));
             if (product == null)
             {
                 _logger.LogInformation("SyncMediaFromTempFilesAsync product not found");
                 throw new KeyNotFoundException("Product not found");
             }
+
             var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
             if (user == null)
             {
@@ -185,7 +191,6 @@ public class ProductMediaService(
             }
 
             _logger.LogInformation("SyncMediaFromTempFilesAsync success");
-            return result;
         }
     }
 
@@ -197,7 +202,8 @@ public class ProductMediaService(
     /// <returns>True if deletion was successful; otherwise, false.</returns>
     public async Task DeleteAsync(string id)
     {
-        using (_logger.BeginScope("DeleteAsync")) {
+        using (_logger.BeginScope("DeleteAsync"))
+        {
             _logger.LogInformation("DeleteAsync called");
             var media = await _repository.GetByIdAsync(id);
             if (media == null) throw new KeyNotFoundException("Media not found");
@@ -219,7 +225,8 @@ public class ProductMediaService(
     /// <returns>True if deletion was successful; otherwise, false.</returns>
     public async Task DeleteByProductIdAsync(string productId)
     {
-        using (_logger.BeginScope("DeleteByProductIdAsync")) {
+        using (_logger.BeginScope("DeleteByProductIdAsync"))
+        {
             _logger.LogInformation("DeleteByProductIdAsync called");
             var media = await _repository.GetByProductIdAsync(productId);
             if (media == null) return;
@@ -250,7 +257,8 @@ public class ProductMediaService(
     /// <returns>Collection of <see cref="ProductMediaDto" /> or null if none found.</returns>
     public async Task<List<ProductMediaDto>?> GetByProductIdAsync(string productId)
     {
-        using (_logger.BeginScope("GetByProductIdAsync")){
+        using (_logger.BeginScope("GetByProductIdAsync"))
+        {
             _logger.LogInformation("GetByProductIdAsync called");
             var list = await _repository.GetByProductIdAsync(productId);
             _logger.LogInformation("GetByProductIdAsync success");

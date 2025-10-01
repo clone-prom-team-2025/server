@@ -11,14 +11,14 @@ using MimeKit;
 namespace App.Services.Services;
 
 /// <summary>
-/// Service class responsible for sending and receiving emails using configured accounts.
+///     Service class responsible for sending and receiving emails using configured accounts.
 /// </summary>
 public class EmailService : IEmailService
 {
     private readonly Dictionary<string, EmailAccountSettings> _accounts;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="EmailService"/> class.
+    ///     Initializes a new instance of the <see cref="EmailService" /> class.
     /// </summary>
     /// <param name="config">The application configuration containing email account settings.</param>
     public EmailService(IConfiguration config)
@@ -33,10 +33,10 @@ public class EmailService : IEmailService
     }
 
     /// <summary>
-    /// Sends an email asynchronously using the configured sender account.
+    ///     Sends an email asynchronously using the configured sender account.
     /// </summary>
     /// <param name="message">The email message to be sent.</param>
-    public async Task SendEmailAsync(EmailMessage message)
+    public async Task SendEmailAsync(EmailMessage message, byte[]? file = null, string? fileName = null)
     {
         if (!_accounts.TryGetValue(GetAccountKeyFromEmail(message.From), out var sender))
             return;
@@ -46,7 +46,14 @@ public class EmailService : IEmailService
         email.To.AddRange(message.To.Select(to => MailboxAddress.Parse(to)));
         email.Subject = message.Subject;
 
-        email.Body = new BodyBuilder { HtmlBody = message.HtmlBody }.ToMessageBody();
+        var bodyBuilder = new BodyBuilder
+        {
+            HtmlBody = message.HtmlBody
+        };
+
+        if (file != null && !string.IsNullOrEmpty(fileName)) bodyBuilder.Attachments.Add(fileName, file);
+
+        email.Body = bodyBuilder.ToMessageBody();
 
         using var client = new SmtpClient();
         await client.ConnectAsync(sender.SmtpServer, sender.Port, SecureSocketOptions.StartTls);
@@ -56,7 +63,7 @@ public class EmailService : IEmailService
     }
 
     /// <summary>
-    /// Retrieves all emails from the inbox of a specified account asynchronously.
+    ///     Retrieves all emails from the inbox of a specified account asynchronously.
     /// </summary>
     /// <param name="from">The sender email to identify the account to use.</param>
     public async Task<List<MimeMessage>> GetInboxAsync(string from)
@@ -84,7 +91,7 @@ public class EmailService : IEmailService
     }
 
     /// <summary>
-    /// Retrieves the account key corresponding to the specified email address.
+    ///     Retrieves the account key corresponding to the specified email address.
     /// </summary>
     /// <param name="email">The email address to look up.</param>
     private string GetAccountKeyFromEmail(string email)

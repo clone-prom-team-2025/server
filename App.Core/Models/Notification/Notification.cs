@@ -12,7 +12,7 @@ public class Notification
 
     public string Message { get; set; } = null!;
 
-    public ObjectId? From { get; set; }
+    public string? From { get; set; }
 
     public ObjectId? To { get; set; }
 

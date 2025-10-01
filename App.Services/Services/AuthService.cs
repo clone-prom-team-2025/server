@@ -10,7 +10,9 @@ using App.Core.Models.FileStorage;
 using App.Core.Models.User;
 using App.Core.Utils;
 using AutoMapper;
+using Google.Apis.Auth;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 
@@ -29,7 +31,9 @@ public class AuthService(
     IOptions<SessionsOptions> options,
     ISessionHubNotifier sessionHubNotifier,
     IFavoriteSellerRepository favoriteSellerRepository,
-    IFavoriteProductRepository favoriteProductRepository)
+    IFavoriteProductRepository favoriteProductRepository,
+    ILogger<AuthService> logger,
+    IOptions<GoogleAuthOptions> googleOptions)
     : IAuthService
 {
     private static readonly Random Random = new();
@@ -38,14 +42,95 @@ public class AuthService(
     private readonly IFavoriteProductRepository _favoriteProductRepository = favoriteProductRepository;
     private readonly IFavoriteSellerRepository _favoriteSellerRepository = favoriteSellerRepository;
     private readonly IFileService _fileService = fileService;
+    private readonly ILogger<AuthService> _logger = logger;
     private readonly IMapper _mapper = mapper;
     private readonly SessionsOptions _options = options.Value;
     private readonly ISessionHubNotifier _sessionHubNotifier = sessionHubNotifier;
     private readonly IUserSessionRepository _sessionRepository = sessionRepository;
     private readonly IUserRepository _userRepository = userRepository;
+    private readonly GoogleAuthOptions _googleAuthOptions = googleOptions.Value;
+
+    public async Task<string?> LoginWithGoogleAsync(string idToken, DeviceInfo deviceInfo)
+    {
+        GoogleJsonWebSignature.Payload payload;
+        try
+        {
+            payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
+        }
+        catch (Exception)
+        {
+            throw new UnauthorizedAccessException("Invalid Google token");
+        }
+
+        var email = payload.Email;
+        var firstName = payload.GivenName;
+        var lastName = payload.FamilyName;
+        var user = await _userRepository.GetUserByEmailAsync(email);
+        var pictureUrl = payload.Picture;
+
+        if (user == null)
+        {
+            BaseFile avatar = new();
+            var stream = pictureUrl != null
+                ? await WebpDownloader.GetWebpStreamAsync(pictureUrl)
+                : AvatarGenerator.ByteToStream(AvatarGenerator.CreateAvatar(firstName ?? lastName ?? email));
+            var id = ObjectId.GenerateNewId();
+            (avatar.SourceUrl, avatar.CompressedUrl, avatar.SourceFileName, avatar.CompressedFileName) =
+                await _fileService.SaveImageAsync(stream, id.ToString(), "user-avatars", 100, 70);
+
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMddss");
+
+            user = new User(
+                $"{email.Split('@')[0]}{timestamp}",
+                Guid.NewGuid().ToString("N"),
+                email,
+                avatar,
+                [RoleNames.User],
+                firstName ?? $"ім'я{timestamp}",
+                lastName ?? $"прізвище{timestamp}"
+            )
+            {
+                Id = id,
+                EmailConfirmed = true,
+                Avatar = avatar
+            };
+
+            await _userRepository.CreateUserAsync(user);
+            await _favoriteProductRepository.CreateAsync(new FavoriteProduct(user.Id,
+                DefaultFavoriteNames.DefaultProductCollectionName));
+            await _favoriteSellerRepository.CreateAsync(new FavoriteSeller(user.Id,
+                DefaultFavoriteNames.DefaultSellerCollectionName));
+        }
+
+        var sessions = await _sessionRepository.GetSessionsAsync(user.Id) ?? new List<UserSession>();
+
+        var existingSession = sessions.FirstOrDefault(s =>
+            s.DeviceInfo.Browser == deviceInfo.Browser &&
+            s.DeviceInfo.Os == deviceInfo.Os &&
+            s.DeviceInfo.Device == deviceInfo.Device
+        );
+
+        if (existingSession != null)
+        {
+            if (existingSession.IsRevoked || existingSession.ExpiresAt <= DateTime.UtcNow)
+            {
+                var newSession = await _sessionRepository.CreateSessionAsync(user.Id, deviceInfo);
+                return newSession?.Id.ToString();
+            }
+
+            existingSession.ExpiresAt = DateTime.UtcNow.AddHours(_options.ExpiresIn);
+            await _sessionRepository.ReplaceSessionsAsync(user.Id, sessions);
+            return existingSession.Id.ToString();
+        }
+
+        {
+            var newSession = await _sessionRepository.CreateSessionAsync(user.Id, deviceInfo);
+            return newSession?.Id.ToString();
+        }
+    }
 
     /// <summary>
-    /// Authenticates a user by email or username and issues a new or existing session token.
+    ///     Authenticates a user by email or username and issues a new or existing session token.
     /// </summary>
     /// <param name="model">The login request containing credentials.</param>
     /// <param name="deviceInfo">The device information for the session.</param>
@@ -85,7 +170,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Registers a new user, generates an avatar, initializes default favorites, and logs them in.
+    ///     Registers a new user, generates an avatar, initializes default favorites, and logs them in.
     /// </summary>
     /// <param name="model">The registration request data.</param>
     /// <param name="deviceInfo">The device information for the session.</param>
@@ -95,18 +180,19 @@ public class AuthService(
         if (existingUser != null) return null;
 
         var index = model.Email.IndexOf('@');
-        var username = model.Email.Substring(0, index);
+        var timestamp = DateTime.UtcNow.ToString("yyyyMMddss");
+        var username = model.Email.Substring(0, index) + timestamp;
 
         var normalizedEmail = model.Email.ToLower();
 
-        await using (var image = AvatarGenerator.ByteToStream(AvatarGenerator.CreateAvatar(model.FullName)))
+        await using (var image = AvatarGenerator.ByteToStream(AvatarGenerator.CreateAvatar(model.FirstName)))
         {
             BaseFile file = new();
             var id = ObjectId.GenerateNewId();
             (file.SourceUrl, file.CompressedFileName, file.SourceFileName, file.CompressedFileName) =
-                await _fileService.SaveImageAsync(image, id + "-avatar", "user-avatars");
+                await _fileService.SaveImageAsync(image, id + "-avatar", "user-avatars", 80, 50);
             var user = new User(username, model.Password, normalizedEmail,
-                file, [RoleNames.User], model.FullName)
+                file, [RoleNames.User], model.FirstName, model.LastName)
             {
                 Id = id
             };
@@ -126,7 +212,6 @@ public class AuthService(
     /// </summary>
     /// <param name="sessionId">The ID of the session to revoke.</param>
     /// <exception cref="KeyNotFoundException">Thrown if the session does not exist or is already revoked.</exception>
-
     public async Task LogoutAsync(string sessionId)
     {
         var session = await _sessionRepository.GetSessionAsync(ObjectId.Parse(sessionId));
@@ -139,7 +224,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Revokes a session belonging to a specific user.
+    ///     Revokes a session belonging to a specific user.
     /// </summary>
     /// <param name="sessionId">The session ID.</param>
     /// <param name="userId">The ID of the user owning the session.</param>
@@ -162,7 +247,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Sends a password reset email containing a verification code.
+    ///     Sends a password reset email containing a verification code.
     /// </summary>
     /// <param name="login">The email or username of the account.</param>
     public async Task<string?> SendPasswordReset(string login)
@@ -179,7 +264,7 @@ public class AuthService(
         var html = await reader.ReadToEndAsync();
 
         var resetToken = Guid.NewGuid().ToString("N");
-        var code = GenerateCode(6);
+        var code = CodeGenerator.GenerateCode(6);
         var readyHtml = html.Replace("__CODE__", code).Replace("__TIME__", "15");
 
         var cacheEntryOptions = new MemoryCacheEntryOptions()
@@ -195,7 +280,7 @@ public class AuthService(
         {
             From = "no-reply@sellpoint.pp.ua",
             To = [user.Email],
-            Subject = "Reset Password",
+            Subject = "Скидання пароля",
             HtmlBody = readyHtml
         };
 
@@ -204,7 +289,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Validates a password reset code.
+    ///     Validates a password reset code.
     /// </summary>
     /// <param name="resetToken">The reset token issued to the user.</param>
     /// <param name="inputCode">The verification code entered by the user.</param>
@@ -229,7 +314,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Resets a user's password using a valid access code.
+    ///     Resets a user's password using a valid access code.
     /// </summary>
     /// <param name="password">The new password to set.</param>
     /// <param name="accessCode">The access code obtained from verification.</param>
@@ -254,7 +339,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Sends an email verification code to the user.
+    ///     Sends an email verification code to the user.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     /// <exception cref="KeyNotFoundException">Thrown if the user does not exist.</exception>
@@ -273,7 +358,7 @@ public class AuthService(
         using var reader = new StreamReader(stream!);
         var html = await reader.ReadToEndAsync();
 
-        var code = GenerateCode(6);
+        var code = CodeGenerator.GenerateCode(6);
         var readyHtml = html.Replace("__CODE__", code).Replace("__TIME__", "15");
 
         SaveVerificationCode(user.Email, code, 15);
@@ -282,7 +367,7 @@ public class AuthService(
         {
             From = "no-reply@sellpoint.pp.ua",
             To = [user.Email],
-            Subject = "Confirm your email address",
+            Subject = "Підтвердіть пошту",
             HtmlBody = readyHtml
         };
 
@@ -290,7 +375,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Verifies an email confirmation code and marks the email as confirmed if valid.
+    ///     Verifies an email confirmation code and marks the email as confirmed if valid.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     /// <param name="inputCode">The verification code entered by the user.</param>
@@ -315,7 +400,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Retrieves all active sessions for a given user.
+    ///     Retrieves all active sessions for a given user.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     /// <exception cref="KeyNotFoundException">Thrown if the user is not found.</exception>
@@ -331,7 +416,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Revokes all sessions associated with a given user.
+    ///     Revokes all sessions associated with a given user.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     /// <exception cref="KeyNotFoundException">Thrown if the user is not found.</exception>
@@ -341,18 +426,20 @@ public class AuthService(
         if (user == null)
             throw new KeyNotFoundException("User not found");
         var sessions = await _sessionRepository.GetSessionsAsync(ObjectId.Parse(userId));
-        if (sessions != null) foreach (var session in sessions) session.IsRevoked = true;
+        if (sessions != null)
+            foreach (var session in sessions)
+                session.IsRevoked = true;
         if (!await _userRepository.UpdateUserAsync(user))
             throw new KeyNotFoundException("User not found");
     }
 
     /// <summary>
-    /// Saves a verification code for email confirmation in memory cache.
+    ///     Saves a verification code for email confirmation in memory cache.
     /// </summary>
     /// <param name="email">The user's email address.</param>
     /// <param name="code">The generated verification code.</param>
     /// <param name="expires">Expiration time in minutes.</param>
-    public void SaveVerificationCode(string email, string code, int expires)
+    private void SaveVerificationCode(string email, string code, int expires)
     {
         var cacheEntryOptions = new MemoryCacheEntryOptions()
             .SetSlidingExpiration(TimeSpan.FromMinutes(expires));
@@ -360,7 +447,7 @@ public class AuthService(
     }
 
     /// <summary>
-    /// Retrieves a stored verification code from memory cache.
+    ///     Retrieves a stored verification code from memory cache.
     /// </summary>
     /// <param name="email">The user's email address.</param>
     public string? GetVerificationCode(string email)
@@ -376,18 +463,6 @@ public class AuthService(
     public void RemoveVerificationCode(string email)
     {
         _cache.Remove($"verify:{email}");
-    }
-
-    /// <summary>
-    ///     Generates a random alphanumeric code.
-    /// </summary>
-    /// <param name="length">The length of the code.</param>
-    /// <returns>A string containing the generated code.</returns>
-    private static string GenerateCode(int length)
-    {
-        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        return new string(Enumerable.Range(0, length)
-            .Select(_ => chars[Random.Next(chars.Length)]).ToArray());
     }
 
     private class ResetPassData

@@ -10,7 +10,7 @@ using MongoDB.Bson;
 namespace App.Services.Services;
 
 /// <summary>
-/// Service responsible for managing favorite products and favorite sellers for users.
+///     Service responsible for managing favorite products and favorite sellers for users.
 /// </summary>
 public class FavoriteService(
     IStoreRepository storeRepository,
@@ -30,7 +30,7 @@ public class FavoriteService(
     private readonly IUserRepository _userRepository = userRepository;
 
     /// <summary>
-    /// Creates a new favorite product collection for a user.
+    ///     Creates a new favorite product collection for a user.
     /// </summary>
     /// <param name="dto">Data transfer object containing information about the favorite product collection to create.</param>
     public async Task CreateFavoriteProductCollection(FavoriteProductCreateDto dto)
@@ -44,7 +44,7 @@ public class FavoriteService(
     }
 
     /// <summary>
-    /// Retrieves all favorite products for a user.
+    ///     Retrieves all favorite products for a user.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     public async Task<IEnumerable<FavoriteProductDto>?> GetFavoriteProductAllByUserIdAsync(string userId)
@@ -56,9 +56,9 @@ public class FavoriteService(
                 await _favoriteProductRepository.GetAllByUserIdAsync(ObjectId.Parse(userId)));
         }
     }
-    
+
     /// <summary>
-    /// Retrieves a favorite product collection by its ID.
+    ///     Retrieves a favorite product collection by its ID.
     /// </summary>
     /// <param name="id">The ID of the favorite product collection.</param>
     public async Task<IEnumerable<FavoriteProductDto>?> GetFavoriteProductAllByIdAsync(string id)
@@ -72,7 +72,7 @@ public class FavoriteService(
     }
 
     /// <summary>
-    /// Updates the name of a favorite product collection.
+    ///     Updates the name of a favorite product collection.
     /// </summary>
     /// <param name="id">The ID of the collection.</param>
     /// <param name="name">The new name for the collection.</param>
@@ -85,7 +85,7 @@ public class FavoriteService(
             _logger.LogInformation(
                 "UpdateFavoriteProductCollectionName called with Id={id}, Name={name}, UserId={userId}", id, name,
                 userId);
-            
+
             var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
             if (user == null)
             {
@@ -125,7 +125,7 @@ public class FavoriteService(
     }
 
     /// <summary>
-    /// Adds a product to a favorite product collection.
+    ///     Adds a product to a favorite product collection.
     /// </summary>
     /// <param name="id">The ID of the favorite collection.</param>
     /// <param name="userId">The ID of the user.</param>
@@ -182,7 +182,7 @@ public class FavoriteService(
     }
 
     /// <summary>
-    /// Adds a product to a favorite product collection by collection name.
+    ///     Adds a product to a favorite product collection by collection name.
     /// </summary>
     /// <param name="name">The name of the favorite collection.</param>
     /// <param name="userId">The ID of the user.</param>
@@ -246,7 +246,7 @@ public class FavoriteService(
     }
 
     /// <summary>
-    /// Adds a product to the default favorite product collection.
+    ///     Adds a product to the default favorite product collection.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     /// <param name="productId">The ID of the product to add.</param>
@@ -266,7 +266,7 @@ public class FavoriteService(
                 await _favoriteProductRepository.GetByNameAsync(DefaultFavoriteNames.DefaultProductCollectionName);
             if (favorites == null || favorites.FirstOrDefault(fav => fav.UserId.ToString() == userId) == null)
                 await _favoriteProductRepository.CreateAsync(new FavoriteProduct(ObjectId.Parse(userId),
-                    DefaultFavoriteNames.DefaultProductCollectionName){ IsDefault = true });
+                    DefaultFavoriteNames.DefaultProductCollectionName) { IsDefault = true });
             favorites = await _favoriteProductRepository.GetByNameAsync(DefaultFavoriteNames
                 .DefaultProductCollectionName);
             if (favorites == null)
@@ -315,7 +315,7 @@ public class FavoriteService(
     }
 
     /// <summary>
-    /// Removes a product from a favorite product collection.
+    ///     Removes a product from a favorite product collection.
     /// </summary>
     /// <param name="id">The ID of the favorite collection.</param>
     /// <param name="userId">The ID of the user.</param>
@@ -372,7 +372,7 @@ public class FavoriteService(
     }
 
     /// <summary>
-    /// Creates an empty favorite product collection.
+    ///     Creates an empty favorite product collection.
     /// </summary>
     /// <param name="name">The name of the collection.</param>
     /// <param name="userId">The ID of the user.</param>
@@ -403,7 +403,7 @@ public class FavoriteService(
     }
 
     /// <summary>
-    /// Creates a default favorite product collection if it does not exist for the user.
+    ///     Creates a default favorite product collection if it does not exist for the user.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     public async Task CreateDefaultFavoriteProductCollectionIfNotExist(string userId)
@@ -426,13 +426,13 @@ public class FavoriteService(
                 _logger.LogInformation("Favorite product collection already exist");
 
             await _favoriteProductRepository.CreateAsync(new FavoriteProduct(parsedUserId,
-                DefaultFavoriteNames.DefaultProductCollectionName){ IsDefault = true });
+                DefaultFavoriteNames.DefaultProductCollectionName) { IsDefault = true });
             _logger.LogInformation("Create favorite product collection successfully");
         }
     }
 
     /// <summary>
-    /// Deletes a favorite product collection.
+    ///     Deletes a favorite product collection.
     /// </summary>
     /// <param name="id">The ID of the collection.</param>
     /// <param name="userId">The ID of the user.</param>
@@ -479,7 +479,7 @@ public class FavoriteService(
     }
 
     /// <summary>
-    /// Creates a new favorite seller collection for a user.
+    ///     Creates a new favorite seller collection for a user.
     /// </summary>
     /// <param name="dto">Data transfer object containing information about the favorite seller collection to create.</param>
     public async Task CreateFavoriteSellerCollection(FavoriteSellerCreateDto dto)
@@ -493,7 +493,7 @@ public class FavoriteService(
     }
 
     /// <summary>
-    /// Retrieves all favorite sellers for a user.
+    ///     Retrieves all favorite sellers for a user.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     public async Task<IEnumerable<FavoriteSellerDto>?> GetFavoriteSellerAllByUserIdAsync(string userId)
@@ -508,7 +508,7 @@ public class FavoriteService(
     }
 
     /// <summary>
-    /// Updates the name of a favorite seller collection.
+    ///     Updates the name of a favorite seller collection.
     /// </summary>
     /// <param name="id">The ID of the collection.</param>
     /// <param name="name">The new name for the collection.</param>
@@ -534,7 +534,7 @@ public class FavoriteService(
                 _logger.LogInformation("Favorite seller not found");
                 throw new KeyNotFoundException("Favorite seller not found");
             }
-            
+
             if (favorite.IsDefault)
             {
                 _logger.LogInformation("You cannot update default favorite seller");
@@ -560,7 +560,7 @@ public class FavoriteService(
     }
 
     /// <summary>
-    /// Retrieves a favorite seller collection by its ID.
+    ///     Retrieves a favorite seller collection by its ID.
     /// </summary>
     /// <param name="id">The ID of the favorite seller collection.</param>
     public async Task<IEnumerable<FavoriteSellerDto>?> GetFavoriteSellerAllByIdAsync(string id)
@@ -574,7 +574,7 @@ public class FavoriteService(
     }
 
     /// <summary>
-    /// Adds a seller to a favorite seller collection.
+    ///     Adds a seller to a favorite seller collection.
     /// </summary>
     /// <param name="id">The ID of the favorite seller collection.</param>
     /// <param name="userId">The ID of the user.</param>
@@ -631,7 +631,7 @@ public class FavoriteService(
     }
 
     /// <summary>
-    /// Adds a seller to a favorite seller collection by collection name.
+    ///     Adds a seller to a favorite seller collection by collection name.
     /// </summary>
     /// <param name="name">The name of the collection.</param>
     /// <param name="userId">The ID of the user.</param>
@@ -695,7 +695,7 @@ public class FavoriteService(
     }
 
     /// <summary>
-    /// Adds a seller to the default favorite seller collection.
+    ///     Adds a seller to the default favorite seller collection.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     /// <param name="sellerId">The ID of the seller to add.</param>
@@ -715,7 +715,7 @@ public class FavoriteService(
                 await _favoriteSellerRepository.GetByNameAsync(DefaultFavoriteNames.DefaultSellerCollectionName);
             if (favorites == null || favorites.FirstOrDefault(fav => fav.UserId.ToString() == userId) == null)
                 await _favoriteSellerRepository.CreateAsync(new FavoriteSeller(ObjectId.Parse(userId),
-                    DefaultFavoriteNames.DefaultSellerCollectionName){ IsDefault = true });
+                    DefaultFavoriteNames.DefaultSellerCollectionName) { IsDefault = true });
             favorites = await _favoriteSellerRepository.GetByNameAsync(DefaultFavoriteNames
                 .DefaultSellerCollectionName);
             if (favorites == null)
@@ -764,7 +764,7 @@ public class FavoriteService(
     }
 
     /// <summary>
-    /// Removes a seller from a favorite seller collection.
+    ///     Removes a seller from a favorite seller collection.
     /// </summary>
     /// <param name="id">The ID of the collection.</param>
     /// <param name="userId">The ID of the user.</param>
@@ -821,7 +821,7 @@ public class FavoriteService(
     }
 
     /// <summary>
-    /// Creates an empty favorite seller collection.
+    ///     Creates an empty favorite seller collection.
     /// </summary>
     /// <param name="name">The name of the collection.</param>
     /// <param name="userId">The ID of the user.</param>
@@ -852,7 +852,7 @@ public class FavoriteService(
     }
 
     /// <summary>
-    /// Creates a default favorite seller collection if it does not exist for the user.
+    ///     Creates a default favorite seller collection if it does not exist for the user.
     /// </summary>
     /// <param name="userId">The ID of the user.</param>
     public async Task CreateDefaultFavoriteSellerCollectionIfNotExist(string userId)
@@ -875,13 +875,13 @@ public class FavoriteService(
                 _logger.LogInformation("Favorite seller collection already exist");
 
             await _favoriteSellerRepository.CreateAsync(new FavoriteSeller(parsedUserId,
-                DefaultFavoriteNames.DefaultSellerCollectionName){ IsDefault = true });
+                DefaultFavoriteNames.DefaultSellerCollectionName) { IsDefault = true });
             _logger.LogInformation("Create favorite seller collection successfully");
         }
     }
 
     /// <summary>
-    /// Deletes a favorite seller collection.
+    ///     Deletes a favorite seller collection.
     /// </summary>
     /// <param name="id">The ID of the collection.</param>
     /// <param name="userId">The ID of the user.</param>
@@ -926,7 +926,7 @@ public class FavoriteService(
             _logger.LogInformation("Delete favorite seller successfully");
         }
     }
-    
+
     // public async Task CreateFavoriteSellerCollection(FavoriteProductCreateDto dto)
     // {
     //     using (_logger.BeginScope("CreateFavoriteSellerCollection"))

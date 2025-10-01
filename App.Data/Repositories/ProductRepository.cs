@@ -241,12 +241,25 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         return await _products.Find(filter).Limit(1).AnyAsync();
     }
 
+    public async Task<IEnumerable<Product>> GetRandomProductsAsync(int page, int pageSize)
+    {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 10;
+
+        var pipeline = _products.Aggregate()
+            .AppendStage<Product>("{$sample: { size: 1000 }}")
+            .Skip((page - 1) * pageSize)
+            .Limit(pageSize);
+
+        return await pipeline.ToListAsync();
+    }
+
     private List<FilterDefinition<Product>> FormFilter(ProductFilterRequest filter)
     {
         var builder = Builders<Product>.Filter;
         var filters = new List<FilterDefinition<Product>>();
 
-        if (filter.CategoryId.HasValue) 
+        if (filter.CategoryId.HasValue)
             filters.Add(builder.AnyEq(p => p.CategoryPath, filter.CategoryId.Value));
 
         if (filter.PriceMin.HasValue && filter.PriceMin > 0)
@@ -255,39 +268,32 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
         if (filter.PriceMax.HasValue && filter.PriceMax > 0)
             filters.Add(builder.Lte(p => p.Price, filter.PriceMax.Value));
 
-        foreach (var group in filter.Include.GroupBy(kv => kv.Key))
-        {
-            var includeFilters = new List<FilterDefinition<Product>>();
-
-            foreach (var kv in group)
+        foreach (var kv in filter.Include)
+            if (kv.Value is { Count: > 0 })
             {
-                includeFilters.Add(builder.ElemMatch(p => p.Features,
-                    feature => feature.Features.ContainsKey(kv.Key) &&
-                               feature.Features[kv.Key].Value == kv.Value
-                ));
+                var valueFilters = kv.Value.Select(val =>
+                    builder.ElemMatch(p => p.Features,
+                        feature => feature.Features.ContainsKey(kv.Key) &&
+                                   feature.Features[kv.Key].Value == val
+                    )).ToList();
+
+                filters.Add(builder.Or(valueFilters));
             }
 
-            filters.Add(builder.Or(includeFilters));
-        }
-
-        foreach (var group in filter.Exclude.GroupBy(kv => kv.Key))
-        {
-            var excludeFilters = new List<FilterDefinition<Product>>();
-
-            foreach (var kv in group)
+        foreach (var kv in filter.Exclude)
+            if (kv.Value is { Count: > 0 })
             {
-                excludeFilters.Add(builder.ElemMatch(p => p.Features,
-                    feature => feature.Features.ContainsKey(kv.Key) &&
-                               feature.Features[kv.Key].Value == kv.Value
-                ));
-            }
+                var valueFilters = kv.Value.Select(val =>
+                    builder.ElemMatch(p => p.Features,
+                        feature => feature.Features.ContainsKey(kv.Key) &&
+                                   feature.Features[kv.Key].Value == val
+                    )).ToList();
 
-            filters.Add(builder.Not(builder.Or(excludeFilters)));
-        }
+                filters.Add(builder.Not(builder.Or(valueFilters)));
+            }
 
         return filters;
     }
-
 
     private static int FindOriginalIndexWithoutSpaces(string text, int indexInClean)
     {
@@ -316,18 +322,4 @@ public class ProductRepository(MongoDbContext mongoDbContext) : IProductReposito
 
         return text.Length;
     }
-    
-    public async Task<IEnumerable<Product>> GetRandomProductsAsync(int page, int pageSize)
-    {
-        if (page < 1) page = 1;
-        if (pageSize < 1) pageSize = 10;
-
-        var pipeline = _products.Aggregate()
-            .AppendStage<Product>("{$sample: { size: 1000 }}")
-            .Skip((page - 1) * pageSize)
-            .Limit(pageSize);
-
-        return await pipeline.ToListAsync();
-    }
-
 }

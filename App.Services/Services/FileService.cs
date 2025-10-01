@@ -12,19 +12,18 @@ using Xabe.FFmpeg;
 namespace App.Services.Services;
 
 /// <summary>
-/// Handles file storage operations including image and video conversion,
-/// uploading to S3/MinIO, and file deletion.
+///     Handles file storage operations including image and video conversion,
+///     uploading to S3/MinIO, and file deletion.
 /// </summary>
 public class FileService : IFileService
 {
+    private readonly int _fileUniqueLength = 10;
     private readonly MinIOOptions _minIOptions;
     private readonly IAmazonS3 _s3Client;
 
-    private readonly int _fileUniqueLength = 10;
-
     /// <summary>
-    /// Initializes a new instance of the <see cref="FileService"/> class.
-    /// Sets up S3 client and FFmpeg path.
+    ///     Initializes a new instance of the <see cref="FileService" /> class.
+    ///     Sets up S3 client and FFmpeg path.
     /// </summary>
     public FileService(IOptions<FileStorageOptions> options, IOptions<MinIOOptions> minioOptions)
     {
@@ -47,14 +46,19 @@ public class FileService : IFileService
     }
 
     /// <summary>
-    /// Converts an input image to WebP format, generates a compressed version,
-    /// uploads both files to storage, and provides their URLs and names.
+    ///     Converts an input image to WebP format, generates a compressed version,
+    ///     uploads both files to storage, and provides their URLs and names.
     /// </summary>
     public async Task<(string SourceUrl, string CompressedUrl, string SourceName, string CompressedFileName)>
-        SaveImageAsync(Stream imageStream, string fileName, string key)
+        SaveImageAsync(Stream imageStream, string fileName, string key, int originalQuality, int compressedQuality)
     {
         var id = NanoIdGenerator.Generate(_fileUniqueLength);
         var baseFileName = Path.GetFileNameWithoutExtension(fileName);
+
+        if (originalQuality == 0) throw new InvalidOperationException("Original quality must be greater than 0");
+        if (compressedQuality == 0) throw new InvalidOperationException("Original quality must be greater than 0");
+        if (originalQuality <= compressedQuality)
+            throw new InvalidOperationException("Original quality must be greater than compressed quality");
 
         var sourceName = GenerateFileName(id, baseFileName, "_source", ".webp");
         var compressedName = GenerateFileName(id, baseFileName, "_compressed", ".webp");
@@ -73,14 +77,16 @@ public class FileService : IFileService
             var sourceConversion = FFmpeg.Conversions.New()
                 .AddParameter($"-i \"{tempInput}\"", ParameterPosition.PreInput)
                 .AddParameter("-vf \"scale=w=1280:h=720:force_original_aspect_ratio=decrease\"")
-                .AddParameter("-c:v libwebp -preset picture -compression_level 6 -quality 90 -threads 0")
+                .AddParameter(
+                    $"-c:v libwebp -preset picture -compression_level 6 -quality {originalQuality} -threads 0")
                 .SetOutput(tempSource);
 
 
             var compressedConversion = FFmpeg.Conversions.New()
                 .AddParameter($"-i \"{tempInput}\"", ParameterPosition.PreInput)
                 .AddParameter("-vf \"scale=w=1280:h=720:force_original_aspect_ratio=decrease\"")
-                .AddParameter("-c:v libwebp -preset picture -compression_level 6 -quality 60 -threads 0")
+                .AddParameter(
+                    $"-c:v libwebp -preset picture -compression_level 6 -quality {compressedQuality} -threads 0")
                 .SetOutput(tempCompressed);
 
             var sourceTask = sourceConversion.Start();
@@ -106,7 +112,7 @@ public class FileService : IFileService
     }
 
     /// <summary>
-    /// Converts an input video to WebM format, uploads it to storage, and provides the URL and filename.
+    ///     Converts an input video to WebM format, uploads it to storage, and provides the URL and filename.
     /// </summary>
     public async Task<(string Url, string FileName)> SaveVideoAsync(Stream videoStream, string fileName, string key)
     {
@@ -120,37 +126,32 @@ public class FileService : IFileService
         var inputPath = Path.Combine(tempDir, Guid.NewGuid() + Path.GetExtension(fileName));
         var outputWebmPath = Path.Combine(tempDir, Guid.NewGuid() + ".webm");
 
-        // Зберігаємо вхідний стрім у файл
         await using (var fileStream = File.Create(inputPath))
         {
             await videoStream.CopyToAsync(fileStream);
         }
 
-        // Конвертація у WebM
         var conversionWebm = FFmpeg.Conversions.New()
             .AddParameter($"-i \"{inputPath}\"", ParameterPosition.PreInput)
             .AddParameter("-vf scale='min(1280,iw)':'min(720,ih)'")
-            .AddParameter("-c:v libvpx -b:v 2M")
-            .AddParameter("-c:a libvorbis -b:a 128k")
+            .AddParameter("-c:v libvpx -crf 10 -b:v 0")
+            .AddParameter("-c:a libvorbis -b:a 192k")
             .SetOutput(outputWebmPath);
 
         await conversionWebm.Start();
 
-        // Видаляємо вхідний файл
         File.Delete(inputPath);
 
-        // Завантажуємо WebM на S3/MinIO
         await using var webmStream = File.OpenRead(outputWebmPath);
         var url = await UploadAsync(key, webmStream, outputWebmFileName);
 
-        // Очищаємо тимчасовий WebM файл
         File.Delete(outputWebmPath);
 
         return (url, outputWebmFileName);
     }
 
     /// <summary>
-    /// Deletes a file from S3/MinIO storage.
+    ///     Deletes a file from S3/MinIO storage.
     /// </summary>
     public async Task DeleteFileAsync(string key, string fileName)
     {
@@ -159,8 +160,8 @@ public class FileService : IFileService
     }
 
     /// <summary>
-    /// Finds the path of FFmpeg executable based on user-defined path or system environment.
-    /// Throws FileNotFoundException if FFmpeg cannot be found.
+    ///     Finds the path of FFmpeg executable based on user-defined path or system environment.
+    ///     Throws FileNotFoundException if FFmpeg cannot be found.
     /// </summary>
     private string GetFfmpegPath(string? userDefinedPath)
     {
@@ -197,7 +198,7 @@ public class FileService : IFileService
     }
 
     /// <summary>
-    /// Generates a pre-signed URL for accessing a file with a limited expiration time.
+    ///     Generates a pre-signed URL for accessing a file with a limited expiration time.
     /// </summary>
     public string GetPreSignedUrl(string bucketName, string objectKey, double expirationMinutes = 60)
     {
@@ -210,18 +211,8 @@ public class FileService : IFileService
         return _s3Client.GetPreSignedURL(request);
     }
 
-    // /// <summary>
-    // /// Generates a unique filename for storage.
-    // /// </summary>
-    // private string GenerateFileName(string originalName, string suffix, string extension)
-    // {
-    //     var id = NanoIdGenerator.Generate(_fileUniqueLength);
-    //     var sanitized = Path.GetFileNameWithoutExtension(originalName).Trim().Replace(" ", "-");
-    //     return $"{id}_{sanitized}{suffix}{extension}";
-    // }
-
     /// <summary>
-    /// Generates a unique filename using a provided ID for storage.
+    ///     Generates a unique filename using a provided ID for storage.
     /// </summary>
     private string GenerateFileName(string id, string originalName, string suffix, string extension)
     {
@@ -230,7 +221,7 @@ public class FileService : IFileService
     }
 
     /// <summary>
-    /// Uploads a file stream to S3/MinIO storage and returns the public URL.
+    ///     Uploads a file stream to S3/MinIO storage and returns the public URL.
     /// </summary>
     private async Task<string> UploadAsync(string keyPrefix, Stream fileStream, string fileName)
     {
@@ -247,7 +238,7 @@ public class FileService : IFileService
     }
 
     /// <summary>
-    /// Determines the MIME type of file based on its extension.
+    ///     Determines the MIME type of file based on its extension.
     /// </summary>
     private string GetMimeType(string fileName)
     {

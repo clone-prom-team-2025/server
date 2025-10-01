@@ -1,4 +1,5 @@
 using App.Core.DTOs.Product.Review;
+using App.Core.DTOs.Store;
 
 namespace App.Core.Interfaces;
 
@@ -12,4 +13,6 @@ public interface IProductReviewService
     Task SetReactionToReviewComment(string reviewId, string commentUserId, string reactionUserId, bool reaction);
     Task DeleteReactionToReviewComment(string reviewId, string commentUserId, string reactionUserId);
     Task<IEnumerable<ProductReviewCommentDto>?> GetAllCommentsByProductId(string productId);
+    Task<IEnumerable<ProductReviewDto>?> GetAllCommentsByUserId(string userId);
+    Task<StoreRatingDto> GetAllReviewsByStoreId(string storeId);
 }

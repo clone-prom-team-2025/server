@@ -3,6 +3,7 @@ using App.Api.Handlers;
 using App.Api.Hubs;
 using App.Api.Middleware;
 using App.Core.Interfaces;
+using App.Core.Models;
 using App.Core.Models.Auth;
 using App.Core.Models.FileStorage;
 using App.Core.Validations;
@@ -15,7 +16,10 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
+using MongoDB.Driver;
+using PuppeteerSharp;
 using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
 using LogEventLevel = Serilog.Events.LogEventLevel;
@@ -54,10 +58,17 @@ builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("Mo
 // --- File storage settings
 builder.Services.Configure<FileStorageOptions>(builder.Configuration.GetSection("FileStorage"));
 builder.Services.Configure<MinIOOptions>(builder.Configuration.GetSection("CloudflareR2"));
+builder.Services.Configure<GoogleAuthOptions>(builder.Configuration.GetSection("GoogleAuth"));
 builder.Services.Configure<ProductMediaKeys>(builder.Configuration.GetSection("ProductMediaKeys"));
 
 // --- Auth sessions settings ---
 builder.Services.Configure<SessionsOptions>(builder.Configuration.GetSection("SessionsSettings"));
+
+builder.Services.AddSingleton<IMongoClient>(sp =>
+{
+    var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
+    return new MongoClient(settings.ConnectionString);
+});
 
 // --- Infrastructure ---
 builder.Services.AddSingleton<MongoDbContext>();
@@ -79,7 +90,10 @@ builder.Services.AddSingleton<IStoreRepository, StoreRepository>();
 builder.Services.AddSingleton<INotificationRepository, NotificationRepository>();
 builder.Services.AddSingleton<IFavoriteSellerRepository, FavoriteSellerRepository>();
 builder.Services.AddSingleton<IFavoriteProductRepository, FavoriteProductRepository>();
-builder.Services.AddSingleton<IBuyInfoRepository, BuyInfoRepository>();
+builder.Services.AddSingleton<IOrderRepository, OrderRepository>();
+
+builder.Services.Configure<RedisSettings>(builder.Configuration.GetSection("Redis"));
+builder.Services.AddSingleton<IRedisService, RedisService>();
 
 // --- Services ---
 builder.Services.AddSingleton<ICategoryService, CategoryService>();
@@ -95,11 +109,12 @@ builder.Services.AddSingleton<IStoreService, StoreService>();
 builder.Services.AddSingleton<ICartService, CartService>();
 builder.Services.AddSingleton<INotificationService, NotificationService>();
 builder.Services.AddSingleton<IFavoriteService, FavoriteService>();
-builder.Services.AddSingleton<IBuyService, BuyService>();
+builder.Services.AddSingleton<IOrderService, OrderService>();
+builder.Services.AddHostedService<CleanSchedulerService>();
+builder.Services.AddSingleton<IArchiveAndCleanupManager, ArchiveAndCleanupManager>();
 
 builder.Services.AddSingleton<ISessionHubNotifier, SessionHubNotifier>();
 builder.Services.AddSingleton<INotificationHubNotifier, NotificationHubNotifier>();
-
 
 builder.Services.AddMemoryCache();
 
@@ -210,6 +225,10 @@ builder.Services.AddSignalR();
 
 // --- Create app ---
 var app = builder.Build();
+
+var browserFetcher = new BrowserFetcher();
+var revisionInfo = await browserFetcher.DownloadAsync(); // Скачає лише якщо ще нема
+app.Logger.LogInformation("Chromium predownloaded at {Path}", revisionInfo.Browser.ToString());
 
 // // Включаємо підтримку forwarded headers, щоб коректно отримувати інформацію про клієнта, IP, схему (http/https)
 // app.UseForwardedHeaders(new ForwardedHeadersOptions

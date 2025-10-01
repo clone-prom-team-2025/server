@@ -5,6 +5,7 @@ namespace App.Core.Interfaces;
 
 public interface IAuthService
 {
+    Task<string?> LoginWithGoogleAsync(string idToken, DeviceInfo deviceInfo);
     Task<string?> LoginAsync(LoginDto model, DeviceInfo deviceInfo);
     Task<string?> RegisterAsync(RegisterDto model, DeviceInfo deviceInfo);
     Task SendEmailVerificationCodeAsync(string userId);

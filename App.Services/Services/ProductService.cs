@@ -1,3 +1,4 @@
+using App.Core.Archive.Product.DTOs;
 using App.Core.Constants;
 using App.Core.DTOs.Product;
 using App.Core.Enums;
@@ -19,14 +20,16 @@ public class ProductService(
     ICategoryRepository categoryRepository,
     IStoreRepository storeRepository,
     IUserRepository userRepository,
-    ILogger<ProductService> logger) : IProductService
+    ILogger<ProductService> logger,
+    IArchiveAndCleanupManager archiveAndCleanupManager) : IProductService
 {
+    private readonly IArchiveAndCleanupManager _archiveAndCleanupManager = archiveAndCleanupManager;
     private readonly ICategoryRepository _categoryRepository = categoryRepository;
+    private readonly ILogger<ProductService> _logger = logger;
     private readonly IMapper _mapper = mapper;
     private readonly IProductRepository _productRepository = productRepository;
     private readonly IStoreRepository _storeRepository = storeRepository;
     private readonly IUserRepository _userRepository = userRepository;
-    private readonly ILogger<ProductService> _logger = logger;
 
     /// <summary>
     ///     Retrieves all products matching the specified filter.
@@ -34,7 +37,8 @@ public class ProductService(
     /// <param name="filter">Filtering options.</param>
     public async Task<ProductFilterResponseDto?> GetAllAsync(ProductFilterRequestDto filter)
     {
-        using (_logger.BeginScope("GetAllAsync")){
+        using (_logger.BeginScope("GetAllAsync"))
+        {
             _logger.LogInformation("GetAllAsync called");
             var products = await _productRepository.GetAllAsync(_mapper.Map<ProductFilterRequest>(filter));
             _logger.LogInformation("GetAllAsync success");
@@ -48,7 +52,8 @@ public class ProductService(
     /// <param name="id">The ID of the product.</param>
     public async Task<ProductDto?> GetByIdAsync(string id)
     {
-        using (_logger.BeginScope("GetByIdAsync")) {
+        using (_logger.BeginScope("GetByIdAsync"))
+        {
             _logger.LogInformation("GetByIdAsync called");
             var product = await _productRepository.GetByIdAsync(ObjectId.Parse(id));
             _logger.LogInformation("GetByIdAsync success");
@@ -63,7 +68,8 @@ public class ProductService(
     /// <param name="filter">Additional filtering options.</param>
     public async Task<ProductFilterResponseDto?> GetByNameAsync(string name, ProductFilterRequestDto filter)
     {
-        using (_logger.BeginScope("GetByNameAsync")) {
+        using (_logger.BeginScope("GetByNameAsync"))
+        {
             _logger.LogInformation("GetByNameAsync called");
             var products = await _productRepository.GetByNameAsync(name, _mapper.Map<ProductFilterRequest>(filter));
             _logger.LogInformation("GetByNameAsync success");
@@ -78,7 +84,8 @@ public class ProductService(
     /// <param name="filter">Filtering options.</param>
     public async Task<ProductFilterResponseDto?> GetBySellerIdAsync(string sellerId, ProductFilterRequestDto filter)
     {
-        using  (_logger.BeginScope("GetBySellerIdAsync")) {
+        using (_logger.BeginScope("GetBySellerIdAsync"))
+        {
             _logger.LogInformation("GetBySellerIdAsync called");
             var products =
                 await _productRepository.GetBySellerIdAsync(ObjectId.Parse(sellerId),
@@ -95,7 +102,8 @@ public class ProductService(
     /// <param name="userId">Product creator.</param>
     public async Task CreateAsync(ProductCreateDto productDto, string userId)
     {
-        using (_logger.BeginScope("CreateAsync")){
+        using (_logger.BeginScope("CreateAsync"))
+        {
             _logger.LogInformation("CreateAsync called");
             var store = await _storeRepository.GetStoreByUserId(ObjectId.Parse(userId));
             if (store == null)
@@ -110,6 +118,12 @@ public class ProductService(
 
             if (role != StoreRole.Owner && role != StoreRole.Manager)
                 throw new AccessDeniedException("User is not owner or manager.");
+
+            if (!productDto.DeliveryType.HasFlag(ProductDeliveryType.NovaPost))
+                throw new AccessDeniedException("Delivery must include Nova Poshta");
+
+            if (!productDto.PaymentOptions.HasFlag(PaymentOptions.AfterPayment))
+                throw new AccessDeniedException("Payment options must include After Payment");
 
             var categories = await _categoryRepository.GetCategoryPathAsync(productDto.Category);
             if (categories == null)
@@ -139,7 +153,8 @@ public class ProductService(
     /// <param name="userId">Product updater.</param>
     public async Task UpdateAsync(UpdateProductDto productDto, string userId)
     {
-        using (_logger.BeginScope("UpdateAsync")){
+        using (_logger.BeginScope("UpdateAsync"))
+        {
             _logger.LogInformation("UpdateAsync called");
             var store = await _storeRepository.GetStoreById(ObjectId.Parse(productDto.SellerId));
             if (store == null)
@@ -171,6 +186,64 @@ public class ProductService(
         }
     }
 
+    public async Task RestoreAsync(string id, string userId)
+    {
+        using (_logger.BeginScope("RestoreAsync"))
+        {
+            _logger.LogInformation("RestoreAsync called");
+            var productArchived = await _archiveAndCleanupManager.GetArchivedProductsAsync(ObjectId.Parse(id));
+            if (productArchived == null)
+            {
+                _logger.LogInformation("Product could not be restored.");
+                throw new KeyNotFoundException("Product could not be deleted.");
+            }
+
+            var store = await _storeRepository.GetStoreById(productArchived.SellerId);
+            if (store == null)
+            {
+                _logger.LogInformation("Store not found.");
+                throw new KeyNotFoundException("Store not found.");
+            }
+
+            var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
+            if (user == null)
+            {
+                _logger.LogInformation("User not found.");
+                throw new AccessDeniedException("User not found.");
+            }
+
+            if (!store.Roles.ContainsKey(userId) && !user.Roles.Contains(RoleNames.Admin))
+            {
+                _logger.LogInformation("User is not owner or manager.");
+                throw new AccessDeniedException("User is not owner or manager.");
+            }
+
+            await _archiveAndCleanupManager.RestoreProductAsync(ObjectId.Parse(id));
+            // if (!await _productRepository.DeleteAsync(ObjectId.Parse(id)))
+            //     throw new InvalidOperationException("Product could not be deleted.");
+
+            _logger.LogInformation("RestoreAsync success");
+        }
+    }
+
+    public async Task<IEnumerable<ProductArchiveDto>> GetArchivedByUserIdAsync(string userId)
+    {
+        using (_logger.BeginScope("GetArchivedByUserIdAsync"))
+        {
+            _logger.LogInformation("GetArchivedByUserIdAsync called");
+            var store = await _storeRepository.GetStoreByUserId(ObjectId.Parse(userId));
+            if (store == null)
+            {
+                _logger.LogInformation("Store not found.");
+                throw new KeyNotFoundException("Store not found.");
+            }
+
+            var result = await _archiveAndCleanupManager.GetProductArchiveCollection(store.Id);
+            _logger.LogInformation("GetArchivedByUserIdAsync success");
+            return _mapper.Map<IEnumerable<ProductArchiveDto>>(result);
+        }
+    }
+
     /// <summary>
     ///     Deletes a product by ID.
     /// </summary>
@@ -194,7 +267,7 @@ public class ProductService(
                 _logger.LogInformation("Store not found.");
                 throw new KeyNotFoundException("Store not found.");
             }
-            
+
             var user = await _userRepository.GetUserByIdAsync(ObjectId.Parse(userId));
             if (user == null)
             {
@@ -207,9 +280,11 @@ public class ProductService(
                 _logger.LogInformation("User is not owner or manager.");
                 throw new AccessDeniedException("User is not owner or manager.");
             }
-            if (!await _productRepository.DeleteAsync(ObjectId.Parse(id)))
-                throw new InvalidOperationException("Product could not be deleted.");
-            
+
+            await _archiveAndCleanupManager.SoftDeleteProductAsync(ObjectId.Parse(id));
+            // if (!await _productRepository.DeleteAsync(ObjectId.Parse(id)))
+            //     throw new InvalidOperationException("Product could not be deleted.");
+
             _logger.LogInformation("DeleteAsync success");
         }
     }
@@ -220,7 +295,8 @@ public class ProductService(
     /// <param name="name">Search query.</param>
     public async Task<IEnumerable<ProductSearchResultDto>?> SearchByNameAsync(string name)
     {
-        using (_logger.BeginScope("SearchByNameAsync")){
+        using (_logger.BeginScope("SearchByNameAsync"))
+        {
             _logger.LogInformation("SearchByNameAsync called");
             var results = await _productRepository.SearchByNameAsync(name);
             _logger.LogInformation("SearchByNameAsync success");
@@ -235,7 +311,8 @@ public class ProductService(
     /// <param name="pageSize">Page size.</param>
     public async Task<IEnumerable<ProductDto>> GetRandomProductsAsync(int page, int pageSize)
     {
-        using (_logger.BeginScope("GetRandomProductsAsync")){
+        using (_logger.BeginScope("GetRandomProductsAsync"))
+        {
             _logger.LogInformation("GetRandomProductsAsync called");
             var result = await _productRepository.GetRandomProductsAsync(page, pageSize);
             _logger.LogInformation("GetRandomProductsAsync success");
